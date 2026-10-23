@@ -119,6 +119,8 @@ def lamp_candidates(hass: HomeAssistant) -> dict[str, str | None]:
         domains = {e.domain for e in siblings}
         presence = any(e.domain == "binary_sensor" and _device_class(hass, e) in MOTION_CLASSES for e in siblings)
         if entry.domain == "light":
+            if entry.platform == "group":   # un gruppo di luci: le singole luci ci sono già
+                continue
             if "camera" not in domains and (presence or domains & set(NOT_A_LAMP_DOMAINS)):
                 continue
         else:
@@ -132,8 +134,8 @@ def lamp_candidates(hass: HomeAssistant) -> dict[str, str | None]:
         out[entry.entity_id] = _entity_area(dev_reg, entry)
     # luci e interruttori scritti in YAML senza unique_id: non sono nel registro, quindi non hanno area
     for state in hass.states.async_all(("light", "switch")):
-        if state.entity_id in out or ent_reg.async_get(state.entity_id):
-            continue
+        if state.entity_id in out or ent_reg.async_get(state.entity_id) or state.attributes.get("entity_id"):
+            continue   # già visto, oppure un gruppo (ha l'elenco delle sue luci)
         text = (state.entity_id + " " + str(state.attributes.get("friendly_name", ""))).lower()
         if state.domain == "switch" and (state.attributes.get("device_class") == "outlet" or any(w in text for w in SWITCH_SKIP_WORDS)):
             continue
@@ -141,21 +143,35 @@ def lamp_candidates(hass: HomeAssistant) -> dict[str, str | None]:
     return out
 
 
-def match_room(text: str, rooms: list[dict[str, Any]]) -> int | None:
-    """Stanza adatta a una luce dal suo nome: prima una parola del nome della stanza, poi il tipo di stanza."""
+def room_kind(text: str) -> str | None:
+    """Tipo di stanza dal nome (cucina, camera...), None se il nome non lo dice."""
     low = (text or "").lower()
-    for i, room in enumerate(rooms):
-        words = [w for w in re.split(r"[^a-zà-ù0-9]+", (room.get("name") or "").lower()) if len(w) >= 4 and w not in ("room", "stanza", "zona", "area")]
-        if any(re.search(r"(^|[^a-zà-ù])" + re.escape(w), low) for w in words):
-            return i
-    kind = None
     for image, words in IMAGE_HINTS:
         if any(w in low for w in words):
-            kind = image
-            break
+            return image
+    return None
+
+
+def match_room(text: str, rooms: list[dict[str, Any]]) -> int | None:
+    """Stanza adatta a una luce dal suo nome.
+
+    Prima le parole del nome delle stanze: vince quella che compare per prima nel nome della luce
+    («Balcone cucina» → balcone). Poi il tipo di stanza («Salotto» → Soggiorno), solo se una sola stanza è di quel tipo.
+    """
+    low = (text or "").lower()
+    best, best_pos = None, len(low) + 1
+    for i, room in enumerate(rooms):
+        words = [w for w in re.split(r"[^a-zà-ù0-9]+", (room.get("name") or "").lower()) if len(w) >= 4 and w not in ("room", "stanza", "zona", "area")]
+        for w in words:
+            m = re.search(r"(^|[^a-zà-ù])" + re.escape(w), low)
+            if m and m.start() < best_pos:
+                best, best_pos = i, m.start()
+    if best is not None:
+        return best
+    kind = room_kind(low)
     if kind is None:
         return None
-    same = [i for i, room in enumerate(rooms) if (room.get("image") or guess_image(room.get("name", ""))) == kind]
+    same = [i for i, room in enumerate(rooms) if room_kind(room.get("name", "")) == kind]
     return same[0] if len(same) == 1 else None
 
 
