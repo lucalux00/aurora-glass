@@ -216,6 +216,7 @@
         sc.hide = false;
         if (c.name) sc.n = c.name;
         if (c.alarm !== undefined) sc.alarm = c.alarm || null;
+        if (!sc.alarm && (sc.id === "night" || sc.id === "away")) { sc.sub = T("Spegne tutte le luci"); sc.msg = T("Luci spente."); }
         if (c.entity) { sc.entity = c.entity; sc.lights = []; }
         if (c.lights) {
           sc.lights = arrIds(c.lights).map(function (x) { return LIGHTS[x] ? x : byEnt[x]; }).filter(Boolean);

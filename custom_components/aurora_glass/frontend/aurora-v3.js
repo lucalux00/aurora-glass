@@ -1,4 +1,4 @@
-/* Aurora Glass v3.1.2 — scheda per Home Assistant (generata da tools/build.py) */
+/* Aurora Glass v3.1.3 — scheda per Home Assistant (generata da tools/build.py) */
 
 /* ---- disegno.js ---- */
 /* ============================================================================
@@ -1274,6 +1274,7 @@
         sc.hide = false;
         if (c.name) sc.n = c.name;
         if (c.alarm !== undefined) sc.alarm = c.alarm || null;
+        if (!sc.alarm && (sc.id === "night" || sc.id === "away")) { sc.sub = T("Spegne tutte le luci"); sc.msg = T("Luci spente."); }
         if (c.entity) { sc.entity = c.entity; sc.lights = []; }
         if (c.lights) {
           sc.lights = arrIds(c.lights).map(function (x) { return LIGHTS[x] ? x : byEnt[x]; }).filter(Boolean);
