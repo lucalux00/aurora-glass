@@ -20,7 +20,7 @@
       },
       "areas": {
         "title": "Stanze",
-        "description": "Scegli le aree di Home Assistant da mostrare come stanze (ne ho trovate {found} con delle luci). Nelle schermate successive puoi dare a ogni stanza il nome che vuoi e controllare luci e sensori. Ti serve una stanza senza area? Aggiungila qui sotto.",
+        "description": "Scegli le aree di Home Assistant da mostrare come stanze (ne propongo {found}: hanno luci o sensori, oppure il nome di una luce le richiama). Nelle schermate successive puoi dare a ogni stanza il nome che vuoi e controllare luci e sensori. Ti serve una stanza senza area? Aggiungila qui sotto.",
         "data": {
           "areas": "Aree",
           "extra_rooms": "Stanze senza area"
@@ -43,6 +43,16 @@
         "data_description": {
           "lights": "Ogni luce diventa un pulsante con un'immagine animata. Vanno bene anche gli interruttori.",
           "image": "Il disegno usato per i pulsanti delle luci di questa stanza."
+        }
+      },
+      "lights": {
+        "title": "Luci senza stanza",
+        "description": "{count} luci e relè non sono in nessuna area di Home Assistant. Mettile nelle stanze qui sotto: per {guessed} c'è già una proposta in base al nome. Quelle che lasci fuori non compaiono sulla plancia (puoi aggiungerle dopo da Configura).",
+        "data": {
+          "assign_areas": "Mettile anche in queste aree di Home Assistant"
+        },
+        "data_description": {
+          "assign_areas": "Utile anche per il resto di Home Assistant. Solo per le stanze che vengono da un'area."
         }
       },
       "devices": {
@@ -123,6 +133,16 @@
           "openings": "Porte, finestre e serrature",
           "temperature": "Sensore di temperatura",
           "image": "Immagine dei pulsanti"
+        }
+      },
+      "lights": {
+        "title": "Luci senza stanza",
+        "description": "{count} luci e relè non sono in nessuna area di Home Assistant. Mettile nelle stanze qui sotto: per {guessed} c'è già una proposta in base al nome. Quelle che lasci fuori non compaiono sulla plancia (puoi aggiungerle dopo da Configura).",
+        "data": {
+          "assign_areas": "Mettile anche in queste aree di Home Assistant"
+        },
+        "data_description": {
+          "assign_areas": "Utile anche per il resto di Home Assistant. Solo per le stanze che vengono da un'area."
         }
       },
       "devices": {

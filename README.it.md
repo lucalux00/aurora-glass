@@ -18,6 +18,7 @@ La installi da HACS, riavvii e una **procedura guidata** crea la plancia al post
 4. Segui la procedura:
    - **La tua plancia** — nome nella barra laterale, icona, lingua (automatica, italiano, inglese).
    - **Stanze** — le aree con delle luci sono già selezionate. Per ogni stanza scrivi il nome che vuoi e controlla luci, sensori di movimento, porte/finestre/serrature e temperatura (già compilati). Puoi aggiungere anche stanze senza area.
+   - **Luci senza stanza** — le luci e i relè (Shelly, Sonoff…) che non sono in nessuna area sono in un'unica schermata, già messi nella stanza giusta in base al nome («Lampadario cucina» → Cucina). Controlli, sistemi, fatto: anche con 10 stanze. Se vuoi, finiscono anche nelle aree di Home Assistant.
    - **La tua casa** — centrale allarme, meteo, climatizzatore, potenza (W) ed energia (kWh) della casa, telecamere, valuta. Se lasci vuoto un campo, quella parte non compare.
    - **Scene rapide** — cosa accendono *Buongiorno*, *Cinema* e *Cena* (luci, oppure una scena o uno script).
 5. A sinistra compare la nuova voce. Fatto.

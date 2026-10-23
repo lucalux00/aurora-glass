@@ -31,6 +31,20 @@ BAD_HINTS = ("channel", "canale", "_ch1", "_ch2", "elettrodomestic", "appliance"
              "giorn", "ieri", "yesterday", "mese", "month", "anno", "year", "media", "average", "avg", "lavatric", "frigo", "forno")
 # dispositivi che hanno una luce solo come spia (purificatori, sensori di presenza, TV...): quella luce non è una lampada
 NOT_A_LAMP_DOMAINS = ("fan", "humidifier", "vacuum", "media_player", "climate", "water_heater", "lawn_mower")
+# interruttori che non sono relè di una lampada: dispositivi che fanno altro, nomi da impostazione o da elettrodomestico, integrazioni di rete
+NOT_A_SWITCH_DOMAINS = NOT_A_LAMP_DOMAINS + ("camera", "alarm_control_panel", "lock", "cover", "siren", "valve", "remote")
+SWITCH_SKIP_WORDS = (
+    "siren", "sirena", "detection", "rilevament", "stream", "record", "registra", "privacy", "notif", "protez", "protection",
+    "filter", "filtro", "adguard", "pihole", "pi_hole", "vpn", "wifi", "wi-fi", "guest", "ospit", "blocco", "child", "infrared",
+    "infraross", "indicator", "indicatore", "disturb", "automation", "automazion", "update", "aggiorn", "sleep", "boost", "turbo",
+    "mute", "audio", "alexa", "echo", "shuffle", "repeat", "schedule", "programm", "presa", "plug", "outlet", "socket", "lavatric",
+    "asciugatric", "lavastovigl", "frigo", "forno", "boiler", "scaldabagn", "caldaia", "pompa", "pump", "irrig", "sprinkler",
+    "valvol", "condizionat", "clima", "deumid", "ventil", "purific", "router", "server", "computer", "stampante", "printer",
+    "caricator", "charger", "wallbox", "power on behav", "relay type", "anti_flicker", "eco mode",
+)
+SWITCH_SKIP_PLATFORMS = ("adguard", "pi_hole", "unifi", "fritz", "synology_dsm", "plex", "spotify", "mobile_app", "browser_mod",
+                         "alexa_media", "hacs", "ring", "reolink", "ezviz", "frigate", "sonos", "octoprint", "proxmoxve",
+                         "wake_on_lan", "homekit", "tapo_control", "onvif", "go2rtc", "backup")
 
 
 def guess_image(text: str) -> str:
@@ -70,36 +84,90 @@ def area_entities(hass: HomeAssistant, area_id: str) -> list[er.RegistryEntry]:
     return out
 
 
-def _indicator_lights(hass: HomeAssistant) -> set[str]:
-    """Luci di dispositivi che fanno altro: il LED di un purificatore, di un sensore di presenza, di una TV.
-    Restano le luci delle telecamere (faretti) e quelle dei dispositivi che sono solo luci."""
+def _entity_area(dev_reg: dr.DeviceRegistry, entry: er.RegistryEntry) -> str | None:
+    if entry.area_id:
+        return entry.area_id
+    device = dev_reg.async_get(entry.device_id) if entry.device_id else None
+    return device.area_id if device else None
+
+
+def entity_label(hass: HomeAssistant, entity_id: str) -> str:
+    state = hass.states.get(entity_id)
+    if state and state.attributes.get("friendly_name"):
+        return str(state.attributes["friendly_name"])
+    return entity_id.split(".", 1)[-1].replace("_", " ")
+
+
+def lamp_candidates(hass: HomeAssistant) -> dict[str, str | None]:
+    """Tutto ciò che può essere una lampada, con la sua area (None = in nessuna area).
+
+    Luci vere, tranne le spie di dispositivi che fanno altro (il LED di un purificatore o di un sensore
+    di presenza). Interruttori dei relè (Shelly, Sonoff...), tranne quelli di telecamere, elettrodomestici,
+    prese e impostazioni (sirena, rilevamento, privacy, protezioni di rete...).
+    """
     ent_reg = er.async_get(hass)
+    dev_reg = dr.async_get(hass)
     by_device: dict[str, list[er.RegistryEntry]] = {}
     for entry in ent_reg.entities.values():
         if entry.device_id:
             by_device.setdefault(entry.device_id, []).append(entry)
-    out = set()
-    for entries in by_device.values():
-        domains = {e.domain for e in entries}
-        if "light" not in domains or "camera" in domains:
+    out: dict[str, str | None] = {}
+    for entry in ent_reg.entities.values():
+        if not _usable(entry) or entry.domain not in ("light", "switch"):
             continue
-        presence = any(e.domain == "binary_sensor" and _device_class(hass, e) in MOTION_CLASSES for e in entries)
-        if presence or domains & set(NOT_A_LAMP_DOMAINS):
-            out.update(e.entity_id for e in entries if e.domain == "light")
+        siblings = by_device.get(entry.device_id, []) if entry.device_id else []
+        domains = {e.domain for e in siblings}
+        presence = any(e.domain == "binary_sensor" and _device_class(hass, e) in MOTION_CLASSES for e in siblings)
+        if entry.domain == "light":
+            if "camera" not in domains and (presence or domains & set(NOT_A_LAMP_DOMAINS)):
+                continue
+        else:
+            text = (entry.entity_id + " " + entity_label(hass, entry.entity_id)).lower()
+            if _device_class(hass, entry) == "outlet" or domains & set(NOT_A_SWITCH_DOMAINS) or presence:
+                continue
+            if any(w in text for w in SWITCH_SKIP_WORDS):
+                continue
+            if entry.platform in SWITCH_SKIP_PLATFORMS:
+                continue
+        out[entry.entity_id] = _entity_area(dev_reg, entry)
+    # luci e interruttori scritti in YAML senza unique_id: non sono nel registro, quindi non hanno area
+    for state in hass.states.async_all(("light", "switch")):
+        if state.entity_id in out or ent_reg.async_get(state.entity_id):
+            continue
+        text = (state.entity_id + " " + str(state.attributes.get("friendly_name", ""))).lower()
+        if state.domain == "switch" and (state.attributes.get("device_class") == "outlet" or any(w in text for w in SWITCH_SKIP_WORDS)):
+            continue
+        out[state.entity_id] = None
     return out
 
 
-def detect_room(hass: HomeAssistant, area_id: str, skip: set[str] | None = None) -> dict[str, Any]:
+def match_room(text: str, rooms: list[dict[str, Any]]) -> int | None:
+    """Stanza adatta a una luce dal suo nome: prima una parola del nome della stanza, poi il tipo di stanza."""
+    low = (text or "").lower()
+    for i, room in enumerate(rooms):
+        words = [w for w in re.split(r"[^a-zà-ù0-9]+", (room.get("name") or "").lower()) if len(w) >= 4 and w not in ("room", "stanza", "zona", "area")]
+        if any(re.search(r"(^|[^a-zà-ù])" + re.escape(w), low) for w in words):
+            return i
+    kind = None
+    for image, words in IMAGE_HINTS:
+        if any(w in low for w in words):
+            kind = image
+            break
+    if kind is None:
+        return None
+    same = [i for i, room in enumerate(rooms) if (room.get("image") or guess_image(room.get("name", ""))) == kind]
+    return same[0] if len(same) == 1 else None
+
+
+def detect_room(hass: HomeAssistant, area_id: str, lamps: dict[str, str | None] | None = None) -> dict[str, Any]:
     """Luci, movimento, aperture e temperatura che stanno in un'area."""
-    lights, motion, openings, temps = [], [], [], []
-    skip = _indicator_lights(hass) if skip is None else skip
+    lamps = lamp_candidates(hass) if lamps is None else lamps
+    lights = [e for e, a in lamps.items() if a == area_id]
+    motion, openings, temps = [], [], []
     for entry in area_entities(hass, area_id):
         domain = entry.domain
         dc = _device_class(hass, entry)
-        if domain == "light":
-            if entry.entity_id not in skip:
-                lights.append(entry.entity_id)
-        elif domain == "binary_sensor" and dc in MOTION_CLASSES:
+        if domain == "binary_sensor" and dc in MOTION_CLASSES:
             motion.append(entry.entity_id)
         elif (domain == "binary_sensor" and dc in OPEN_CLASSES) or domain == "lock":
             openings.append(entry.entity_id)
@@ -108,10 +176,21 @@ def detect_room(hass: HomeAssistant, area_id: str, skip: set[str] | None = None)
     return {"lights": sorted(lights), "motion": sorted(motion), "openings": sorted(openings), "temperature": sorted(temps)[:1]}
 
 
-def areas_with_lights(hass: HomeAssistant) -> list[str]:
-    """Aree che hanno almeno una luce, nell'ordine del registro."""
-    skip = _indicator_lights(hass)
-    return [a.id for a in ar.async_get(hass).async_list_areas() if detect_room(hass, a.id, skip)["lights"]]
+def suggested_areas(hass: HomeAssistant) -> list[str]:
+    """Aree da proporre come stanze: hanno una lampada o un sensore, o il nome di una lampada senza area le richiama."""
+    lamps = lamp_candidates(hass)
+    areas = ar.async_get(hass).async_list_areas()
+    loose = [entity_label(hass, e) + " " + e for e, a in lamps.items() if a is None]
+    out = []
+    for area in areas:
+        room = detect_room(hass, area.id, lamps)
+        if room["lights"] or room["motion"] or room["temperature"] or room["openings"]:
+            out.append(area.id)
+            continue
+        probe = [{"name": area.name, "image": guess_image(area.name)}]
+        if any(match_room(text, probe) == 0 for text in loose):
+            out.append(area.id)
+    return out
 
 
 def area_name(hass: HomeAssistant, area_id: str) -> str:

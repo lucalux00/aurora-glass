@@ -20,7 +20,7 @@
       },
       "areas": {
         "title": "Rooms",
-        "description": "Pick the Home Assistant areas to show as rooms ({found} with lights were found). On the next screens you can rename each room and check its lights and sensors. Need a room without an area? Add it below.",
+        "description": "Pick the Home Assistant areas to show as rooms ({found} are suggested: they have lights or sensors, or the name of a light points to them). On the next screens you can rename each room and check its lights and sensors. Need a room without an area? Add it below.",
         "data": {
           "areas": "Areas",
           "extra_rooms": "Rooms without an area"
@@ -43,6 +43,16 @@
         "data_description": {
           "lights": "Each light becomes a button with an animated picture. Switches work too.",
           "image": "The illustration used for this room's light buttons."
+        }
+      },
+      "lights": {
+        "title": "Lights without a room",
+        "description": "{count} lights and relays are not in any Home Assistant area. Put each one in its room below: {guessed} are already suggested from their names. Anything you leave out won't be on the dashboard (you can add it later from Configure).",
+        "data": {
+          "assign_areas": "Also put them in these areas in Home Assistant"
+        },
+        "data_description": {
+          "assign_areas": "Handy for the rest of Home Assistant too. Only for rooms that come from an area."
         }
       },
       "devices": {
@@ -123,6 +133,16 @@
           "openings": "Doors, windows and locks",
           "temperature": "Temperature sensor",
           "image": "Button picture"
+        }
+      },
+      "lights": {
+        "title": "Lights without a room",
+        "description": "{count} lights and relays are not in any Home Assistant area. Put each one in its room below: {guessed} are already suggested from their names. Anything you leave out won't be on the dashboard (you can add it later from Configure).",
+        "data": {
+          "assign_areas": "Also put them in these areas in Home Assistant"
+        },
+        "data_description": {
+          "assign_areas": "Handy for the rest of Home Assistant too. Only for rooms that come from an area."
         }
       },
       "devices": {

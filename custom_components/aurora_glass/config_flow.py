@@ -32,15 +32,19 @@ from .helpers import (
     MOTION_CLASSES,
     OPEN_CLASSES,
     area_name,
-    areas_with_lights,
     currency_symbol,
     detect_devices,
     detect_room,
+    entity_label,
     guess_image,
+    lamp_candidates,
+    match_room,
+    suggested_areas,
     unique_url_path,
 )
+from homeassistant.helpers import entity_registry as er
 
-MAX_EXTRA_ROOMS = 10
+MAX_EXTRA_ROOMS = 20
 
 
 def _ent(multiple: bool = False, **cfg) -> selector.EntitySelector:
@@ -100,7 +104,7 @@ class AuroraFlowSteps:
             areas = [r["area_id"] for r in current if r.get("area_id")]
             extra = len([r for r in current if not r.get("area_id")])
         else:
-            areas = areas_with_lights(hass)
+            areas = suggested_areas(hass)
             extra = 0 if areas else 2
         return self.async_show_form(step_id="areas", data_schema=self._areas_schema(areas, extra), last_step=False,
                                     description_placeholders={"found": str(len(areas))})
@@ -135,15 +139,12 @@ class AuroraFlowSteps:
                 self._rooms_out.append(done)
                 if len(self._rooms_out) < len(self._queue):
                     return await self.async_step_room()
-                self._conf[CONF_ROOMS] = self._rooms_out
-                if self._only == "rooms":
-                    return self._finish()
-                return await self.async_step_devices()
+                return await self.async_step_lights()
             room = dict(room, **{k: v for k, v in user_input.items()})
 
         schema = vol.Schema({
             vol.Required("name", default=room.get("name") or ""): selector.TextSelector(),
-            vol.Optional("lights", description=_sv(room.get("lights"))): _ent(True, domain=["light", "switch"]),
+            vol.Optional("lights", description=_sv(room.get("lights"))): _ent(True, include_entities=self._lamp_list(room.get("lights"))),
             vol.Optional("motion", description=_sv(room.get("motion"))): _ent(True, filter=[{"domain": "binary_sensor", "device_class": list(MOTION_CLASSES)}]),
             vol.Optional("openings", description=_sv(room.get("openings"))): _ent(True, filter=[{"domain": "binary_sensor", "device_class": list(OPEN_CLASSES)}, {"domain": "lock"}]),
             vol.Optional("temperature", description=_sv(room.get("temperature"))): _ent(True, filter=[{"domain": "sensor", "device_class": "temperature"}]),
@@ -152,9 +153,59 @@ class AuroraFlowSteps:
             ),
         })
         area = area_name(self.hass, room["area_id"]) if room.get("area_id") else "—"
-        last = index + 1 == len(self._queue) and self._only == "rooms"
-        return self.async_show_form(step_id="room", data_schema=schema, errors=errors, last_step=last,
+        return self.async_show_form(step_id="room", data_schema=schema, errors=errors, last_step=False,
                                     description_placeholders={"current": str(index + 1), "total": str(len(self._queue)), "area": area})
+
+    def _lamp_list(self, chosen: list[str] | None = None) -> list[str]:
+        """Le lampade proponibili (luci vere e relè), più quelle già scelte: niente sirene o interruttori delle telecamere."""
+        if not hasattr(self, "_lamps") or self._lamps is None:
+            self._lamps = lamp_candidates(self.hass)
+        return sorted(set(self._lamps) | set(chosen or []))
+
+    # ---------------------------------------------------------------- luci che non sono in nessuna area
+    async def async_step_lights(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Una sola schermata per mettere nelle stanze tutte le luci e i relè senza area, con proposte dal nome."""
+        rooms = self._rooms_out
+        self._lamp_list()
+        used = {e for r in rooms for e in r["lights"]}
+        loose = sorted(e for e, area in self._lamps.items() if area is None and e not in used)
+        keys = self._room_keys(rooms)
+        if user_input is not None or not loose:
+            if user_input:
+                ent_reg = er.async_get(self.hass)
+                assign = bool(user_input.get("assign_areas"))
+                for key, room in zip(keys, rooms):
+                    for entity_id in user_input.get(key) or []:
+                        if entity_id not in room["lights"]:
+                            room["lights"].append(entity_id)
+                            if assign and room.get("area_id") and ent_reg.async_get(entity_id):
+                                ent_reg.async_update_entity(entity_id, area_id=room["area_id"])
+            self._conf[CONF_ROOMS] = rooms
+            if self._only == "rooms":
+                return self._finish()
+            return await self.async_step_devices()
+        guess: dict[int, list[str]] = {}
+        for entity_id in loose:
+            i = match_room(entity_label(self.hass, entity_id) + " " + entity_id, rooms)
+            if i is not None:
+                guess.setdefault(i, []).append(entity_id)
+        fields: dict[Any, Any] = {}
+        for i, key in enumerate(keys):
+            fields[vol.Optional(key, description=_sv(guess.get(i)))] = _ent(True, include_entities=loose)
+        fields[vol.Required("assign_areas", default=False)] = selector.BooleanSelector()
+        return self.async_show_form(step_id="lights", data_schema=vol.Schema(fields), last_step=self._only == "rooms",
+                                    description_placeholders={"count": str(len(loose)), "guessed": str(sum(len(v) for v in guess.values()))})
+
+    @staticmethod
+    def _room_keys(rooms: list[dict[str, Any]]) -> list[str]:
+        """Un campo per stanza, con il nome della stanza come etichetta (resi unici se due stanze si chiamano uguale)."""
+        keys: list[str] = []
+        for room in rooms:
+            key, n = room["name"], 2
+            while key in keys or key == "assign_areas":
+                key, n = f"{room['name']} ({n})", n + 1
+            keys.append(key)
+        return keys
 
     # ---------------------------------------------------------------- dispositivi della casa
     async def async_step_devices(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
@@ -226,6 +277,7 @@ class AuroraGlassConfigFlow(AuroraFlowSteps, ConfigFlow, domain=DOMAIN):
         self._conf = {}
         self._queue = []
         self._rooms_out = []
+        self._lamps = None
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
@@ -279,6 +331,7 @@ class AuroraGlassOptionsFlow(AuroraFlowSteps, OptionsFlow):
         self._conf = {}
         self._queue = []
         self._rooms_out = []
+        self._lamps = None
         self._only = None
 
     def _load(self) -> None:

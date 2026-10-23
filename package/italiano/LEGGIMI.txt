@@ -33,6 +33,9 @@ Dopo il riavvio:
          stanza scrivi il nome che vuoi vedere e controlli luci, sensori di movimento,
          porte e finestre e temperatura (sono gia' compilati: devi solo togliere o
          aggiungere). Puoi aggiungere stanze senza area.
+       - le luci senza stanza: luci e rele' (Shelly, Sonoff...) che non sono in nessuna
+         area, tutte in una schermata e gia' messe in una stanza in base al nome
+         ("Lampadario cucina" -> Cucina). Controlli e sistemi: fatto, anche con 10 stanze.
        - allarme, meteo, climatizzatore, potenza ed energia della casa, telecamere
        - cosa accendono le scene Buongiorno, Cinema e Cena
   6) Fine: a sinistra compare la voce con il nome che hai scelto. Aprila.

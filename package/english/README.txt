@@ -33,6 +33,9 @@ After the restart:
          room type the name you want to see and check lights, motion sensors, doors and
          windows and temperature (already filled in: you only remove or add).
          You can also add rooms that have no area.
+       - lights without a room: lights and relays (Shelly, Sonoff...) that are in no
+         area, all on one screen and already placed in a room from their names
+         ("Kitchen ceiling" -> Kitchen). Check and adjust: done, even with 10 rooms.
        - alarm, weather, air conditioner, whole-house power and energy, cameras
        - what the Good morning, Cinema and Dinner scenes turn on
   6) Done: the sidebar shows an entry with the name you picked. Open it.

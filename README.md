@@ -22,6 +22,7 @@ Install it from HACS, restart, and a **wizard** builds the dashboard for you: it
 4. Follow the wizard:
    - **Your dashboard** — sidebar name, icon, language (automatic, English, Italian).
    - **Rooms** — the areas that have lights are already selected. For each room type the name you want and check lights, motion sensors, doors/windows/locks and temperature (pre-filled). Rooms without an area can be added too.
+   - **Lights without a room** — lights and relays (Shelly, Sonoff…) that are in no area are listed on one screen, already placed in the right room from their names ("Kitchen ceiling" → Kitchen). Check, adjust, done — even with 10 rooms. Optionally put them in those Home Assistant areas too.
    - **Your home** — alarm panel, weather, air conditioner, whole-house power (W) and energy (kWh), cameras, currency. Leave a field empty to hide that part.
    - **Quick scenes** — what *Good morning*, *Cinema* and *Dinner* turn on (lights, or a scene/script).
 5. The new entry appears in the sidebar. Done.
