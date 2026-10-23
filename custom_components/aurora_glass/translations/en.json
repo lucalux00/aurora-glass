@@ -1,0 +1,182 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "welcome": {
+        "title": "Aurora Glass is installed",
+        "description": "Let's create your animated dashboard. In a few steps you pick its name and language, your rooms and the devices to show. Rooms, lights and sensors are found automatically from your Home Assistant areas: you only check and rename. You can change everything later from Settings → Devices & services → Aurora Glass → Configure."
+      },
+      "user": {
+        "title": "Your dashboard",
+        "description": "This name appears in the sidebar on the left.",
+        "data": {
+          "name": "Dashboard name",
+          "icon": "Sidebar icon",
+          "language": "Dashboard language"
+        },
+        "data_description": {
+          "language": "Automatic follows the language of each Home Assistant user."
+        }
+      },
+      "areas": {
+        "title": "Rooms",
+        "description": "Pick the Home Assistant areas to show as rooms ({found} with lights were found). On the next screens you can rename each room and check its lights and sensors. Need a room without an area? Add it below.",
+        "data": {
+          "areas": "Areas",
+          "extra_rooms": "Rooms without an area"
+        },
+        "data_description": {
+          "extra_rooms": "How many rooms to add by hand, picking lights and sensors yourself."
+        }
+      },
+      "room": {
+        "title": "Room {current} of {total}",
+        "description": "Area: {area}. Give the room the name you want to see on the dashboard and check what was found.",
+        "data": {
+          "name": "Room name",
+          "lights": "Lights",
+          "motion": "Motion sensors",
+          "openings": "Doors, windows and locks",
+          "temperature": "Temperature sensor",
+          "image": "Button picture"
+        },
+        "data_description": {
+          "lights": "Each light becomes a button with an animated picture. Switches work too.",
+          "image": "The illustration used for this room's light buttons."
+        }
+      },
+      "devices": {
+        "title": "Your home",
+        "description": "Everything is optional: leave a field empty and that part of the dashboard is hidden.",
+        "data": {
+          "alarm": "Alarm panel",
+          "weather": "Weather",
+          "climate": "Air conditioner or thermostat",
+          "power": "Whole-house power sensor (W)",
+          "energy": "Whole-house energy meter (kWh)",
+          "cameras": "Cameras",
+          "currency": "Currency symbol"
+        },
+        "data_description": {
+          "weather": "Shows the outside temperature on the home screen.",
+          "power": "Turns on the Energy view with live power and costs.",
+          "energy": "A total energy sensor (kWh) for the 14-day history.",
+          "currency": "Used for the energy costs, for example €, $ or £."
+        }
+      },
+      "scenes": {
+        "title": "Quick scenes",
+        "description": "What each quick scene turns on (everything else is turned off). You can also pick a Home Assistant scene or script. Leave a scene empty to hide it.",
+        "data": {
+          "morning": "Good morning",
+          "cinema": "Cinema",
+          "dinner": "Dinner",
+          "night_alarm": "Good night also arms the alarm (night mode)",
+          "away_alarm": "Leaving home also arms the alarm (away mode)"
+        }
+      }
+    },
+    "error": {
+      "no_rooms": "Pick at least one area or add a room without an area.",
+      "name_required": "Give the room a name."
+    },
+    "abort": {
+      "already_configured": "Aurora Glass is already set up.",
+      "not_this_instance": "This announcement comes from another Home Assistant."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Aurora Glass",
+        "description": "What do you want to change?",
+        "menu_options": {
+          "general": "Name, icon and language",
+          "areas": "Rooms, lights and sensors",
+          "devices": "Alarm, weather, climate, energy and cameras",
+          "scenes": "Quick scenes"
+        }
+      },
+      "general": {
+        "title": "Your dashboard",
+        "data": {
+          "name": "Dashboard name",
+          "icon": "Sidebar icon",
+          "language": "Dashboard language"
+        }
+      },
+      "areas": {
+        "title": "Rooms",
+        "description": "Pick the areas to show as rooms. On the next screens you can rename each room and change its lights and sensors.",
+        "data": {
+          "areas": "Areas",
+          "extra_rooms": "Rooms without an area"
+        }
+      },
+      "room": {
+        "title": "Room {current} of {total}",
+        "description": "Area: {area}.",
+        "data": {
+          "name": "Room name",
+          "lights": "Lights",
+          "motion": "Motion sensors",
+          "openings": "Doors, windows and locks",
+          "temperature": "Temperature sensor",
+          "image": "Button picture"
+        }
+      },
+      "devices": {
+        "title": "Your home",
+        "description": "Leave a field empty to hide that part of the dashboard.",
+        "data": {
+          "alarm": "Alarm panel",
+          "weather": "Weather",
+          "climate": "Air conditioner or thermostat",
+          "power": "Whole-house power sensor (W)",
+          "energy": "Whole-house energy meter (kWh)",
+          "cameras": "Cameras",
+          "currency": "Currency symbol"
+        }
+      },
+      "scenes": {
+        "title": "Quick scenes",
+        "description": "What each quick scene turns on (everything else is turned off). Leave a scene empty to hide it.",
+        "data": {
+          "morning": "Good morning",
+          "cinema": "Cinema",
+          "dinner": "Dinner",
+          "night_alarm": "Good night also arms the alarm (night mode)",
+          "away_alarm": "Leaving home also arms the alarm (away mode)"
+        }
+      }
+    },
+    "error": {
+      "no_rooms": "Pick at least one area or add a room without an area.",
+      "name_required": "Give the room a name."
+    }
+  },
+  "selector": {
+    "language": {
+      "options": {
+        "auto": "Automatic (Home Assistant language)",
+        "it": "Italiano",
+        "en": "English"
+      }
+    },
+    "image": {
+      "options": {
+        "salotto": "Living room",
+        "cucina": "Kitchen",
+        "camera": "Bedroom",
+        "cameretta": "Kids' room",
+        "bagno_doccia": "Bathroom with shower",
+        "bagno_piccolo": "Small bathroom",
+        "ingresso": "Entrance",
+        "corridoio": "Hallway",
+        "balcone": "Balcony or outdoor",
+        "lavanderia": "Laundry",
+        "sgabuzzino": "Storage, office or garage"
+      }
+    }
+  }
+}

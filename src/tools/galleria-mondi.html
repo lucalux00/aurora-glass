@@ -1,0 +1,21 @@
+<!doctype html><html><head><meta charset="utf-8"><title>mondi</title>
+<style>body{margin:0;background:#0b0e1a;color:#9aa;font:12px sans-serif;padding:8px;width:1340px}
+.row{display:flex;gap:8px;margin-bottom:6px;align-items:center}.row b{width:110px;color:#fff}
+.row img{width:310px;height:126px;border-radius:8px;background:#222}
+.err{color:#f66}</style></head><body>
+<script src="../js/disegno.js"></script><script src="../js/mondi-base.js"></script>
+<script src="../js/mondi-a.js"></script><script src="../js/mondi-b.js" onerror="void 0"></script>
+<script>
+var q=new URLSearchParams(location.search), hours=(q.get('h')||'3,7,12,19').split(',').map(Number), only=q.get('w');
+Object.keys(AMB.W).forEach(function(id){
+  if(only&&only.split(',').indexOf(id)<0) return;
+  var row=document.createElement('div'); row.className='row'; row.innerHTML='<b>'+id+'</b>';
+  hours.forEach(function(h){
+    var s; try{ s=AMB.svg(id,h);}catch(e){ row.innerHTML+='<span class="err">'+id+' '+h+' JS '+e.message+'</span>'; console.error(id,e); return; }
+    var doc=new DOMParser().parseFromString(s,'image/svg+xml'), pe=doc.querySelector('parsererror');
+    if(pe){ row.innerHTML+='<span class="err">XML ERR '+h+': '+pe.textContent.slice(0,200)+'</span>'; console.error(id,h,pe.textContent.slice(0,300)); }
+    var img=new Image(); img.src=AMB.dataURL(id,h); row.appendChild(img);
+  });
+  document.body.appendChild(row);
+});
+</script></body></html>

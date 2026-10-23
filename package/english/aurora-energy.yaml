@@ -1,0 +1,39 @@
+# ============================================================================
+#  AURORA GLASS v3 - sensors for the Energy view (optional)
+#  The card already works out today/yesterday/month/year kWh from the history of
+#  your total energy meter. Use this file only if you want real meters.
+#
+#  How to use it (two ways):
+#   A) copy this file to /config/packages/aurora-energy.yaml and add to
+#      configuration.yaml:
+#          homeassistant:
+#            packages: !include_dir_named packages
+#   B) paste the "utility_meter:" and "template:" sections into configuration.yaml
+#      (if you already have them, merge the lines).
+#
+#  THEN: replace ENERGY_SENSOR_KWH with YOUR sensor (total kWh that always grows,
+#  e.g. sensor.house_energy_total). Restart Home Assistant.
+# ============================================================================
+utility_meter:
+  aurora_energy_today:
+    source: sensor.ENERGY_SENSOR_KWH
+    cycle: daily
+  aurora_energy_month:
+    source: sensor.ENERGY_SENSOR_KWH
+    cycle: monthly
+  aurora_energy_year:
+    source: sensor.ENERGY_SENSOR_KWH
+    cycle: yearly
+
+template:
+  - sensor:
+      - name: Aurora energy yesterday
+        unique_id: aurora_energy_yesterday
+        unit_of_measurement: kWh
+        device_class: energy
+        state: "{{ state_attr('sensor.aurora_energy_today', 'last_period') | float(0) }}"
+      - name: Aurora energy last month
+        unique_id: aurora_energy_last_month
+        unit_of_measurement: kWh
+        device_class: energy
+        state: "{{ state_attr('sensor.aurora_energy_month', 'last_period') | float(0) }}"

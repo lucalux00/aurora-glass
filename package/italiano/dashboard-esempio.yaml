@@ -1,0 +1,38 @@
+# ============================================================================
+#  AURORA GLASS v3 - plancia completa in YAML (metodo B del LEGGIMI)
+#  Come usarla: apri la plancia -> matita -> menu (tre puntini) -> "Editor di
+#  configurazione testuale" -> sostituisci tutto con questo testo -> Salva.
+#  Poi cambia i nomi delle stanze e le entita' con quelli di casa tua.
+#  Tutte le opzioni sono spiegate in scheda-esempio.yaml.
+# ============================================================================
+title: Aurora
+views:
+  - title: Casa
+    path: casa
+    icon: mdi:home-heart
+    panel: true            # la scheda occupa tutta la pagina
+    cards:
+      - type: custom:aurora-v3-card
+        language: it                     # it, en oppure auto (lingua di Home Assistant)
+        assets: /local/aurora-v3/btn/
+        rooms:                           # le TUE stanze, nell'ordine in cui le vuoi vedere
+          - name: Soggiorno              # il nome che compare sulla plancia
+            lights:
+              - light.soggiorno
+              - entity: light.lampada_divano
+                name: Lampada divano     # facoltativo: altrimenti usa il nome dell'entita'
+            motion: binary_sensor.soggiorno_movimento
+            openings:
+              - binary_sensor.porta_ingresso
+            temperature: sensor.soggiorno_temperatura
+          - name: Cucina
+            lights: [light.cucina]
+          - name: Camera da letto
+            lights: [light.camera]
+        entities:
+          alarm: alarm_control_panel.allarme
+          weather: weather.forecast_home
+          climate: climate.salotto
+          energy:
+            power: sensor.potenza_casa         # W
+            energyTotal: sensor.energia_totale # kWh totali (storico e kWh di oggi/mese/anno)

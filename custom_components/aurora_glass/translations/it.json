@@ -1,0 +1,182 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "welcome": {
+        "title": "Aurora Glass è installata",
+        "description": "Creiamo la tua plancia animata. In pochi passi scegli nome e lingua, le stanze e i dispositivi da mostrare. Stanze, luci e sensori vengono trovati da soli dalle aree di Home Assistant: devi solo controllare e dare i nomi. Puoi cambiare tutto anche dopo da Impostazioni → Dispositivi e servizi → Aurora Glass → Configura."
+      },
+      "user": {
+        "title": "La tua plancia",
+        "description": "Questo nome compare nella barra laterale a sinistra.",
+        "data": {
+          "name": "Nome della plancia",
+          "icon": "Icona nella barra laterale",
+          "language": "Lingua della plancia"
+        },
+        "data_description": {
+          "language": "Automatica segue la lingua di ogni utente di Home Assistant."
+        }
+      },
+      "areas": {
+        "title": "Stanze",
+        "description": "Scegli le aree di Home Assistant da mostrare come stanze (ne ho trovate {found} con delle luci). Nelle schermate successive puoi dare a ogni stanza il nome che vuoi e controllare luci e sensori. Ti serve una stanza senza area? Aggiungila qui sotto.",
+        "data": {
+          "areas": "Aree",
+          "extra_rooms": "Stanze senza area"
+        },
+        "data_description": {
+          "extra_rooms": "Quante stanze aggiungere a mano, scegliendo tu luci e sensori."
+        }
+      },
+      "room": {
+        "title": "Stanza {current} di {total}",
+        "description": "Area: {area}. Dai alla stanza il nome che vuoi vedere sulla plancia e controlla cosa è stato trovato.",
+        "data": {
+          "name": "Nome della stanza",
+          "lights": "Luci",
+          "motion": "Sensori di movimento",
+          "openings": "Porte, finestre e serrature",
+          "temperature": "Sensore di temperatura",
+          "image": "Immagine dei pulsanti"
+        },
+        "data_description": {
+          "lights": "Ogni luce diventa un pulsante con un'immagine animata. Vanno bene anche gli interruttori.",
+          "image": "Il disegno usato per i pulsanti delle luci di questa stanza."
+        }
+      },
+      "devices": {
+        "title": "La tua casa",
+        "description": "Tutto è facoltativo: se lasci vuoto un campo, quella parte della plancia non compare.",
+        "data": {
+          "alarm": "Centrale allarme",
+          "weather": "Meteo",
+          "climate": "Climatizzatore o termostato",
+          "power": "Sensore di potenza della casa (W)",
+          "energy": "Contatore di energia della casa (kWh)",
+          "cameras": "Telecamere",
+          "currency": "Simbolo della valuta"
+        },
+        "data_description": {
+          "weather": "Mostra la temperatura esterna nella schermata principale.",
+          "power": "Attiva la vista Energia con potenza in tempo reale e costi.",
+          "energy": "Un sensore di energia totale (kWh) per lo storico di 14 giorni.",
+          "currency": "Usato per i costi dell'energia, per esempio € o $."
+        }
+      },
+      "scenes": {
+        "title": "Scene rapide",
+        "description": "Cosa accende ogni scena rapida (tutto il resto si spegne). Puoi anche scegliere una scena o uno script di Home Assistant. Lascia vuota una scena per nasconderla.",
+        "data": {
+          "morning": "Buongiorno",
+          "cinema": "Cinema",
+          "dinner": "Cena",
+          "night_alarm": "Buonanotte inserisce anche l'allarme (modalità notte)",
+          "away_alarm": "Esco di casa inserisce anche l'allarme (fuori casa)"
+        }
+      }
+    },
+    "error": {
+      "no_rooms": "Scegli almeno un'area o aggiungi una stanza senza area.",
+      "name_required": "Dai un nome alla stanza."
+    },
+    "abort": {
+      "already_configured": "Aurora Glass è già configurata.",
+      "not_this_instance": "Questo annuncio arriva da un altro Home Assistant."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Aurora Glass",
+        "description": "Cosa vuoi cambiare?",
+        "menu_options": {
+          "general": "Nome, icona e lingua",
+          "areas": "Stanze, luci e sensori",
+          "devices": "Allarme, meteo, clima, energia e telecamere",
+          "scenes": "Scene rapide"
+        }
+      },
+      "general": {
+        "title": "La tua plancia",
+        "data": {
+          "name": "Nome della plancia",
+          "icon": "Icona nella barra laterale",
+          "language": "Lingua della plancia"
+        }
+      },
+      "areas": {
+        "title": "Stanze",
+        "description": "Scegli le aree da mostrare come stanze. Nelle schermate successive puoi rinominare ogni stanza e cambiare luci e sensori.",
+        "data": {
+          "areas": "Aree",
+          "extra_rooms": "Stanze senza area"
+        }
+      },
+      "room": {
+        "title": "Stanza {current} di {total}",
+        "description": "Area: {area}.",
+        "data": {
+          "name": "Nome della stanza",
+          "lights": "Luci",
+          "motion": "Sensori di movimento",
+          "openings": "Porte, finestre e serrature",
+          "temperature": "Sensore di temperatura",
+          "image": "Immagine dei pulsanti"
+        }
+      },
+      "devices": {
+        "title": "La tua casa",
+        "description": "Se lasci vuoto un campo, quella parte della plancia non compare.",
+        "data": {
+          "alarm": "Centrale allarme",
+          "weather": "Meteo",
+          "climate": "Climatizzatore o termostato",
+          "power": "Sensore di potenza della casa (W)",
+          "energy": "Contatore di energia della casa (kWh)",
+          "cameras": "Telecamere",
+          "currency": "Simbolo della valuta"
+        }
+      },
+      "scenes": {
+        "title": "Scene rapide",
+        "description": "Cosa accende ogni scena rapida (tutto il resto si spegne). Lascia vuota una scena per nasconderla.",
+        "data": {
+          "morning": "Buongiorno",
+          "cinema": "Cinema",
+          "dinner": "Cena",
+          "night_alarm": "Buonanotte inserisce anche l'allarme (modalità notte)",
+          "away_alarm": "Esco di casa inserisce anche l'allarme (fuori casa)"
+        }
+      }
+    },
+    "error": {
+      "no_rooms": "Scegli almeno un'area o aggiungi una stanza senza area.",
+      "name_required": "Dai un nome alla stanza."
+    }
+  },
+  "selector": {
+    "language": {
+      "options": {
+        "auto": "Automatica (lingua di Home Assistant)",
+        "it": "Italiano",
+        "en": "English"
+      }
+    },
+    "image": {
+      "options": {
+        "salotto": "Salotto",
+        "cucina": "Cucina",
+        "camera": "Camera da letto",
+        "cameretta": "Cameretta",
+        "bagno_doccia": "Bagno con doccia",
+        "bagno_piccolo": "Bagno piccolo",
+        "ingresso": "Ingresso",
+        "corridoio": "Corridoio",
+        "balcone": "Balcone o esterno",
+        "lavanderia": "Lavanderia",
+        "sgabuzzino": "Ripostiglio, studio o garage"
+      }
+    }
+  }
+}

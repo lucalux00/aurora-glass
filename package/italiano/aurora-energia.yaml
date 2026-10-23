@@ -1,0 +1,41 @@
+# ============================================================================
+#  AURORA GLASS v3 - sensori per la vista Energia (facoltativo)
+#  La scheda calcola gia' da sola i kWh di oggi, ieri, mese e anno dallo storico
+#  del contatore totale (energyTotal). Questo file serve solo se vuoi dei
+#  contatori veri: giornaliero / mensile / annuale, "ieri" e "mese scorso".
+#
+#  Come usarlo (due modi):
+#   A) copia questo file in /config/packages/aurora-energia.yaml e, in
+#      configuration.yaml, aggiungi:
+#          homeassistant:
+#            packages: !include_dir_named packages
+#   B) incolla le sezioni "utility_meter:" e "template:" in configuration.yaml
+#      (se le hai già, unisci le righe).
+#
+#  POI: sostituisci SENSORE_ENERGIA_KWH con il TUO sensore (kWh totali che
+#  crescono sempre: ad es. sensor.contatore_energia_totale).
+#  Riavvia Home Assistant (Strumenti per sviluppatori -> YAML -> Riavvia).
+# ============================================================================
+utility_meter:
+  aurora_energia_oggi:
+    source: sensor.SENSORE_ENERGIA_KWH
+    cycle: daily
+  aurora_energia_mese:
+    source: sensor.SENSORE_ENERGIA_KWH
+    cycle: monthly
+  aurora_energia_anno:
+    source: sensor.SENSORE_ENERGIA_KWH
+    cycle: yearly
+
+template:
+  - sensor:
+      - name: Aurora energia ieri
+        unique_id: aurora_energia_ieri
+        unit_of_measurement: kWh
+        device_class: energy
+        state: "{{ state_attr('sensor.aurora_energia_oggi', 'last_period') | float(0) }}"
+      - name: Aurora energia mese scorso
+        unique_id: aurora_energia_mese_scorso
+        unit_of_measurement: kWh
+        device_class: energy
+        state: "{{ state_attr('sensor.aurora_energia_mese', 'last_period') | float(0) }}"

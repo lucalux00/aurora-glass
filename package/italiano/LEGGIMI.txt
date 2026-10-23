@@ -1,0 +1,87 @@
+AURORA GLASS v3 per Home Assistant
+==================================
+La plancia animata: cielo che segue l'ora, 10 mondi, 11 effetti meteo, pulsanti
+fatti di immagini e GIF, allarme, clima, telecamere ed energia con i costi.
+In italiano o in inglese, con le TUE stanze e i nomi che vuoi tu.
+
+Due modi per installarla. Il primo non richiede di scrivere YAML.
+
+
+METODO A - INSTALLAZIONE GUIDATA (consigliato)
+----------------------------------------------
+Con HACS:
+  1) HACS -> menu (tre puntini) -> Archivi digitali personalizzati
+     Archivio:  https://github.com/lucalux00/aurora-glass    Tipo: Integrazione
+  2) Cerca "Aurora Glass" -> Scarica.
+  3) Riavvia Home Assistant (Impostazioni -> Sistema -> menu in alto a destra -> Riavvia).
+
+Senza HACS:
+  1) Copia la cartella  custom_components/aurora_glass  di questo pacchetto dentro
+     la cartella di configurazione di Home Assistant (File editor, Samba o Studio Code
+     Server). Risultato:  custom_components/aurora_glass/manifest.json
+  2) Riavvia Home Assistant.
+
+Dopo il riavvio:
+  4) Home Assistant la trova da solo: compare una notifica e in Impostazioni ->
+     Dispositivi e servizi, in alto, c'e' "Aurora Glass" tra le integrazioni rilevate.
+     Premi "Aggiungi".
+     (Se non la vedi: Impostazioni -> Dispositivi e servizi -> Aggiungi integrazione ->
+     cerca "Aurora Glass".)
+  5) La procedura guidata ti chiede, una schermata alla volta:
+       - il nome della plancia, l'icona e la lingua (automatica, italiano, inglese)
+       - le stanze: propone le aree di Home Assistant che hanno delle luci. Per ogni
+         stanza scrivi il nome che vuoi vedere e controlli luci, sensori di movimento,
+         porte e finestre e temperatura (sono gia' compilati: devi solo togliere o
+         aggiungere). Puoi aggiungere stanze senza area.
+       - allarme, meteo, climatizzatore, potenza ed energia della casa, telecamere
+       - cosa accendono le scene Buongiorno, Cinema e Cena
+  6) Fine: a sinistra compare la voce con il nome che hai scelto. Aprila.
+
+Per cambiare qualcosa dopo: Impostazioni -> Dispositivi e servizi -> Aurora Glass ->
+Configura (nome e lingua, stanze, dispositivi, scene). La plancia si aggiorna da sola.
+Per avere piu' plance (per esempio una per il tablet di camera): Aggiungi voce.
+
+
+METODO B - A MANO CON YAML
+--------------------------
+  1) COPIA I FILE: metti la cartella  www/aurora-v3  del pacchetto dentro la cartella
+     www  di Home Assistant. Risultato: www/aurora-v3/aurora-v3.js e www/aurora-v3/btn/...
+     Se www e' nuova, riavvia Home Assistant una volta.
+     Prova: apri  <indirizzo di Home Assistant>/local/aurora-v3/aurora-v3.js : se vedi
+     del testo, e' tutto a posto.
+  2) AGGIUNGI LA RISORSA: Impostazioni -> Plance -> menu (tre puntini) -> Risorse ->
+     Aggiungi risorsa.  URL: /local/aurora-v3/aurora-v3.js?v=1   Tipo: Modulo JavaScript
+     (quando aggiorni la scheda, alza il numero dopo ?v=)
+  3) CREA LA PLANCIA: Impostazioni -> Plance -> Aggiungi plancia -> Nuova plancia da zero.
+     Titolo "Aurora", icona mdi:home-heart, "Mostra nella barra laterale".
+  4) INCOLLA LA SCHEDA: apri la plancia -> matita -> menu -> "Editor di configurazione
+     testuale" -> cancella tutto e incolla  dashboard-esempio.yaml  -> Salva.
+  5) LE TUE STANZE: in dashboard-esempio.yaml cambia la sezione  rooms:  con i nomi
+     delle tue stanze e le tue entita' (Impostazioni -> Strumenti -> Stati, filtra
+     "light."). scheda-esempio.yaml contiene TUTTE le opzioni, commentate.
+  6) ENERGIA (facoltativo): indica il sensore di potenza (W) e il contatore di energia
+     totale (kWh). I kWh di oggi, ieri, mese e anno vengono calcolati dallo storico di
+     Home Assistant; se preferisci dei contatori veri usa aurora-energia.yaml.
+     Nella vista Energia tocca la barra "Tariffa" e scrivi quanto paghi un kWh.
+
+
+SE QUALCOSA NON VA
+ - Scheda rossa "Custom element doesn't exist": controlla la risorsa e ricarica con Ctrl+F5.
+ - Immagini vuote (metodo B): "assets" deve essere /local/aurora-v3/btn/ (con la barra finale).
+ - Luci grigie: l'entita' non esiste o il dispositivo e' offline.
+ - La voce non compare dopo la procedura: ricarica la pagina (Ctrl+F5).
+ - Costi a zero: tocca la barra Tariffa.
+
+PRIVACY
+ Funziona tutta in locale. L'unica richiesta esterna sono i font Google (Manrope, Sora).
+ Nessun dato viene raccolto o inviato.
+
+RIMUOVERE
+ Metodo A: Impostazioni -> Dispositivi e servizi -> Aurora Glass -> Elimina, poi
+ rimuovi l'integrazione da HACS (o la cartella custom_components/aurora_glass).
+ Metodo B: elimina la plancia, la risorsa e la cartella www/aurora-v3.
+
+Licenza GPL-3.0: puoi usare, modificare e condividere la scheda, anche a scopo
+commerciale, purche' le versioni modificate restino GPL-3.0, con il codice sorgente
+e un nome diverso da "Aurora Glass". Vedi LICENSE.
+(c) 2026 DomotikPro.it (Luca Pinelli) - https://domotikpro.it/progetti/aurora-glass-v3

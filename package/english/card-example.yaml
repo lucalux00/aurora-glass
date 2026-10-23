@@ -1,0 +1,93 @@
+# ============================================================================
+#  AURORA GLASS v3 - card configuration (every option)
+#  Paste it into the card's YAML editor, or use dashboard-example.yaml which
+#  already wraps it in a panel view.
+#
+#  Everything is OPTIONAL: what you leave out is not shown.
+#  Where to find entity IDs: Settings -> Developer tools -> States.
+# ============================================================================
+type: custom:aurora-v3-card
+language: en                        # en, it, auto (follows each user's language)
+assets: /local/aurora-v3/btn/       # folder with the button pictures
+currency: "$"                       # symbol for energy costs
+
+# --- ROOMS: as many as you like, named as you like. The order is the dashboard order.
+rooms:
+  - name: Living room               # room name
+    image: salotto                  # button picture: salotto (living room), cucina (kitchen),
+                                    # camera (bedroom), cameretta (kids' room), bagno_doccia
+                                    # (shower room), bagno_piccolo (small bathroom), ingresso
+                                    # (entrance), corridoio (hallway), balcone (balcony/outdoor),
+                                    # lavanderia (laundry), sgabuzzino (storage/office/garage).
+                                    # Left out: picked from the room name.
+    icon: mdi:sofa                  # optional
+    color: "#8B5CF6"                # optional
+    lights:                         # lights (or switches): one button each
+      - light.living_room
+      - entity: light.sofa_lamp
+        name: Sofa lamp             # button label (otherwise the entity name)
+        image: salotto              # picture for this button only
+    motion:                         # motion sensors (the first one that responds wins)
+      - binary_sensor.living_room_motion
+    openings:                       # doors, windows, locks
+      - binary_sensor.front_door
+      - entity: binary_sensor.big_window
+        name: Big window
+        type: window                # door, window, gate, lock (worked out if left out)
+      - lock.front_door
+    temperature: sensor.living_room_temperature
+  - name: Kitchen
+    lights: [light.kitchen, light.kitchen_island]
+  - name: Bedroom
+    lights: [light.bedroom]
+    temperature: sensor.bedroom_temperature
+
+# --- QUICK SCENES: what they turn on (everything else turns off). A scene with no
+#     lights is hidden. Instead of lights you can use a scene or a script.
+scenes:
+  - id: morning                     # Good morning
+    lights: [light.kitchen, light.living_room]
+  - id: cinema
+    entity: scene.movie_night       # a Home Assistant scene or script
+  - id: dinner
+    lights: [light.kitchen, light.sofa_lamp]
+  - id: night                       # Good night: turns everything off and arms night mode
+    alarm: armed_night              # null = leave the alarm alone
+  - id: away                        # Leaving home
+    alarm: armed_away
+
+# --- LIT WINDOWS in the Little house, City, Mountains and Christmas worlds: which light
+#     turns each one on. Left out: the first light of each room.
+windows:
+  salotto: light.living_room        # living room window
+  cucina: light.kitchen             # kitchen window
+  camera: light.bedroom             # bedroom window
+
+entities:
+  alarm: alarm_control_panel.home         # alarm panel
+  weather: weather.forecast_home          # outside temperature
+  climate: climate.living_room            # air conditioner or thermostat
+
+  # --- CAMERAS (Security view)
+  cameras:
+    - { n: Front door, img: camera.front_door, live: camera.front_door, poll: 20 }   # preview + live
+    - { n: Garden, kind: motion, img: image.garden_last_motion, cam: camera.garden, poll: 60 }   # last picture only
+
+  # --- ENERGY (Energy view)
+  energy:
+    power: sensor.house_power             # live W                 (needed for the view)
+    energyTotal: sensor.house_energy      # total kWh, always increasing: 14-day history and,
+                                          # if the sensors below are missing, today/yesterday/month/year kWh
+    today: sensor.aurora_energy_today     # optional: real meters (see aurora-energy.yaml)
+    yesterday: sensor.aurora_energy_yesterday
+    month: sensor.aurora_energy_month
+    lastMonth: sensor.aurora_energy_last_month
+    year: sensor.aurora_energy_year
+    voltage: sensor.house_voltage         # V                      (optional)
+    price: input_number.energy_price      # price per kWh: set it from the card (created automatically)
+    priceDefault: 0.30                    # example price until you set yours
+    limitDefault: 3000                    # W: full scale of the gauge
+    liveRefresh: 3                        # seconds: ask for a fresh value (0 = no). Handy with Shelly
+    appliances:                           # appliances: power W + today's kWh
+      - { n: Washing machine, p: sensor.washer_power, e: sensor.washer_energy_today, ic: mdi-washing-machine, c: "#38BDF8" }
+      - { n: Fridge, p: sensor.fridge_power, ic: mdi-fridge, c: "#34D399" }

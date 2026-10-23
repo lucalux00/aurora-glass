@@ -1,0 +1,39 @@
+# ============================================================================
+#  AURORA GLASS v3 - full dashboard in YAML (method B in README)
+#  How to use it: open the dashboard -> pencil -> menu (three dots) -> "Raw
+#  configuration editor" -> replace everything with this text -> Save.
+#  Then change room names and entities to match your home.
+#  Every option is explained in card-example.yaml.
+# ============================================================================
+title: Aurora
+views:
+  - title: Home
+    path: home
+    icon: mdi:home-heart
+    panel: true            # the card fills the whole page
+    cards:
+      - type: custom:aurora-v3-card
+        language: en                     # en, it or auto (Home Assistant language)
+        assets: /local/aurora-v3/btn/
+        currency: "£"                    # €, $, £ ...
+        rooms:                           # YOUR rooms, in the order you want to see them
+          - name: Living room            # the name shown on the dashboard
+            lights:
+              - light.living_room
+              - entity: light.sofa_lamp
+                name: Sofa lamp          # optional: otherwise the entity name is used
+            motion: binary_sensor.living_room_motion
+            openings:
+              - binary_sensor.front_door
+            temperature: sensor.living_room_temperature
+          - name: Kitchen
+            lights: [light.kitchen]
+          - name: Bedroom
+            lights: [light.bedroom]
+        entities:
+          alarm: alarm_control_panel.home
+          weather: weather.forecast_home
+          climate: climate.living_room
+          energy:
+            power: sensor.house_power          # W
+            energyTotal: sensor.house_energy   # total kWh (history and today/month/year kWh)

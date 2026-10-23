@@ -1,0 +1,14 @@
+{
+  "domain": "aurora_glass",
+  "name": "Aurora Glass",
+  "codeowners": ["@lucalux00"],
+  "config_flow": true,
+  "dependencies": ["frontend", "http", "panel_custom"],
+  "documentation": "https://github.com/lucalux00/aurora-glass",
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/lucalux00/aurora-glass/issues",
+  "requirements": [],
+  "version": "3.1.0",
+  "zeroconf": ["_home-assistant._tcp.local."]
+}

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aurora Glass — prova con Home Assistant simulato</title>
+<style>html, body { margin: 0; height: 100%; background: #0b1020; }</style>
+</head>
+<body>
+<!-- Prova della pagina della barra laterale con un hass finto: ?lang=it|en, ?cfg=default per la disposizione di esempio -->
+<script src="../../dist/aurora-v3.js"></script>
+<script>
+  var q = new URLSearchParams(location.search), lang = q.get("lang") || "en";
+  function st(id, state, attrs) { return { entity_id: id, state: state, attributes: attrs || {}, last_changed: new Date(Date.now() - 600000).toISOString(), last_updated: new Date().toISOString() }; }
+  var S = {};
+  [["light.living_room_lamp", "on", "Living room lamp"], ["light.living_room_ceiling", "off", "Ceiling"], ["light.tv_strip", "on", "TV strip"],
+   ["light.kitchen", "off", "Kitchen"], ["light.kitchen_island", "on", "Island"], ["light.bedroom", "off", "Bedroom"], ["light.office", "unavailable", "Office desk"],
+   ["light.bathroom", "off", "Bathroom mirror"]].forEach(function (x) { S[x[0]] = st(x[0], x[1], { friendly_name: x[2] }); });
+  S["binary_sensor.living_motion"] = st("binary_sensor.living_motion", "on", { friendly_name: "Living motion", device_class: "motion" });
+  S["binary_sensor.kitchen_motion"] = st("binary_sensor.kitchen_motion", "off", { device_class: "motion" });
+  S["binary_sensor.front_door"] = st("binary_sensor.front_door", "off", { friendly_name: "Front door", device_class: "door" });
+  S["binary_sensor.kitchen_window"] = st("binary_sensor.kitchen_window", "on", { friendly_name: "Kitchen window", device_class: "window" });
+  S["lock.front"] = st("lock.front", "locked", { friendly_name: "Front lock" });
+  S["sensor.living_temp"] = st("sensor.living_temp", "21.4", { unit_of_measurement: "°C", device_class: "temperature" });
+  S["sensor.bedroom_temp"] = st("sensor.bedroom_temp", "17.2", { unit_of_measurement: "°C", device_class: "temperature" });
+  S["alarm_control_panel.home"] = st("alarm_control_panel.home", "disarmed", { friendly_name: "Home alarm", supported_features: 7 });
+  S["weather.home"] = st("weather.home", "rainy", { temperature: 11.8, temperature_unit: "°C" });
+  S["sensor.house_power"] = st("sensor.house_power", "642", { unit_of_measurement: "W" });
+  S["climate.living"] = st("climate.living", "cool", { friendly_name: "Living AC", hvac_modes: ["off", "cool", "heat", "dry", "fan_only"], current_temperature: 24, temperature: 22, min_temp: 16, max_temp: 30, fan_modes: ["auto", "low", "high"], fan_mode: "auto", hvac_action: "cooling" });
+  S["scene.movie"] = st("scene.movie", "unknown", { friendly_name: "Movie night" });
+  var calls = [];
+  var hass = {
+    states: S, user: { name: "Alex Smith", is_admin: true }, language: lang, locale: { language: lang },
+    callService: function (d, s, data) {
+      calls.push([d, s, data]); window.CALLS = calls;
+      var ids = [].concat(data.entity_id || []);
+      ids.forEach(function (id) {
+        var o = S[id]; if (!o) return;
+        var ns = s === "toggle" ? (o.state === "on" ? "off" : "on") : s === "turn_on" ? "on" : s === "turn_off" ? "off" : o.state;
+        if (/^light\./.test(id) && o.state !== "unavailable") S[id] = st(id, ns, o.attributes);
+      });
+      push();
+      return Promise.resolve();
+    },
+    callWS: function (m) { return Promise.resolve({}); }
+  };
+  function push() { hass = Object.assign({}, hass, { states: Object.assign({}, S) }); panel.hass = hass; }
+  var card = q.get("cfg") === "default" ? { language: lang } : {
+    language: lang,
+    rooms: [
+      { name: "Living room", lights: [{ entity: "light.living_room_lamp" }, "light.living_room_ceiling", { entity: "light.tv_strip", name: "TV strip" }], motion: ["binary_sensor.living_motion"], openings: ["binary_sensor.front_door", "lock.front"], temperature: "sensor.living_temp" },
+      { name: "Kitchen", lights: ["light.kitchen", "light.kitchen_island"], motion: "binary_sensor.kitchen_motion", openings: ["binary_sensor.kitchen_window"] },
+      { name: "Bedroom", lights: ["light.bedroom"], temperature: ["sensor.bedroom_temp"] },
+      { name: "Office <b>&</b> study", lights: ["light.office"] },
+      { name: "Bathroom", lights: ["light.bathroom"] }
+    ],
+    scenes: [{ id: "morning", lights: ["light.kitchen", "light.bathroom"] }, { id: "cinema", entity: "scene.movie" }, { id: "dinner", lights: ["light.kitchen", "light.kitchen_island", "light.living_room_lamp"] }],
+    entities: { alarm: "alarm_control_panel.home", weather: "weather.home", climate: "climate.living", energy: { power: "sensor.house_power" } },
+    currency: q.get("cur") || "€"
+  };
+  var panel = document.createElement("aurora-glass-panel");
+  document.body.appendChild(panel);
+  panel.narrow = window.innerWidth < 870;
+  panel.panel = { config: { card: card } };
+  panel.hass = hass;
+  window.PANEL = panel; window.push = push; window.S = S; window.st = st;
+</script>
+</body>
+</html>

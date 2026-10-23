@@ -1,0 +1,93 @@
+# ============================================================================
+#  AURORA GLASS v3 - configurazione della scheda (tutte le opzioni)
+#  Incollala nell'editor YAML della scheda, oppure usa dashboard-esempio.yaml
+#  che la contiene gia' dentro una vista a pannello.
+#
+#  Tutto e' FACOLTATIVO: cio' che non scrivi non compare.
+#  Dove trovi i nomi delle entita': Impostazioni -> Strumenti -> Stati.
+# ============================================================================
+type: custom:aurora-v3-card
+language: it                        # it, en, auto (segue la lingua di ogni utente)
+assets: /local/aurora-v3/btn/       # cartella delle immagini dei pulsanti
+currency: "€"                       # simbolo per i costi dell'energia
+
+# --- STANZE: quante vuoi, con il nome che vuoi. L'ordine e' quello della plancia.
+rooms:
+  - name: Soggiorno                 # nome della stanza
+    image: salotto                  # disegno dei pulsanti: salotto, cucina, camera, cameretta,
+                                    # bagno_doccia, bagno_piccolo, ingresso, corridoio, balcone,
+                                    # lavanderia, sgabuzzino (se manca lo sceglie dal nome)
+    icon: mdi:sofa                  # facoltativo
+    color: "#8B5CF6"                # facoltativo
+    lights:                         # luci (o interruttori): un pulsante ciascuna
+      - light.soggiorno
+      - entity: light.lampada_divano
+        name: Lampada divano        # nome sul pulsante (se manca usa quello dell'entita')
+        image: salotto              # disegno solo per questo pulsante
+    motion:                         # sensori di movimento (vale il primo che risponde)
+      - binary_sensor.soggiorno_movimento
+    openings:                       # porte, finestre, serrature
+      - binary_sensor.porta_ingresso
+      - entity: binary_sensor.finestra_soggiorno
+        name: Finestra grande
+        type: window                # door, window, gate, lock (se manca lo capisce da solo)
+      - lock.serratura_ingresso
+    temperature: sensor.soggiorno_temperatura
+  - name: Cucina
+    lights: [light.cucina, light.isola]
+  - name: Camera da letto
+    lights: [light.camera]
+    temperature: sensor.camera_temperatura
+
+# --- SCENE RAPIDE: cosa accendono (tutto il resto si spegne). Una scena senza
+#     luci non compare. Al posto delle luci puoi usare una scena o uno script.
+scenes:
+  - id: morning                     # Buongiorno
+    lights: [light.cucina, light.soggiorno]
+  - id: cinema
+    entity: scene.serata_film       # scena o script di Home Assistant
+  - id: dinner                      # Cena
+    lights: [light.cucina, light.lampada_divano]
+  - id: night                       # Buonanotte: spegne tutto e arma l'allarme notte
+    alarm: armed_night              # null = non toccare l'allarme
+  - id: away                        # Esco di casa
+    alarm: armed_away
+
+# --- FINESTRE ILLUMINATE nei mondi Casetta, Citta', Montagna e Natale: quale luce le accende.
+#     Se manca, la prima luce di ogni stanza.
+windows:
+  salotto: light.soggiorno
+  cucina: light.cucina
+  camera: light.camera
+
+entities:
+  alarm: alarm_control_panel.allarme      # centrale allarme
+  weather: weather.forecast_home          # temperatura esterna
+  climate: climate.salotto                # climatizzatore o termostato
+
+  # --- TELECAMERE (vista Sicurezza)
+  cameras:
+    - { n: Ingresso, img: camera.ingresso, live: camera.ingresso, poll: 20 }      # anteprima + diretta
+    - { n: Giardino, kind: motion, img: image.giardino_ultimo_movimento, cam: camera.giardino, poll: 60 }  # solo ultima immagine
+
+  # --- ENERGIA (vista Energia)
+  energy:
+    power: sensor.potenza_casa            # W istantanei           (obbligatorio per la vista)
+    energyTotal: sensor.energia_totale    # kWh totali che crescono sempre: storico 14 giorni e,
+                                          # se mancano i sensori qui sotto, kWh di oggi/ieri/mese/anno
+    today: sensor.aurora_energia_oggi     # facoltativi: contatori veri (vedi aurora-energia.yaml)
+    yesterday: sensor.aurora_energia_ieri
+    month: sensor.aurora_energia_mese
+    lastMonth: sensor.aurora_energia_mese_scorso
+    year: sensor.aurora_energia_anno
+    voltage: sensor.tensione_casa         # V                      (facoltativo)
+    price: input_number.prezzo_energia    # costo del kWh: si imposta dalla scheda (viene creato da solo)
+    priceDefault: 0.30                    # prezzo di esempio finche' non imposti il tuo
+    limitDefault: 3000                    # W: fondo scala del quadrante
+    liveRefresh: 3                        # secondi: chiede il valore fresco (0 = no). Utile con Shelly
+    appliances:                           # elettrodomestici: potenza W + kWh di oggi
+      - { n: Lavatrice, p: sensor.lavatrice_potenza, e: sensor.lavatrice_energia_oggi, ic: mdi-washing-machine, c: "#38BDF8" }
+      - { n: Frigorifero, p: sensor.frigo_potenza, ic: mdi-fridge, c: "#34D399" }
+
+# Hai gia' la configurazione della versione precedente (entities: lights: salotto: ...)?
+# Continua a funzionare: senza "rooms:" la scheda usa le 11 stanze di esempio.
