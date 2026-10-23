@@ -1,4 +1,4 @@
-/* Aurora Glass v3.1.1 — scheda per Home Assistant (generata da tools/build.py) */
+/* Aurora Glass v3.1.2 — scheda per Home Assistant (generata da tools/build.py) */
 
 /* ---- disegno.js ---- */
 /* ============================================================================
