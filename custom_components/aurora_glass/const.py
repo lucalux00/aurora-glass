@@ -1,11 +1,12 @@
 """Costanti dell'integrazione Aurora Glass."""
 
 DOMAIN = "aurora_glass"
-VERSION = "3.1.3"
+VERSION = "3.1.4"
 
 # file della scheda e immagini dei pulsanti, serviti da Home Assistant
 URL_BASE = "/aurora_glass"
-PANEL_ELEMENT = "aurora-glass-panel"
+# con la versione nel nome: vedi card-wrapper.js
+PANEL_ELEMENT = "aurora-glass-panel-" + VERSION.replace(".", "-")
 
 CONF_NAME = "name"
 CONF_ICON = "icon"

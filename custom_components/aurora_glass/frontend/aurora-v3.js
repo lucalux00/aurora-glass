@@ -1,4 +1,4 @@
-/* Aurora Glass v3.1.3 — scheda per Home Assistant (generata da tools/build.py) */
+/* Aurora Glass v3.1.4 — scheda per Home Assistant (generata da tools/build.py) */
 
 /* ---- disegno.js ---- */
 /* ============================================================================
@@ -2472,6 +2472,10 @@
   /* riferimento preso subito: se nella stessa pagina c'è anche la vecchia scheda Aurora v3 (risorsa /local/ o HACS),
      il suo window.AuroraApp non deve sostituire quello di questa versione */
   var App = window.AuroraApp;
+  /* nomi con la versione per la pagina della barra laterale: dopo un aggiornamento la versione nuova
+     non trova mai i nomi già occupati da quella vecchia rimasta in memoria nel browser */
+  var VER = "3.1.4".replace(/\./g, "-");
+  var CARD_TAG = "aurora-glass-card-" + VER, PANEL_TAG = "aurora-glass-panel-" + VER;
   var OVERRIDES = [
     ":host { display: block; position: relative; --lp: absolute; --sp: absolute; --so: hidden auto; height: var(--aurora-height, calc(100vh - var(--header-height, 56px))); min-height: 520px; overflow: hidden; }",
     ".shell { height: 100%; min-height: 0; overflow: hidden; background: var(--bg); }",
@@ -2541,7 +2545,8 @@
   }
   /* aurora-glass-card è il nome di questa versione (lo usa la pagina della barra laterale);
      aurora-v3-card resta per le plance già fatte, se la vecchia scheda non l'ha già registrato */
-  if (!customElements.get("aurora-glass-card")) customElements.define("aurora-glass-card", AuroraV3Card);
+  if (!customElements.get(CARD_TAG)) customElements.define(CARD_TAG, AuroraV3Card);
+  if (!customElements.get("aurora-glass-card")) customElements.define("aurora-glass-card", class extends AuroraV3Card {});
   if (!customElements.get("aurora-v3-card")) customElements.define("aurora-v3-card", class extends AuroraV3Card {});
 
   /* pagina della barra laterale: Home Assistant le passa hass, narrow e panel (panel.config.card = config della scheda) */
@@ -2550,7 +2555,7 @@
     connectedCallback() {
       if (this._card) return;
       this.style.display = "block"; this.style.height = "100%";
-      this._card = document.createElement("aurora-glass-card");
+      this._card = document.createElement(CARD_TAG);
       this._card.style.setProperty("--aurora-height", "100dvh");
       this.appendChild(this._card);
       this._menu = document.createElement("button");
@@ -2578,7 +2583,8 @@
       if (this._narrow) this._card.setAttribute("data-menu", "1"); else this._card.removeAttribute("data-menu");
     }
   }
-  if (!customElements.get("aurora-glass-panel")) customElements.define("aurora-glass-panel", AuroraGlassPanel);
+  if (!customElements.get(PANEL_TAG)) customElements.define(PANEL_TAG, AuroraGlassPanel);
+  window.AuroraGlassPanelTag = PANEL_TAG;
 
   window.customCards = window.customCards || [];
   window.customCards.push({ type: "aurora-glass-card", name: "Aurora Glass v3", description: "Animated dashboard: worlds, weather effects and buttons made of images and GIFs." });

@@ -30,7 +30,8 @@ def bundle(assets: str) -> str:
     b = html.index("</div><!-- /shell -->") + len("</div><!-- /shell -->")
     wrapper = (SRC / "ha" / "card-wrapper.js").read_text(encoding="utf-8")
     wrapper = (wrapper.replace("__CSS__", json.dumps(css)).replace("__HTML__", json.dumps(html[a:b]))
-               .replace("__PROPS__", json.dumps(props)).replace("__ASSETS__", json.dumps(assets)))
+               .replace("__PROPS__", json.dumps(props)).replace("__ASSETS__", json.dumps(assets))
+               .replace("__VERSION__", json.dumps(VERSION)))
     out = f"/* Aurora Glass v{VERSION} — scheda per Home Assistant (generata da tools/build.py) */\n"
     for p in PARTS:
         out += "\n/* ---- " + p + " ---- */\n" + (SRC / "js" / p).read_text(encoding="utf-8") + "\n"

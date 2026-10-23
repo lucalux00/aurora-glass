@@ -58,7 +58,7 @@
     entities: { alarm: "alarm_control_panel.home", weather: "weather.home", climate: "climate.living", energy: { power: "sensor.house_power" } },
     currency: q.get("cur") || "€"
   };
-  var panel = document.createElement("aurora-glass-panel");
+  var panel = document.createElement(window.AuroraGlassPanelTag);
   document.body.appendChild(panel);
   panel.narrow = window.innerWidth < 870;
   panel.panel = { config: { card: card } };
