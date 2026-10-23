@@ -22,7 +22,7 @@ La installi da HACS, riavvii e una **procedura guidata** crea la plancia al post
    - **Scene rapide** — cosa accendono *Buongiorno*, *Cinema* e *Cena* (luci, oppure una scena o uno script).
 5. A sinistra compare la nuova voce. Fatto.
 
-Per cambiare qualcosa dopo: **Impostazioni → Dispositivi e servizi → Aurora Glass → Configura**. Ti serve una seconda plancia (per esempio per il tablet a muro)? *Aggiungi voce*.
+Per cambiare qualcosa dopo: **Impostazioni → Dispositivi e servizi → Aurora Glass → Configura**. Ti serve una seconda plancia (per esempio per il tablet a muro)? *Aggiungi servizio*.
 
 Senza HACS: copia `custom_components/aurora_glass` nella cartella di configurazione e riavvia. Il [pacchetto da scaricare](https://domotikpro.it/progetti/aurora-glass-v3) contiene anche la cartella `italiano/` con la guida passo passo e gli esempi YAML per l'installazione a mano (e la cartella `english/`).
 

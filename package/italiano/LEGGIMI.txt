@@ -39,7 +39,7 @@ Dopo il riavvio:
 
 Per cambiare qualcosa dopo: Impostazioni -> Dispositivi e servizi -> Aurora Glass ->
 Configura (nome e lingua, stanze, dispositivi, scene). La plancia si aggiorna da sola.
-Per avere piu' plance (per esempio una per il tablet di camera): Aggiungi voce.
+Per avere piu' plance (per esempio una per il tablet di camera): Aggiungi servizio.
 
 
 METODO B - A MANO CON YAML

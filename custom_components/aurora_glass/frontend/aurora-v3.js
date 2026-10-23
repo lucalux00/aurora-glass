@@ -1,4 +1,4 @@
-/* Aurora Glass v3.1.4 — scheda per Home Assistant (generata da tools/build.py) */
+/* Aurora Glass v3.1.5 — scheda per Home Assistant (generata da tools/build.py) */
 
 /* ---- disegno.js ---- */
 /* ============================================================================
@@ -2474,7 +2474,7 @@
   var App = window.AuroraApp;
   /* nomi con la versione per la pagina della barra laterale: dopo un aggiornamento la versione nuova
      non trova mai i nomi già occupati da quella vecchia rimasta in memoria nel browser */
-  var VER = "3.1.4".replace(/\./g, "-");
+  var VER = "3.1.5".replace(/\./g, "-");
   var CARD_TAG = "aurora-glass-card-" + VER, PANEL_TAG = "aurora-glass-panel-" + VER;
   var OVERRIDES = [
     ":host { display: block; position: relative; --lp: absolute; --sp: absolute; --so: hidden auto; height: var(--aurora-height, calc(100vh - var(--header-height, 56px))); min-height: 520px; overflow: hidden; }",

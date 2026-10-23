@@ -26,7 +26,7 @@ Install it from HACS, restart, and a **wizard** builds the dashboard for you: it
    - **Quick scenes** — what *Good morning*, *Cinema* and *Dinner* turn on (lights, or a scene/script).
 5. The new entry appears in the sidebar. Done.
 
-Change anything later from **Settings → Devices & services → Aurora Glass → Configure**. Want a second dashboard (e.g. for a wall tablet)? *Add entry*.
+Change anything later from **Settings → Devices & services → Aurora Glass → Configure**. Want a second dashboard (e.g. for a wall tablet)? *Add service*.
 
 Without HACS: copy `custom_components/aurora_glass` into your config folder and restart. The [download package](https://domotikpro.it/progetti/aurora-glass-v3) also contains an `english/` folder with a step-by-step guide and YAML examples for a manual install.
 

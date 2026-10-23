@@ -152,7 +152,8 @@ class AuroraFlowSteps:
             ),
         })
         area = area_name(self.hass, room["area_id"]) if room.get("area_id") else "—"
-        return self.async_show_form(step_id="room", data_schema=schema, errors=errors, last_step=False,
+        last = index + 1 == len(self._queue) and self._only == "rooms"
+        return self.async_show_form(step_id="room", data_schema=schema, errors=errors, last_step=last,
                                     description_placeholders={"current": str(index + 1), "total": str(len(self._queue)), "area": area})
 
     # ---------------------------------------------------------------- dispositivi della casa
@@ -174,7 +175,7 @@ class AuroraFlowSteps:
             vol.Optional("cameras", description=_sv(d.get("cameras"))): _ent(True, domain="camera"),
             vol.Required("currency", default=d.get("currency") or currency_symbol(self.hass)): selector.TextSelector(),
         })
-        return self.async_show_form(step_id="devices", data_schema=schema, last_step=False)
+        return self.async_show_form(step_id="devices", data_schema=schema, last_step=self._only == "devices")
 
     # ---------------------------------------------------------------- scene rapide
     async def async_step_scenes(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:

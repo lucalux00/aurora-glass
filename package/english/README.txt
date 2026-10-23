@@ -39,7 +39,7 @@ After the restart:
 
 To change something later: Settings -> Devices & services -> Aurora Glass -> Configure
 (name and language, rooms, devices, scenes). The dashboard updates by itself.
-Want more dashboards (for example one for the bedroom tablet)? Add entry.
+Want more dashboards (for example one for the bedroom tablet)? Add service.
 
 
 METHOD B - BY HAND WITH YAML

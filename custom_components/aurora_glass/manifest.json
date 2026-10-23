@@ -9,6 +9,6 @@
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/lucalux00/aurora-glass/issues",
   "requirements": [],
-  "version": "3.1.4",
+  "version": "3.1.5",
   "zeroconf": ["_home-assistant._tcp.local."]
 }
