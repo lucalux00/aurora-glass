@@ -12,7 +12,7 @@ views:
     icon: mdi:home-heart
     panel: true            # la scheda occupa tutta la pagina
     cards:
-      - type: custom:aurora-v3-card
+      - type: custom:aurora-glass-card
         language: it                     # it, en oppure auto (lingua di Home Assistant)
         assets: /local/aurora-v3/btn/
         rooms:                           # le TUE stanze, nell'ordine in cui le vuoi vedere

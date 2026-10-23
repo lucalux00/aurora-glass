@@ -6,7 +6,7 @@
 #  Tutto e' FACOLTATIVO: cio' che non scrivi non compare.
 #  Dove trovi i nomi delle entita': Impostazioni -> Strumenti -> Stati.
 # ============================================================================
-type: custom:aurora-v3-card
+type: custom:aurora-glass-card      # (la vecchia custom:aurora-v3-card funziona ancora)
 language: it                        # it, en, auto (segue la lingua di ogni utente)
 assets: /local/aurora-v3/btn/       # cartella delle immagini dei pulsanti
 currency: "€"                       # simbolo per i costi dell'energia

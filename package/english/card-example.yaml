@@ -6,7 +6,7 @@
 #  Everything is OPTIONAL: what you leave out is not shown.
 #  Where to find entity IDs: Settings -> Developer tools -> States.
 # ============================================================================
-type: custom:aurora-v3-card
+type: custom:aurora-glass-card      # (the old custom:aurora-v3-card still works)
 language: en                        # en, it, auto (follows each user's language)
 assets: /local/aurora-v3/btn/       # folder with the button pictures
 currency: "$"                       # symbol for energy costs

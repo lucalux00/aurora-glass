@@ -44,7 +44,7 @@ Without HACS: copy `custom_components/aurora_glass` into your config folder and 
 The integration also loads the card everywhere, so you can use it in any dashboard (panel view recommended):
 
 ```yaml
-type: custom:aurora-v3-card
+type: custom:aurora-glass-card
 language: en
 rooms:
   - name: Living room

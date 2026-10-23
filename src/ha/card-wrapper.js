@@ -16,6 +16,9 @@
   var HTML = __HTML__;
   var PROPS = __PROPS__;
   var BUILD_ASSETS = __ASSETS__;
+  /* riferimento preso subito: se nella stessa pagina c'è anche la vecchia scheda Aurora v3 (risorsa /local/ o HACS),
+     il suo window.AuroraApp non deve sostituire quello di questa versione */
+  var App = window.AuroraApp;
   var OVERRIDES = [
     ":host { display: block; position: relative; --lp: absolute; --sp: absolute; --so: hidden auto; height: var(--aurora-height, calc(100vh - var(--header-height, 56px))); min-height: 520px; overflow: hidden; }",
     ".shell { height: 100%; min-height: 0; overflow: hidden; background: var(--bg); }",
@@ -61,7 +64,7 @@
       this._root.appendChild(style);
       while (wrap.firstChild) this._root.appendChild(wrap.firstChild);
       var self = this, cfg = JSON.parse(this._sig || "{}");
-      this._app = new window.AuroraApp({
+      this._app = new App({
         root: this._root, host: this, layer: this._root.querySelector("#shell"), scroll: this._root.querySelector("#scroll"),
         assets: cfg.assets || defaultAssets(), live: true, embedded: true, haIcons: true, config: cfg, hass: this._hass, lang: haLang(this._hass, cfg),
         call: function (domain, service, data) { return self._hass.callService(domain, service, data); },
@@ -83,7 +86,10 @@
     disconnectedCallback() { if (this._app) this._app.stop(); }
     static getStubConfig() { return {}; }
   }
-  if (!customElements.get("aurora-v3-card")) customElements.define("aurora-v3-card", AuroraV3Card);
+  /* aurora-glass-card è il nome di questa versione (lo usa la pagina della barra laterale);
+     aurora-v3-card resta per le plance già fatte, se la vecchia scheda non l'ha già registrato */
+  if (!customElements.get("aurora-glass-card")) customElements.define("aurora-glass-card", AuroraV3Card);
+  if (!customElements.get("aurora-v3-card")) customElements.define("aurora-v3-card", class extends AuroraV3Card {});
 
   /* pagina della barra laterale: Home Assistant le passa hass, narrow e panel (panel.config.card = config della scheda) */
   class AuroraGlassPanel extends HTMLElement {
@@ -91,7 +97,7 @@
     connectedCallback() {
       if (this._card) return;
       this.style.display = "block"; this.style.height = "100%";
-      this._card = document.createElement("aurora-v3-card");
+      this._card = document.createElement("aurora-glass-card");
       this._card.style.setProperty("--aurora-height", "100dvh");
       this.appendChild(this._card);
       this._menu = document.createElement("button");
@@ -122,6 +128,6 @@
   if (!customElements.get("aurora-glass-panel")) customElements.define("aurora-glass-panel", AuroraGlassPanel);
 
   window.customCards = window.customCards || [];
-  window.customCards.push({ type: "aurora-v3-card", name: "Aurora Glass v3", description: "Animated dashboard: worlds, weather effects and buttons made of images and GIFs." });
+  window.customCards.push({ type: "aurora-glass-card", name: "Aurora Glass v3", description: "Animated dashboard: worlds, weather effects and buttons made of images and GIFs." });
   console.info("%c AURORA GLASS v3 %c card loaded ", "background:#7C5CFF;color:#fff;border-radius:4px 0 0 4px;padding:2px 6px", "background:#1b1740;color:#fff;border-radius:0 4px 4px 0;padding:2px 6px");
 })();

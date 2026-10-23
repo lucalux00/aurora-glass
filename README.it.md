@@ -40,7 +40,7 @@ Senza HACS: copia `custom_components/aurora_glass` nella cartella di configurazi
 L'integrazione carica la scheda ovunque, quindi puoi usarla in qualsiasi plancia (meglio in una vista a pannello):
 
 ```yaml
-type: custom:aurora-v3-card
+type: custom:aurora-glass-card
 language: it
 rooms:
   - name: Soggiorno
