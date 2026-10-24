@@ -37,6 +37,7 @@ _LOGGER = logging.getLogger(__name__)
 
 PACKS_URL = "/aurora_glass_pacchetti"
 CATALOG_URL = "https://domotikpro.it/aurora-glass/pacchetti/catalogo.json"
+PACKS_PAGE = "https://domotikpro.it/progetti/aurora-glass-pacchetti?utm_source=home-assistant&utm_medium=integrazione&utm_campaign=aurora-glass-pacchetti"
 STORE_KEY = f"{DOMAIN}.pacchetti"
 DATA_KEY = f"{DOMAIN}.pacchetti_dati"
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,39}$")

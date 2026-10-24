@@ -44,7 +44,7 @@ from .helpers import (
 )
 from homeassistant.helpers import entity_registry as er
 
-from .packs import PackError, lang_of, version_tuple
+from .packs import PACKS_PAGE, PackError, lang_of, version_tuple
 
 MAX_EXTRA_ROOMS = 20
 
@@ -404,7 +404,7 @@ class AuroraGlassOptionsFlow(AuroraFlowSteps, OptionsFlow):
             )
         })
         return self.async_show_form(step_id="packs", data_schema=schema, errors=errors,
-                                    description_placeholders={"status": status, "detail": detail})
+                                    description_placeholders={"status": status, "detail": detail, "packs_url": PACKS_PAGE})
 
     def _pack_text(self, entry: dict[str, Any]) -> tuple[str, str]:
         en = lang_of(self.hass) != "it"

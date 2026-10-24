@@ -172,7 +172,7 @@
       },
       "packs": {
         "title": "Packs",
-        "description": "{status}\n\nTick a pack to download and enable it, untick it to remove it. Packs are optional: Aurora Glass works the same without them. A pack adds features to every Aurora dashboard (for example an extra view in the dock).\n\n[Discover the packs on domotikpro.it](https://domotikpro.it/progetti/aurora-glass-pacchetti?utm_source=home-assistant&utm_medium=integration&utm_campaign=aurora-glass-pacchetti)",
+        "description": "{status}\n\nTick a pack to download and enable it, untick it to remove it. Packs are optional: Aurora Glass works the same without them. A pack adds features to every Aurora dashboard (for example an extra view in the dock).\n\n[Discover the packs on domotikpro.it]({packs_url})",
         "data": {
           "packs": "Packs"
         }

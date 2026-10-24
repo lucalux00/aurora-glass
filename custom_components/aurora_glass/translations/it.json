@@ -172,7 +172,7 @@
       },
       "packs": {
         "title": "Pacchetti",
-        "description": "{status}\n\nSpunta un pacchetto per scaricarlo e attivarlo, togli la spunta per rimuoverlo. Sono facoltativi: Aurora Glass funziona uguale anche senza. Un pacchetto aggiunge funzioni a tutte le plance Aurora (per esempio una vista in più nel dock).\n\n[Scopri i pacchetti su domotikpro.it](https://domotikpro.it/progetti/aurora-glass-pacchetti?utm_source=home-assistant&utm_medium=integrazione&utm_campaign=aurora-glass-pacchetti)",
+        "description": "{status}\n\nSpunta un pacchetto per scaricarlo e attivarlo, togli la spunta per rimuoverlo. Sono facoltativi: Aurora Glass funziona uguale anche senza. Un pacchetto aggiunge funzioni a tutte le plance Aurora (per esempio una vista in più nel dock).\n\n[Scopri i pacchetti su domotikpro.it]({packs_url})",
         "data": {
           "packs": "Pacchetti"
         }
