@@ -120,6 +120,9 @@ input.ph[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radiu
 .hints { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-top: 18px; }
 .hint { font-size: .76rem; font-weight: 600; color: var(--dim); padding: 6px 12px; border-radius: 99px; background: var(--surface); border: 1px solid var(--border); display: inline-flex; align-items: center; gap: 6px; }
 .hint i { color: var(--acc-text); }
+.hint.guide { color: var(--text); text-decoration: none; border-color: color-mix(in srgb, var(--acc-text) 55%, transparent); }
+.hint.guide:hover { background: color-mix(in srgb, var(--acc-text) 16%, var(--surface)); }
+footer.note a { color: var(--acc-text); font-weight: 700; text-decoration: none; }
 button.hint { cursor: pointer; transition: transform .3s var(--spring), border-color .2s, color .2s; }
 button.hint:hover { color: var(--text); border-color: var(--acc-text); transform: translateY(-2px); }
 button.hint.danger:hover { border-color: var(--danger); }
@@ -626,6 +629,7 @@ footer.note { text-align: center; color: var(--faint); font-size: .78rem; paddin
     <button class="hint" id="hint-style" type="button"><i class="mdi mdi-palette-swatch-variant"></i>Cambia mondo, effetti e ora</button>
     <button class="hint" id="hint-edit" type="button"><i class="mdi mdi-image-edit"></i>Modifica le immagini</button>
     <button class="hint danger" id="sim-alarm" type="button" data-demo><i class="mdi mdi-bell-ring"></i>Simula intrusione</button>
+    <a class="hint guide" href="/progetti/aurora-glass-v3?utm_source=demo&amp;utm_medium=referral&amp;utm_campaign=aurora-glass&amp;utm_content=hint" data-demo><i class="mdi mdi-book-open-variant"></i>Guida e installazione</a>
   </div>
 
   <main id="main">
@@ -784,7 +788,7 @@ footer.note { text-align: center; color: var(--faint); font-size: .78rem; paddin
       </div>
     </section>
 
-    <footer class="note">Aurora Glass v3 · anteprima: non riflette dati reali di un impianto.</footer>
+    <footer class="note">Aurora Glass v3 · anteprima: non riflette dati reali di un impianto. <a href="/progetti/aurora-glass-v3?utm_source=demo&amp;utm_medium=referral&amp;utm_campaign=aurora-glass&amp;utm_content=footer" data-demo>Guida completa e installazione</a></footer>
   </main>
 </div>
 

@@ -134,7 +134,8 @@
     "€ / kWh": "€ / kWh", "Aumenta": "Increase", "Non lo so: calcolalo dalla bolletta": "Not sure? Work it out from your bill", "Totale da pagare": "Total to pay", "es. 84,50": "e.g. 84.50",
     "kWh consumati": "kWh used", "es. 210": "e.g. 210",
     "Dividere il totale per i kWh include anche quota fissa, trasporto e imposte: è il costo reale di ogni kWh che consumi.": "Dividing the total by the kWh also includes standing charges, delivery and taxes: it is the real cost of every kWh you use.",
-    "Salva tariffa": "Save tariff"
+    "Salva tariffa": "Save tariff",
+    "Guida e installazione": "How to install it", "Guida completa e installazione": "Full guide and install"
   };
   var DICT = { en: EN };
 

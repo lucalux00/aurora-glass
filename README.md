@@ -8,8 +8,8 @@ A living dashboard: the sky, sun, moon and the windows of the little house follo
 
 Install it from HACS, restart, and a **wizard** builds the dashboard for you: it finds your rooms from your Home Assistant areas, lets you rename them, and adds the dashboard to the **sidebar**. No YAML. English and Italian.
 
-- **Live demo (no install):** https://domotikpro.it/aurora-glass-v3-demo/index.html?lang=en
-- **Guide (Italian):** https://domotikpro.it/progetti/aurora-glass-v3
+- **Live demo (no install):** [try it in your browser](https://domotikpro.it/aurora-glass-v3-demo/index.html?lang=en&utm_source=github&utm_medium=readme&utm_campaign=aurora-glass&utm_content=demo)
+- **Guide (Italian):** [domotikpro.it/progetti/aurora-glass-v3](https://domotikpro.it/progetti/aurora-glass-v3?utm_source=github&utm_medium=readme&utm_campaign=aurora-glass&utm_content=guide)
 
 | The wizard | One room at a time |
 |---|---|
@@ -29,7 +29,7 @@ Install it from HACS, restart, and a **wizard** builds the dashboard for you: it
 
 Change anything later from **Settings → Devices & services → Aurora Glass → Configure**. Want a second dashboard (e.g. for a wall tablet)? *Add service*.
 
-Without HACS: copy `custom_components/aurora_glass` into your config folder and restart. The [download package](https://domotikpro.it/progetti/aurora-glass-v3) also contains an `english/` folder with a step-by-step guide and YAML examples for a manual install.
+Without HACS: copy `custom_components/aurora_glass` into your config folder and restart. The [download package](https://domotikpro.it/progetti/aurora-glass-v3?utm_source=github&utm_medium=readme&utm_campaign=aurora-glass&utm_content=package) also contains an `english/` folder with a step-by-step guide and YAML examples for a manual install.
 
 ## Features
 - 10 animated worlds and 11 weather effects (rain, snow, storm, fireflies, petals, fireworks…)
@@ -82,4 +82,4 @@ The card sources are in `src/` (open `src/index.html` for the preview, `src/test
 The name "Aurora Glass" and the DomotikPro.it brand are not covered by the license: a modified version must use a different name.
 
 ---
-Made by [DomotikPro.it](https://domotikpro.it) — practical guides for a reliable smart home.
+Made by [DomotikPro.it](https://domotikpro.it/?utm_source=github&utm_medium=readme&utm_campaign=aurora-glass&utm_content=footer) — practical guides for a reliable smart home.

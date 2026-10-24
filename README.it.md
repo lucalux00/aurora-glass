@@ -8,8 +8,8 @@ Una plancia viva: cielo, sole, luna e le finestre della casetta seguono l'ora ve
 
 La installi da HACS, riavvii e una **procedura guidata** crea la plancia al posto tuo: trova le stanze dalle aree di Home Assistant, ti fa scegliere i nomi e aggiunge la plancia alla **barra laterale**. Niente YAML. In italiano e in inglese.
 
-- **Demo dal vivo (senza installare):** https://domotikpro.it/aurora-glass-v3-demo/index.html
-- **Guida completa:** https://domotikpro.it/progetti/aurora-glass-v3
+- **Demo dal vivo (senza installare):** [provala nel browser](https://domotikpro.it/aurora-glass-v3-demo/index.html?utm_source=github&utm_medium=readme&utm_campaign=aurora-glass&utm_content=demo)
+- **Guida completa:** [domotikpro.it/progetti/aurora-glass-v3](https://domotikpro.it/progetti/aurora-glass-v3?utm_source=github&utm_medium=readme&utm_campaign=aurora-glass&utm_content=guide)
 
 ## Installazione
 1. **HACS** → ⋮ → *Archivi digitali personalizzati* → aggiungi `https://github.com/lucalux00/aurora-glass`, tipo **Integrazione** → cerca **Aurora Glass** → *Scarica*.
@@ -25,7 +25,7 @@ La installi da HACS, riavvii e una **procedura guidata** crea la plancia al post
 
 Per cambiare qualcosa dopo: **Impostazioni → Dispositivi e servizi → Aurora Glass → Configura**. Ti serve una seconda plancia (per esempio per il tablet a muro)? *Aggiungi servizio*.
 
-Senza HACS: copia `custom_components/aurora_glass` nella cartella di configurazione e riavvia. Il [pacchetto da scaricare](https://domotikpro.it/progetti/aurora-glass-v3) contiene anche la cartella `italiano/` con la guida passo passo e gli esempi YAML per l'installazione a mano (e la cartella `english/`).
+Senza HACS: copia `custom_components/aurora_glass` nella cartella di configurazione e riavvia. Il [pacchetto da scaricare](https://domotikpro.it/progetti/aurora-glass-v3?utm_source=github&utm_medium=readme&utm_campaign=aurora-glass&utm_content=package) contiene anche la cartella `italiano/` con la guida passo passo e gli esempi YAML per l'installazione a mano (e la cartella `english/`).
 
 ## Cosa fa
 - 10 mondi animati e 11 effetti meteo (pioggia, neve, temporale, lucciole, petali, fuochi d'artificio…)
@@ -75,4 +75,4 @@ Impostazioni → Dispositivi e servizi → Aurora Glass → Elimina, poi rimuovi
 Il nome "Aurora Glass" e il marchio DomotikPro.it non sono coperti dalla licenza: una versione modificata deve usare un nome diverso.
 
 ---
-Fatta da [DomotikPro.it](https://domotikpro.it) — guide pratiche per una casa smart che funziona.
+Fatta da [DomotikPro.it](https://domotikpro.it/?utm_source=github&utm_medium=readme&utm_campaign=aurora-glass&utm_content=footer) — guide pratiche per una casa smart che funziona.
