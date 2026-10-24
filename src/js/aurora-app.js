@@ -1368,6 +1368,7 @@
 
     /* ------------------------------------------------------------------ avvio */
     T.dom(ROOT);
+    if (!LIVE) { var tv = $("#temp-val"); if (tv) tv.textContent = fmt(21.4) + " °C"; }   /* anteprima: numero nel formato della lingua */
     if (CUR !== "€") {
       setIco($(".pb-ico i"), CUR_ICON);
       var cw = document.createTreeWalker($("#pricebox"), NodeFilter.SHOW_TEXT, null), cn;

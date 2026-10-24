@@ -2,7 +2,7 @@
 
 🇬🇧 [Read in English](README.md)
 
-![Aurora Glass](docs/dashboard-casa-notte-intera.webp)
+![Aurora Glass](https://raw.githubusercontent.com/lucalux00/aurora-glass/main/docs/dashboard-casa-notte-intera.webp)
 
 Una plancia viva: cielo, sole, luna e le finestre della casetta seguono l'ora vera, dieci mondi animati, undici effetti meteo, pulsanti fatti di immagini e GIF, allarme, clima, telecamere e una vista energia con i costi calcolati dalla tua tariffa.
 

@@ -2,7 +2,7 @@
 
 🇮🇹 [Leggi in italiano](README.it.md)
 
-![Aurora Glass](docs/dashboard-casa-notte-intera.webp)
+![Aurora Glass in English](https://raw.githubusercontent.com/lucalux00/aurora-glass/main/docs/aurora-glass-english.gif)
 
 A living dashboard: the sky, sun, moon and the windows of the little house follow the real time of day, ten animated worlds, eleven weather effects, buttons made of images and GIFs, alarm, climate, cameras and an energy view with costs from your own tariff.
 
@@ -13,7 +13,7 @@ Install it from HACS, restart, and a **wizard** builds the dashboard for you: it
 
 | The wizard | One room at a time |
 |---|---|
-| ![Name and language](docs/wizard-dashboard.webp) | ![Room](docs/wizard-room.webp) |
+| ![Name and language](https://raw.githubusercontent.com/lucalux00/aurora-glass/main/docs/wizard-dashboard.webp) | ![Room](https://raw.githubusercontent.com/lucalux00/aurora-glass/main/docs/wizard-room.webp) |
 
 ## Install
 1. **HACS** → ⋮ → *Custom repositories* → add `https://github.com/lucalux00/aurora-glass`, type **Integration** → search **Aurora Glass** → *Download*.
