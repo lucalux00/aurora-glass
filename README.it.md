@@ -33,6 +33,7 @@ Senza HACS: copia `custom_components/aurora_glass` nella cartella di configurazi
 - Le tue stanze con i tuoi nomi: quante stanze e luci hai
 - 50 immagini e GIF pronte per i pulsanti, modificabili dalla plancia
 - Allarme con codice, clima, telecamere con diretta
+- Barra in alto da toccare: le luci accese (tocchi una luce e si spegne) e le stanze con movimento, con l'ultima volta che ogni sensore ha visto qualcuno
 - Vista Energia: potenza in tempo reale, kWh di oggi / ieri / mese / anno (calcolati dallo storico del contatore, senza sensori in più) e costi = kWh × la tua tariffa
 - Italiano e inglese; in automatico segue la lingua di ogni utente
 - **Privacy:** tutto in locale. L'unica richiesta esterna sono i font Google (Manrope, Sora).

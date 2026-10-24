@@ -37,6 +37,7 @@ Without HACS: copy `custom_components/aurora_glass` into your config folder and 
 - Your rooms, your names: as many rooms and lights as you have
 - 50 ready-made button images and GIFs (lights, scenes, sensors, alarm, climate), editable from the dashboard
 - Alarm panel with code, climate control, cameras with live view
+- Top bar you can tap: the lights that are on (tap one to turn it off) and the rooms with motion, with when each sensor last saw someone
 - Energy view: live power, kWh today / yesterday / month / year (worked out from your meter's history, no extra sensors needed) and costs = kWh × your tariff
 - English and Italian; automatic mode follows each user's language
 - **Privacy:** everything runs locally. The only external request is Google Fonts (Manrope, Sora).

@@ -417,6 +417,7 @@
       if (LIVE && nUn) lt += " · " + T(nUn === 1 ? "{n} non risponde" : "{n} non rispondono", { n: nUn });
       $("#status-text").textContent = lt + (!LIVE || sv(ENT.alarm) ? " · " + a.short : "");
       $$(".scene").forEach(function (b) { var act = b.dataset.scene === state.scene; b.classList.toggle("active", act); b.dataset.on = act ? "1" : "0"; refreshImg(b); });
+      paintStatus();
     }
 
     /* ------------------------------------------------------------------ scene */
@@ -514,7 +515,11 @@
 
     /* ------------------------------------------------------------------ sensori */
     var lastMotion = null, lastAt = 0;
+    var motState = {};   /* stanza → { on, na, last }: serve alla finestra del movimento */
     function setMotionUI(key, act, na) {
+      var prev = motState[key] || {};
+      motState[key] = { on: !!act, na: !!na, last: act ? new Date() : prev.last };
+      if (!!prev.on !== !!act || !!prev.na !== !!na) later(paintStatus, 0);
       $$('[data-sensor="' + key + '"]').forEach(function (n) {
         n.classList.toggle("active", !!act); n.classList.toggle("na", !!na); n.dataset.on = act ? "1" : "0"; refreshImg(n);
         var st = $(".st-state", n); if (st) st.textContent = (na ? T("Non disponibile") : (act ? T("Movimento!") : T("Nessun movimento"))) + tSuffix(key);
@@ -544,6 +549,109 @@
       var s = Math.round((Date.now() - lastAt) / 1000), t = s < 4 ? T("adesso") : s < 60 ? T("{n} s fa", { n: s }) : s < 3600 ? T("{n} min fa", { n: Math.round(s / 60) }) : T("{n} h fa", { n: Math.round(s / 3600) });
       $("#last-motion").textContent = T("Ultimo movimento: {n}", { n: lastMotion }) + " · " + t + (motNa ? " · " + T(motNa === 1 ? "{n} sensore offline" : "{n} sensori offline", { n: motNa }) : "");
     }
+
+    /* ------------------------------------------------------------------ barra in alto: luci accese e movimento
+       Un tocco su "N luci accese" apre l'elenco delle luci accese (tocca per spegnerle);
+       un tocco su "Movimento" apre le stanze con i sensori, quelle con movimento in cima. */
+    var stOpen = null, stBtn = null, stPop = $("#st-pop");
+    function lightRoom(k) { for (var i = 0; i < ROOMS.length; i++) if (ROOMS[i].l.indexOf(k) > -1) return ROOMS[i].n; return ""; }
+    function litKeys() { return Object.keys(state.lights).filter(function (k) { return state.lights[k] && LIGHTS[k] && (!LIVE || ENT.lights[k]); }); }
+    function motRooms() { return MOTION.filter(function (m) { return hasMotion(m[0]); }); }
+    function motInfo(k) { if (LIVE) return roomMot(k); var m = motState[k] || {}; return { on: !!m.on, na: false, last: m.last || null, id: null }; }
+    function ago(d) {
+      if (!d) return T("mai");
+      var sec = Math.round((Date.now() - d) / 1000);
+      return sec < 4 ? T("adesso") : sec < 60 ? T("{n} s fa", { n: sec }) : sec < 3600 ? T("{n} min fa", { n: Math.round(sec / 60) }) : sec < 86400 ? T("{n} h fa", { n: Math.round(sec / 3600) }) : T("{n} g fa", { n: Math.round(sec / 86400) });
+    }
+    function paintStatus() {
+      var lit = litKeys().length, rooms = motRooms(), act = rooms.filter(function (m) { return motInfo(m[0]).on; });
+      $("#st-lcount").textContent = lit;
+      var mb = $("#st-motion");
+      mb.hidden = !rooms.length;
+      mb.classList.toggle("st-on", act.length > 0);
+      $("#st-mcount").textContent = act.length;
+      $("#st-motion-text").textContent = !act.length ? T("Nessun movimento") : act.length === 1 ? T("Movimento: {n}", { n: act[0][1] }) : T("Movimento in {n} stanze", { n: act.length });
+      mb.setAttribute("aria-label", $("#st-motion-text").textContent);
+      $("#status").setAttribute("aria-label", $("#status-text").textContent);
+      if (stOpen) renderPop(false);
+    }
+    function stItem(i, cls, inner) { var b = el("button", "st-item" + (cls ? " " + cls : ""), inner, { type: "button" }); b.style.setProperty("--i", i); return b; }
+    var stSig = "";
+    /* first: entrata animata; poi si ridisegna solo se cambia qualcosa, senza animazione */
+    function renderPop(first) {
+      var list = $("#st-list"), foot = $("#st-foot");
+      var sig = stOpen + "|" + (stOpen === "lights" ? litKeys().join(",") + "|" + state.alarm : motRooms().map(function (m) { var mi = motInfo(m[0]); return m[0] + (mi.on ? 1 : 0) + (mi.na ? 1 : 0) + ago(mi.last); }).join(","));
+      if (!first && sig === stSig) return;
+      stSig = sig;
+      list.classList.toggle("st-still", !first);
+      list.innerHTML = ""; foot.innerHTML = "";
+      if (stOpen === "lights") {
+        var keys = litKeys();
+        $("#st-pop-title").textContent = T("Luci accese");
+        $("#st-pop-sub").textContent = keys.length ? T("Tocca una luce per spegnerla") : "";
+        keys.forEach(function (k, i) {
+          var L = LIGHTS[k], src = resolve(L[3] || L[1], L[1], true);
+          var b = stItem(i, "", '<img class="st-thumb" alt="" draggable="false" src="' + esc(src) + '"><span class="st-txt"><b>' + esc(L[0]) + "</b><small>" + esc(lightRoom(k)) + '</small></span><span class="st-act" aria-hidden="true"><i class="mdi mdi-power"></i></span>');
+          b.setAttribute("aria-label", T("Spegni {n}", { n: L[0] }));
+          b.addEventListener("click", function () { lightOff(k, b); });
+          list.appendChild(b);
+        });
+        if (!keys.length) list.appendChild(el("div", "st-empty", '<i class="mdi mdi-lightbulb-off-outline"></i>' + esc(T("Tutte le luci sono spente"))));
+        if (keys.length > 1) { var all = el("button", "btn", '<i class="mdi mdi-lightbulb-off-outline"></i>' + esc(T("Spegni tutte")), { type: "button" }); all.addEventListener("click", function () { $("#dock-off").click(); }); foot.appendChild(all); }
+        if (!LIVE || sv(ENT.alarm)) {
+          var a = ALARM[state.alarm] || ALARM.disarmed, ab = el("button", "btn ghost", '<i class="mdi mdi-shield-home"></i>' + esc(T("Allarme: {s}", { s: a.t })), { type: "button" });
+          ab.addEventListener("click", function () { closePop(); show("sic"); }); foot.appendChild(ab);
+        }
+      } else {
+        var rooms = motRooms().map(function (m) { var mi = motInfo(m[0]); return { k: m[0], n: m[1], on: mi.on, na: mi.na, last: mi.last, id: mi.id }; });
+        rooms.sort(function (x, y) { return (y.on - x.on) || ((y.last ? +y.last : 0) - (x.last ? +x.last : 0)); });
+        var on = rooms.filter(function (r) { return r.on; }).length;
+        $("#st-pop-title").textContent = T("Sensori di movimento");
+        $("#st-pop-sub").textContent = !on ? T("Nessun movimento adesso") : on === 1 ? T("Movimento in {n} stanza", { n: 1 }) : T("Movimento in {n} stanze", { n: on });
+        rooms.forEach(function (r, i) {
+          var txt = r.na ? T("Non disponibile") : r.on ? T("Movimento adesso") : r.last ? T("Ultimo movimento {t}", { t: ago(r.last) }) : T("Nessun movimento registrato");
+          var b = stItem(i, r.on ? "on" : r.na ? "na" : "", '<span class="st-mdot" aria-hidden="true"></span><span class="st-txt"><b>' + esc(r.n) + "</b><small>" + esc(txt) + "</small></span>" + (LIVE ? '<i class="mdi mdi-chevron-right st-go" aria-hidden="true"></i>' : ""));
+          b.addEventListener("click", function () { if (LIVE && r.id) moreInfo(r.id); });
+          list.appendChild(b);
+        });
+        var sb = el("button", "btn ghost", '<i class="mdi mdi-shield-home"></i>' + esc(T("Apri Sicurezza")), { type: "button" });
+        sb.addEventListener("click", function () { closePop(); show("sic"); }); foot.appendChild(sb);
+      }
+      hydrate(stPop);
+    }
+    function lightOff(k, b) {
+      b.classList.add("going");
+      if (LIVE && ENT.lights[k]) call("homeassistant", "turn_off", { entity_id: ENT.lights[k] });
+      state.lights[k] = false; state.scene = null;
+      toast(T("{n}: spenta", { n: LIGHTS[k][0] }), "mdi-lightbulb-off-outline", "var(--acc-text)");
+      later(render, 300);
+    }
+    function placePop() {
+      if (!stBtn || window.matchMedia("(max-width: 720px)").matches) { stPop.style.left = ""; return; }
+      var tb = $(".topbar").getBoundingClientRect(), r = stBtn.getBoundingClientRect(), w = stPop.offsetWidth;      stPop.style.left = Math.max(12, Math.min(r.left - tb.left + r.width / 2 - w / 2, tb.width - w - 12)) + "px";
+    }
+    function openPop(kind, btn) {
+      if (stOpen === kind) { closePop(); return; }
+      stOpen = kind; stBtn = btn;
+      $$(".status-row .status").forEach(function (x) { x.setAttribute("aria-expanded", x === btn ? "true" : "false"); });
+      stPop.hidden = false; stPop.style.animation = "none"; void stPop.offsetWidth; stPop.style.animation = "";
+      renderPop(true); placePop();
+    }
+    function closePop() {
+      if (!stOpen) return;
+      stOpen = null; stPop.hidden = true;
+      $$(".status-row .status").forEach(function (x) { x.setAttribute("aria-expanded", "false"); });
+      if (stBtn) stBtn.focus({ preventScroll: true });
+    }
+    $("#status").addEventListener("click", function () { openPop("lights", this); });
+    $("#st-motion").addEventListener("click", function () { openPop("motion", this); });
+    $("#st-pop-close").addEventListener("click", closePop);
+    on(document, "pointerdown", function (e) {
+      if (!stOpen) return;
+      var path = e.composedPath ? e.composedPath() : [e.target];
+      if (path.indexOf(stPop) < 0 && !path.some(function (n) { return n.classList && n.classList.contains("status"); })) closePop();
+    });
+    on(document, "keydown", function (e) { if (e.key === "Escape" && stOpen) closePop(); });
 
     /* ------------------------------------------------------------------ viste + dock */
     function scrollTop0() { var o = { top: 0, behavior: reduce ? "auto" : "smooth" }; if (SCROLL === window) window.scrollTo(o); else SCROLL.scrollTo(o); }
@@ -1358,6 +1466,7 @@
       if (running) return; running = true;
       every(function () { if (!LIVE) { chipPower(demoPower()); if (!$("#view-en").hidden) renderEnergy(); } else { livePoll(); if (!$("#view-en").hidden) { enLoad(false); kpiStats(); } } enAge(); tickClock(); lastMotionText(); camsTick(); var d = new Date(), ts = pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds()); $$("[data-stamp]").forEach(function (n) { n.textContent = ts; }); }, 1000);
       every(tickDate, 60000);
+      every(function () { if (stOpen === "motion") renderPop(false); }, 5000);
       if (!LIVE) later(motionLoop, 1800);
       applyFx();
       if (window.ResizeObserver) { var rzT; ro = new ResizeObserver(function () { clearTimeout(rzT); rzT = setTimeout(function () { fxHero.resize(); fxPage.resize(); movePill(); }, 120); }); ro.observe($("#shell")); }

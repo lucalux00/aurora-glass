@@ -91,6 +91,47 @@ img { -webkit-user-drag: none; user-select: none; }
 .ver { font-size: .62rem; font-weight: 800; letter-spacing: .08em; color: #fff; padding: 3px 8px; border-radius: 99px; background: linear-gradient(135deg, var(--a1), var(--a2)); }
 .status { margin: 0 auto; display: flex; align-items: center; gap: 10px; padding: 8px 16px; border-radius: 99px; background: var(--surface); border: 1px solid var(--border); font-size: .84rem; font-weight: 600; color: var(--dim); min-width: 0; }
 .status span#status-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* luci accese e movimento: due pulsanti che aprono una finestra con l'elenco */
+.status-row { margin: 0 auto; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.status-row .status { margin: 0; cursor: pointer; font: inherit; font-size: .84rem; font-weight: 600; color: var(--dim); transition: color .2s, border-color .2s, background .2s, transform .35s var(--spring); }
+.status-row .status:hover { color: var(--text); border-color: var(--acc-text); transform: translateY(-1px); }
+.status-row .status[aria-expanded="true"] { color: var(--text); border-color: var(--acc-text); background: var(--surface-2); }
+.status-row .status span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.status .st-ico { display: none; font-size: 1.1rem; color: var(--acc-text); }
+.status .st-chev { flex: none; font-size: 1rem; opacity: .6; transition: transform .3s var(--ease); }
+.status[aria-expanded="true"] .st-chev { transform: rotate(180deg); }
+.status .st-count { display: none; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 99px; place-items: center; font-size: .75rem; font-weight: 800; color: #fff; background: linear-gradient(135deg, var(--a1), var(--a2)); }
+.st-motion .st-ico { display: inline-flex; }
+.st-motion.st-on { border-color: color-mix(in srgb, var(--warn) 50%, var(--border)); color: var(--text); }
+.st-motion.st-on .st-ico { color: var(--warn); animation: wiggle 2.4s ease-in-out infinite; }
+.st-motion.st-on .st-count { background: var(--warn); color: #1b1300; }
+.st-pop { position: absolute; top: calc(100% + 8px); left: 12px; z-index: 45; width: min(380px, calc(100% - 24px)); max-height: min(70vh, 540px); overflow: auto; padding: 14px; border-radius: 24px; background: color-mix(in srgb, var(--surface-solid) 94%, transparent); border: 1px solid var(--border); box-shadow: var(--shadow), inset 0 1px 0 var(--hi); backdrop-filter: blur(18px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4); animation: rise .35s var(--ease) both; }
+.st-pop-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin: 2px 2px 12px 4px; }
+.st-pop-head h3 { margin: 0; font-family: var(--font-display); font-size: 1rem; letter-spacing: -.01em; }
+.st-pop-head small { display: block; margin-top: 2px; color: var(--dim); font-size: .78rem; font-weight: 600; }
+.st-pop-head .icon-btn { width: 34px; height: 34px; font-size: 1rem; flex: none; }
+.st-list { display: grid; gap: 8px; }
+.st-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px 8px 8px 8px; border-radius: 18px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; text-align: left; cursor: pointer; transition: transform .35s var(--spring), border-color .2s, background .2s, opacity .3s ease; animation: rise .4s var(--ease) both; animation-delay: calc(var(--i, 0) * 45ms); }
+.st-item:hover { transform: translateX(3px); border-color: var(--acc-text); }
+.st-still .st-item { animation: none; }
+.st-item.going { opacity: 0; transform: translateX(28px) scale(.96); pointer-events: none; }
+.st-thumb { flex: none; width: 46px; height: 46px; border-radius: 14px; object-fit: cover; box-shadow: 0 8px 18px -10px rgba(0,0,0,.7); }
+.st-txt { min-width: 0; flex: 1; }
+.st-txt b { display: block; font-size: .9rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-txt small { display: block; margin-top: 1px; color: var(--dim); font-size: .76rem; font-weight: 600; }
+.st-act { flex: none; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-size: 1.2rem; color: #fff; background: linear-gradient(135deg, var(--a1), var(--a2)); box-shadow: 0 8px 18px -8px var(--a1); transition: transform .3s var(--spring); }
+.st-item:hover .st-act { transform: scale(1.1) rotate(-12deg); }
+.st-mdot { flex: none; width: 12px; height: 12px; margin: 0 8px 0 6px; border-radius: 50%; background: var(--faint); }
+.st-item.on { border-color: color-mix(in srgb, var(--warn) 55%, var(--border)); background: color-mix(in srgb, var(--warn) 12%, var(--surface)); }
+.st-item.on .st-mdot { background: var(--warn); animation: st-ping 1.4s ease-out infinite; }
+@keyframes st-ping { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--warn) 65%, transparent); } 100% { box-shadow: 0 0 0 10px transparent; } }
+.st-item.na { opacity: .6; }
+.st-item .st-go { flex: none; color: var(--faint); font-size: 1.1rem; }
+.st-empty { display: grid; place-items: center; gap: 6px; padding: 18px 10px; text-align: center; color: var(--dim); font-size: .86rem; font-weight: 600; }
+.st-empty i { font-size: 1.8rem; color: var(--acc-text); }
+.st-foot { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.st-foot:empty { display: none; }
+.st-foot .btn { flex: 1 1 auto; }
 .status .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ok); flex: none; animation: ping2 2.4s ease-in-out infinite; }
 :root[data-alarm="armed"] .status .dot { background: var(--warn); }
 :root[data-alarm="alarm"] .status .dot { background: var(--danger); animation-duration: 1s; }
@@ -567,8 +608,12 @@ footer.note { text-align: center; color: var(--faint); font-size: .78rem; paddin
   .alarm .seg { grid-column: 1 / -1; }
 }
 @media (max-width: 720px) {
-  .status { display: none; }
-  .top-actions { margin-left: auto; }
+  .status-row { margin: 0 0 0 auto; gap: 6px; }
+  .status-row .status { padding: 7px 9px; gap: 6px; }
+  .status-row #status-text, .status-row #st-motion-text, .status .st-chev { display: none; }
+  .status .st-ico, .status .st-count { display: inline-grid; }
+  .st-pop { left: 12px !important; right: 12px; width: auto; }
+  .top-actions { margin-left: 0; }
   .style-btn span, .ver { display: none; }
   .style-btn { padding: 0 12px; }
   .topbar .wrap { gap: 8px; }
@@ -611,11 +656,19 @@ footer.note { text-align: center; color: var(--faint); font-size: .78rem; paddin
 <header class="topbar">
   <div class="wrap">
     <div class="brand"><span class="logo" aria-hidden="true"></span>Aurora <em>Glass</em><span class="ver">v3</span></div>
-    <div class="status" id="status" role="status" aria-live="polite"><span class="dot"></span><span id="status-text">…</span></div>
+    <div class="status-row">
+      <button type="button" class="status" id="status" aria-haspopup="dialog" aria-expanded="false" aria-controls="st-pop"><span class="dot"></span><i class="mdi mdi-lightbulb-on-outline st-ico"></i><span id="status-text" aria-live="polite">…</span><b class="st-count" id="st-lcount">0</b><i class="mdi mdi-chevron-down st-chev"></i></button>
+      <button type="button" class="status st-motion" id="st-motion" aria-haspopup="dialog" aria-expanded="false" aria-controls="st-pop"><i class="mdi mdi-motion-sensor st-ico"></i><span id="st-motion-text">Nessun movimento</span><b class="st-count" id="st-mcount">0</b><i class="mdi mdi-chevron-down st-chev"></i></button>
+    </div>
     <div class="top-actions">
       <button class="style-btn" id="style-btn" type="button" aria-haspopup="dialog" aria-controls="drawer"><i class="mdi mdi-palette-swatch-variant"></i><span>Stile</span></button>
       <button class="icon-btn" id="theme-btn" type="button" aria-label="Cambia tema chiaro/scuro"><i class="mdi mdi-weather-night" id="theme-ico"></i></button>
     </div>
+  </div>
+  <div class="st-pop" id="st-pop" role="dialog" aria-labelledby="st-pop-title" hidden>
+    <div class="st-pop-head"><div><h3 id="st-pop-title"></h3><small id="st-pop-sub"></small></div><button class="icon-btn" id="st-pop-close" type="button" aria-label="Chiudi"><i class="mdi mdi-close"></i></button></div>
+    <div class="st-list" id="st-list"></div>
+    <div class="st-foot" id="st-foot"></div>
   </div>
 </header>
 

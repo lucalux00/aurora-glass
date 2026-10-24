@@ -1,7 +1,7 @@
 """Costanti dell'integrazione Aurora Glass."""
 
 DOMAIN = "aurora_glass"
-VERSION = "3.3.0"
+VERSION = "3.4.0"
 
 # file della scheda e immagini dei pulsanti, serviti da Home Assistant
 URL_BASE = "/aurora_glass"
