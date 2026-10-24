@@ -37,6 +37,13 @@ Senza HACS: copia `custom_components/aurora_glass` nella cartella di configurazi
 - Italiano e inglese; in automatico segue la lingua di ogni utente
 - **Privacy:** tutto in locale. L'unica richiesta esterna sono i font Google (Manrope, Sora).
 
+## Pacchetti facoltativi
+Funzioni in più da aggiungere e togliere quando vuoi: **Impostazioni → Dispositivi e servizi → Aurora Glass → Configura → Pacchetti**. Spunta per scaricare e attivare, togli la spunta per rimuovere, poi ricarica la pagina del browser. Non viene scaricato niente finché non spunti qualcosa, e Aurora Glass funziona uguale anche senza pacchetti.
+
+- **Regia**: pad delle scene animati, dissolvenza A ⇄ B tra due scene, REC per salvare le luci come nuovo pad, luminosità e colore per stanza. [Provala dal vivo](https://domotikpro.it/aurora-glass-pacchetti-demo/index.html?vista=regia&utm_source=github&utm_medium=readme&utm_campaign=aurora-glass-pacchetti)
+
+Elenco e file dei pacchetti arrivano da [domotikpro.it](https://domotikpro.it/progetti/aurora-glass-pacchetti?utm_source=github&utm_medium=readme&utm_campaign=aurora-glass-pacchetti); ogni file viene controllato con lo SHA-256 dell'elenco prima di installarlo. Nessun dato della tua casa viene inviato.
+
 ## La scheda nelle tue plance
 L'integrazione carica la scheda ovunque, quindi puoi usarla in qualsiasi plancia (meglio in una vista a pannello):
 

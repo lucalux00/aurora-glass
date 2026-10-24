@@ -1,4 +1,4 @@
-/* Aurora Glass v3.2.1 — scheda per Home Assistant (generata da tools/build.py) */
+/* Aurora Glass v3.3.0 — scheda per Home Assistant (generata da tools/build.py) */
 
 /* ---- disegno.js ---- */
 /* ============================================================================
@@ -1056,6 +1056,95 @@
 })(window);
 
 
+/* ---- pacchetti.js ---- */
+/* ============================================================================
+   AURORA GLASS — presa per i pacchetti
+   Un pacchetto è un file JS che si registra così (anche prima che la scheda sia caricata):
+
+     (window.AuroraGlassPacks = window.AuroraGlassPacks || []).push({
+       id: "regia", name: "Regia", version: "1.0.0", glass: "3.3.0",   // glass = versione minima di Aurora Glass
+       css: "...",                                                       // facoltativo, :root diventa :host dentro HA
+       mount: function (api) { ...; return { hass: fn(h), show: fn(view), destroy: fn() }; }
+     });
+
+   Ogni scheda Aurora aperta chiama mount() con la sua api (vedi aurora-app.js, packApi).
+   I pacchetti li scarica e li attiva l'integrazione: Configura → Pacchetti.
+   ========================================================================== */
+(function (g) {
+  "use strict";
+  var list = g.AuroraGlassPacks = g.AuroraGlassPacks || [];
+  var hosts = [];   /* schede aperte che vogliono sapere dei pacchetti arrivati dopo */
+  if (!list.__aurora) {
+    var push = Array.prototype.push;
+    list.push = function () {
+      var n = push.apply(list, arguments), added = Array.prototype.slice.call(arguments);
+      hosts.slice().forEach(function (h) { added.forEach(function (p) { h(p); }); });
+      return n;
+    };
+    Object.defineProperty(list, "__aurora", { value: true });
+  }
+
+  /* "3.10.0" >= "3.3.0" */
+  function atLeast(have, need) {
+    var a = String(have || "0").split("."), b = String(need || "0").split(".");
+    for (var i = 0; i < Math.max(a.length, b.length); i++) {
+      var x = parseInt(a[i] || "0", 10), y = parseInt(b[i] || "0", 10);
+      if (x !== y) return x > y;
+    }
+    return true;
+  }
+
+  /* @property non funziona dentro lo shadow DOM: va nel documento, una volta sola */
+  var PROP_RE = /@property\s+--[\w-]+\s*\{[^}]*\}/g;
+  function addCss(root, embedded, id, css) {
+    if (!css) return null;
+    var props = css.match(PROP_RE) || [];
+    if (props.length && !document.getElementById("aurora-pack-props-" + id)) {
+      var p = document.createElement("style"); p.id = "aurora-pack-props-" + id; p.textContent = props.join("\n"); document.head.appendChild(p);
+    }
+    css = css.replace(PROP_RE, "");
+    if (embedded) css = css.replace(/:root\[([^\]]+)\]/g, ":host([$1])").replace(/:root/g, ":host");
+    var st = document.createElement("style"); st.setAttribute("data-pack", id); st.textContent = css;
+    (embedded ? root : document.head).appendChild(st);
+    return st;
+  }
+
+  /* collega i pacchetti a una scheda: makeApi(pack) dà l'api per quel pacchetto */
+  function attach(opts) {
+    var mounted = {}, handles = [];
+    function mount(p) {
+      if (!p || !p.id || mounted[p.id] || typeof p.mount !== "function") return;
+      if (p.glass && !atLeast(opts.version, p.glass)) {
+        console.warn("Aurora Glass: il pacchetto «" + (p.name || p.id) + "» richiede Aurora Glass " + p.glass + " o più recente (questa è " + opts.version + ")");
+        return;
+      }
+      mounted[p.id] = true;
+      var style = addCss(opts.root, opts.embedded, p.id, p.css), h = null;
+      try { h = p.mount(opts.makeApi(p)) || {}; }
+      catch (e) { console.error("Aurora Glass: errore nel pacchetto «" + (p.name || p.id) + "»", e); h = {}; }
+      h.__style = style; h.__id = p.id;
+      handles.push(h);
+      if (opts.hass && h.hass) try { h.hass(opts.hass()); } catch (e) { console.error(e); }
+    }
+    list.forEach(mount);
+    hosts.push(mount);
+    function each(fn) { handles.forEach(function (h) { try { fn(h); } catch (e) { console.error("Aurora Glass: errore nel pacchetto «" + h.__id + "»", e); } }); }
+    return {
+      list: function () { return Object.keys(mounted); },
+      hass: function (hs) { each(function (h) { if (h.hass) h.hass(hs); }); },
+      shown: function (view) { each(function (h) { if (h.show) h.show(view); }); },
+      destroy: function () {
+        var i = hosts.indexOf(mount); if (i > -1) hosts.splice(i, 1);
+        each(function (h) { if (h.destroy) h.destroy(); if (h.__style) h.__style.remove(); });
+        handles = []; mounted = {};
+      }
+    };
+  }
+
+  g.AuroraPacks = { attach: attach, atLeast: atLeast };
+})(window);
+
+
 /* ---- aurora-app.js ---- */
 /* ============================================================================
    AURORA GLASS v3 — logica dell'interfaccia
@@ -1069,6 +1158,7 @@
   g.AuroraApp = function (ctx) {
     var ROOT = ctx.root, HOST = ctx.host, LAYER = ctx.layer || HOST, SCROLL = ctx.scroll || window;
     var LIVE = !!ctx.live, HA = !!ctx.haIcons, EMB = !!ctx.embedded, CFG = ctx.config || {};
+    var VERSION = ctx.version || "999.0.0";   /* l'anteprima conta come l'ultima versione */
     /* lingua: "it" o "en" (config language, poi la lingua di Home Assistant); T() traduce le frasi italiane del codice */
     var T = g.AuroraI18n.make(ctx.lang || CFG.language), LOC = T.loc;
     var CUR = CFG.currency || "€", CUR_ICON = { "€": "mdi-currency-eur", "$": "mdi-currency-usd", "£": "mdi-currency-gbp", "CHF": "mdi-currency-fra" }[CUR] || "mdi-cash";
@@ -1612,6 +1702,7 @@
       scrollTop0();
       if (LIVE) { if (which === "sic") camsEnter(); else camsStopAll(); }
       if (which === "en") enEnter();
+      if (PK) PK.shown(which);
       requestAnimationFrame(function () { movePill(); if (which === "home") { fxHero.resize(); } });
     }
     $$(".dock [data-view]").forEach(function (b) { b.addEventListener("click", function () { show(b.dataset.view); }); });
@@ -1962,6 +2053,8 @@
       if (dirty) syncLive(firstTime);
       if (firstTime) buildCams();
       for (var j = 0; j < camTiles.length; j++) if (camTiles[j].liveEl) camTiles[j].liveEl.hass = h;
+      if (hassWait.length && h.callWS) { var w = hassWait; hassWait = []; w.forEach(function (ok) { ok(h); }); }
+      if (PK) PK.hass(h);
     }
 
     /* ------------------------------------------------------------------ clima (Panasonic) */
@@ -2423,7 +2516,77 @@
       if (ro) { ro.disconnect(); ro = null; }
       fxHero.stop(); fxPage.stop();
     }
-    function destroy() { stop(); unbinds.forEach(function (u) { u(); }); unbinds = []; }
+    function destroy() { stop(); if (PK) { PK.destroy(); PK = null; } unbinds.forEach(function (u) { u(); }); unbinds = []; }
+
+    /* ------------------------------------------------------------------ pacchetti (vedi pacchetti.js) */
+    var PK = null, hassWait = [];
+    /* la scheda nasce prima di ricevere hass: i pacchetti aspettano il collegamento */
+    function whenHass() {
+      var h = HASS || ctx.hass;
+      if (h && h.callWS) return Promise.resolve(h);
+      return new Promise(function (ok) { hassWait.push(ok); });
+    }
+    function packApi(p) {
+      var key = "aurora-v3-pack-" + p.id;
+      return {
+        id: p.id, glassVersion: VERSION, live: LIVE, embedded: EMB, lang: T.lang, T: T, reduceMotion: reduce,
+        root: ROOT, host: HOST, layer: LAYER, scroll: SCROLL,
+        $: $, $$: $$, el: el, esc: esc, hydrate: hydrate, on: on,
+        /* coordinate dello strato dove vanno menu e finestre (dentro Home Assistant non è la pagina intera) */
+        layerOffset: function () { return EMB ? LAYER.getBoundingClientRect() : { left: 0, top: 0 }; },
+        assets: BASE,
+        image: function (k, onState) { return resolve(k, k, onState !== false); },
+        library: function () { return Object.keys(IMG).map(function (k) { var it = IMG[k]; return { key: k, src: it.kind === "single" ? it.src : it.on }; }); },
+        rooms: function () {
+          return ROOMS.map(function (r) {
+            return { name: r.n, icon: r.ic, color: r.c, lights: r.l.map(function (k) { return { key: k, name: LIGHTS[k][0], entity: ENT.lights[k] || null, image: LIGHTS[k][1] }; }) };
+          });
+        },
+        scenes: function () {
+          return SCENES.map(function (sc) { return { id: sc.id, name: sc.n, sub: sc.sub, icon: sc.ic, s1: sc.s1, s2: sc.s2, image: sc.img, lights: (sc.lights || []).slice(), alarm: sc.alarm || null, entity: sc.entity || null }; });
+        },
+        state: state, hass: function () { return HASS; }, entity: sv, unavailable: isUnavail,
+        call: call, moreInfo: moreInfo, toast: toast, burst: burst, render: render, show: show,
+        runScene: function (id) { var sc = SCENES.filter(function (x) { return x.id === id; })[0]; if (sc) runScene(sc, $('[data-scene="' + id + '"]')); },
+        /* accende o spegne una luce di Glass (chiave delle stanze): nell'anteprima cambia solo lo stato */
+        setLight: function (k, onOff) {
+          if (!(k in state.lights)) return;
+          state.lights[k] = !!onOff; state.scene = null;
+          if (LIVE && ENT.lights[k]) call("homeassistant", onOff ? "turn_on" : "turn_off", { entity_id: ENT.lights[k] });
+          render();
+        },
+        /* una vista in più con il suo tasto nel dock; hideDock: id dei tasti di Glass da nascondere */
+        addView: function (o) {
+          var vid = "pk-" + o.id;
+          if (VIEWS[vid]) return $("#view-" + vid);
+          var sec = el("section", "enter", "", { id: "view-" + vid, "aria-label": o.label || o.id });
+          sec.hidden = true; sec.style.cssText = "display:flex;flex-direction:column;gap:22px";
+          $("#main").appendChild(sec);
+          VIEWS[vid] = "#view-" + vid;
+          var b = el("button", "", '<i class="mdi ' + (o.icon || "mdi-puzzle") + '"></i><span>' + esc(o.label || o.id) + "</span>", { type: "button", "data-view": vid });
+          var sep = $(".dock .sep"); sep.parentNode.insertBefore(b, sep);
+          hydrate(b);
+          b.addEventListener("click", function () { show(vid); });
+          (o.hideDock || []).forEach(function (id) { var d = $("#" + id); if (d) d.hidden = true; });
+          return sec;
+        },
+        viewId: function (id) { return "pk-" + id; },
+        /* dati del pacchetto: in Home Assistant restano nell'integrazione (uguali su tutti i dispositivi).
+           get() dà null se il pacchetto non ha mai salvato niente e fallisce se non riesce a leggere:
+           così un errore non diventa mai "dati vuoti" da sovrascrivere */
+        storage: {
+          get: function () {
+            if (LIVE) return whenHass().then(function (h) { return h.callWS({ type: "aurora_glass/pack_data", pack: p.id }); }).then(function (r) { return r ? r.data : null; });
+            try { return Promise.resolve(JSON.parse(localStorage.getItem(key) || "null")); } catch (e) { return Promise.resolve(null); }
+          },
+          set: function (data) {
+            if (LIVE) return whenHass().then(function (h) { return h.callWS({ type: "aurora_glass/pack_data/save", pack: p.id, data: data }); }).catch(function (e) { toast(T("Non riuscito: {e}", { e: (e && e.message) || T("errore di Home Assistant") }), "mdi-alert-circle", "var(--warn)"); });
+            try { localStorage.setItem(key, JSON.stringify(data)); } catch (e) {}
+            return Promise.resolve();
+          }
+        }
+      };
+    }
 
     /* ------------------------------------------------------------------ avvio */
     T.dom(ROOT);
@@ -2446,6 +2609,7 @@
     start();
     later(function () { Object.keys(IMG).forEach(function (k) { var it = IMG[k]; [it.on, it.src].forEach(function (u) { if (u) { var i = new Image(); i.src = u; } }); }); }, 1200);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(movePill);
+    if (g.AuroraPacks) PK = g.AuroraPacks.attach({ version: VERSION, root: ROOT, embedded: EMB, makeApi: packApi, hass: function () { return HASS; } });
 
     return { clima: clima, state: state, S: S, setHass: setHass, start: start, stop: stop, destroy: destroy, setWorld: setWorld, applyHour: applyHour, openDrawer: openDrawer, setEdit: setEdit, fxHero: fxHero, setAlarm: setAlarm, show: show, openPrice: openPrice, ENT: ENT, runScene: function (id) { var sc = SCENES.filter(function (x) { return x.id === id; })[0]; runScene(sc, $('[data-scene="' + id + '"]')); } };
   };
@@ -2476,7 +2640,7 @@
   var App = window.AuroraApp;
   /* nomi con la versione per la pagina della barra laterale: dopo un aggiornamento la versione nuova
      non trova mai i nomi già occupati da quella vecchia rimasta in memoria nel browser */
-  var VER = "3.2.1".replace(/\./g, "-");
+  var VER = "3.3.0".replace(/\./g, "-");
   var CARD_TAG = "aurora-glass-card-" + VER, PANEL_TAG = "aurora-glass-panel-" + VER;
   var OVERRIDES = [
     ":host { display: block; position: relative; --lp: absolute; --sp: absolute; --so: hidden auto; height: var(--aurora-height, calc(100vh - var(--header-height, 56px))); min-height: 520px; overflow: hidden; }",
@@ -2525,7 +2689,7 @@
       var self = this, cfg = JSON.parse(this._sig || "{}");
       this._app = new App({
         root: this._root, host: this, layer: this._root.querySelector("#shell"), scroll: this._root.querySelector("#scroll"),
-        assets: cfg.assets || defaultAssets(), live: true, embedded: true, haIcons: true, config: cfg, hass: this._hass, lang: haLang(this._hass, cfg),
+        assets: cfg.assets || defaultAssets(), live: true, embedded: true, haIcons: true, config: cfg, hass: this._hass, lang: haLang(this._hass, cfg), version: "3.3.0",
         call: function (domain, service, data) { return self._hass.callService(domain, service, data); },
         moreInfo: function (entityId) { self.dispatchEvent(new CustomEvent("hass-more-info", { bubbles: true, composed: true, detail: { entityId: entityId } })); }
       });

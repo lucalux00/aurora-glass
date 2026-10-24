@@ -41,6 +41,13 @@ Without HACS: copy `custom_components/aurora_glass` into your config folder and 
 - English and Italian; automatic mode follows each user's language
 - **Privacy:** everything runs locally. The only external request is Google Fonts (Manrope, Sora).
 
+## Optional packs
+Extra features you can add and remove whenever you like: **Settings → Devices & services → Aurora Glass → Configure → Packs**. Tick a pack to download and enable it, untick it to remove it, then reload the browser page. Nothing is downloaded unless you tick it, and Aurora Glass works the same without packs.
+
+- **Mixer** (*Regia*): animated scene pads, A ⇄ B fade between two scenes, REC to save your lights as a new pad, brightness and color per room. [Try it live](https://domotikpro.it/aurora-glass-pacchetti-demo/index.html?vista=regia&lang=en&utm_source=github&utm_medium=readme&utm_campaign=aurora-glass-pacchetti)
+
+The pack list and files come from [domotikpro.it](https://domotikpro.it/progetti/aurora-glass-pacchetti?utm_source=github&utm_medium=readme&utm_campaign=aurora-glass-pacchetti); every file is checked against the SHA-256 in the list before it is installed. No data about your home is sent.
+
 ## Use the card in your own dashboards
 The integration also loads the card everywhere, so you can use it in any dashboard (panel view recommended):
 

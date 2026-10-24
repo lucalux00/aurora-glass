@@ -104,7 +104,8 @@
           "general": "Name, icon and language",
           "areas": "Rooms, lights and sensors",
           "devices": "Alarm, weather, climate, energy and cameras",
-          "scenes": "Quick scenes"
+          "scenes": "Quick scenes",
+          "packs": "Packs (new features to download)"
         }
       },
       "general": {
@@ -168,11 +169,23 @@
           "night_alarm": "Good night also arms the alarm (night mode)",
           "away_alarm": "Leaving home also arms the alarm (away mode)"
         }
+      },
+      "packs": {
+        "title": "Packs",
+        "description": "{status}\n\nTick a pack to download and enable it, untick it to remove it. Packs are optional: Aurora Glass works the same without them. A pack adds features to every Aurora dashboard (for example an extra view in the dock).\n\n[Discover the packs on domotikpro.it](https://domotikpro.it/progetti/aurora-glass-pacchetti?utm_source=home-assistant&utm_medium=integration&utm_campaign=aurora-glass-pacchetti)",
+        "data": {
+          "packs": "Packs"
+        }
+      },
+      "packs_done": {
+        "title": "Done",
+        "description": "{summary}\n\nReload the browser page (F5, or close and reopen the app) to see the changes on the dashboard."
       }
     },
     "error": {
       "no_rooms": "Pick at least one area or add a room without an area.",
-      "name_required": "Give the room a name."
+      "name_required": "Give the room a name.",
+      "pack_failed": "{detail}"
     }
   },
   "selector": {

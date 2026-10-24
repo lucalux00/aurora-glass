@@ -44,6 +44,8 @@ from .helpers import (
 )
 from homeassistant.helpers import entity_registry as er
 
+from .packs import PackError, lang_of, version_tuple
+
 MAX_EXTRA_ROOMS = 20
 
 
@@ -333,6 +335,9 @@ class AuroraGlassOptionsFlow(AuroraFlowSteps, OptionsFlow):
         self._rooms_out = []
         self._lamps = None
         self._only = None
+        self._catalog: list[dict[str, Any]] | None = None
+        self._catalog_error = ""
+        self._done: list[str] = []
 
     def _load(self) -> None:
         if not self._conf:
@@ -340,7 +345,78 @@ class AuroraGlassOptionsFlow(AuroraFlowSteps, OptionsFlow):
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         self._load()
-        return self.async_show_menu(step_id="init", menu_options=["general", "areas", "devices", "scenes"])
+        return self.async_show_menu(step_id="init", menu_options=["general", "areas", "devices", "scenes", "packs"])
+
+    async def async_step_packs(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Pacchetti: spunta per scaricare e attivare, togli la spunta per rimuovere."""
+        mgr = self.hass.data[DOMAIN]["packs"]
+        it = lang_of(self.hass) == "it"
+        if self._catalog is None:
+            try:
+                self._catalog = await mgr.async_catalog()
+                self._catalog_error = ""
+            except PackError as err:
+                self._catalog, self._catalog_error = [], str(err)
+        cat = {p["id"]: p for p in self._catalog}
+        errors: dict[str, str] = {}
+        detail = ""
+        if user_input is not None:
+            chosen = set(user_input.get("packs", []))
+            self._done = []
+            for pid in [p for p in mgr.installed if p not in chosen]:
+                name = mgr.installed[pid].get("name", pid)
+                await mgr.async_remove(pid)
+                self._done.append(("Tolto: " if it else "Removed: ") + name)
+            for pid in sorted(chosen):
+                entry = cat.get(pid)
+                have = mgr.installed.get(pid, {}).get("version")
+                if not entry or (have and version_tuple(have) >= version_tuple(entry.get("versione"))):
+                    continue
+                try:
+                    await mgr.async_install(entry)
+                except PackError as err:
+                    errors["base"], detail = "pack_failed", str(err)
+                    break
+                name, ver = self._pack_text(entry)[0], mgr.installed[pid]["version"]
+                self._done.append((("Aggiornato: " if it else "Updated: ") if have else ("Installato: " if it else "Installed: ")) + f"{name} {ver}")
+            if not errors:
+                return await self.async_step_packs_done()
+        options = []
+        for pid, entry in cat.items():
+            name, desc = self._pack_text(entry)
+            have = mgr.installed.get(pid, {}).get("version")
+            label = f"{name} {entry.get('versione', '')} — {desc}"
+            if have and version_tuple(have) < version_tuple(entry.get("versione")):
+                label += f" ({'installato' if it else 'installed'} {have}, {'aggiornamento disponibile' if it else 'update available'})"
+            options.append(selector.SelectOptionDict(value=pid, label=label))
+        for pid, info in mgr.installed.items():
+            if pid not in cat:
+                options.append(selector.SelectOptionDict(value=pid, label=f"{info.get('name', pid)} {info.get('version', '')} ({'non più nel catalogo' if it else 'no longer in the catalog'})"))
+        if self._catalog_error:
+            status = self._catalog_error
+        elif not options:
+            status = "Nessun pacchetto disponibile per ora." if it else "No packs available yet."
+        else:
+            status = (f"{len(mgr.installed)} installati su {len(options)} disponibili." if it else f"{len(mgr.installed)} installed of {len(options)} available.")
+        schema = vol.Schema({
+            vol.Optional("packs", default=sorted(mgr.installed)): selector.SelectSelector(
+                selector.SelectSelectorConfig(options=options, multiple=True, mode=selector.SelectSelectorMode.LIST)
+            )
+        })
+        return self.async_show_form(step_id="packs", data_schema=schema, errors=errors,
+                                    description_placeholders={"status": status, "detail": detail})
+
+    def _pack_text(self, entry: dict[str, Any]) -> tuple[str, str]:
+        en = lang_of(self.hass) != "it"
+        name = (en and entry.get("nome_en")) or entry.get("nome") or entry["id"]
+        desc = (en and entry.get("descrizione_en")) or entry.get("descrizione") or ""
+        return name, desc
+
+    async def async_step_packs_done(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        if user_input is not None or not self._done:
+            return self.async_create_entry(data=dict(self.config_entry.options))
+        return self.async_show_form(step_id="packs_done", data_schema=vol.Schema({}),
+                                    description_placeholders={"summary": "\n".join("- " + d for d in self._done)})
 
     async def async_step_general(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         self._load()

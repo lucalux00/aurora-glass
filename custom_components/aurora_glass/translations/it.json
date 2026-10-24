@@ -104,7 +104,8 @@
           "general": "Nome, icona e lingua",
           "areas": "Stanze, luci e sensori",
           "devices": "Allarme, meteo, clima, energia e telecamere",
-          "scenes": "Scene rapide"
+          "scenes": "Scene rapide",
+          "packs": "Pacchetti (nuove funzioni da scaricare)"
         }
       },
       "general": {
@@ -168,11 +169,23 @@
           "night_alarm": "Buonanotte inserisce anche l'allarme (modalità notte)",
           "away_alarm": "Esco di casa inserisce anche l'allarme (fuori casa)"
         }
+      },
+      "packs": {
+        "title": "Pacchetti",
+        "description": "{status}\n\nSpunta un pacchetto per scaricarlo e attivarlo, togli la spunta per rimuoverlo. Sono facoltativi: Aurora Glass funziona uguale anche senza. Un pacchetto aggiunge funzioni a tutte le plance Aurora (per esempio una vista in più nel dock).\n\n[Scopri i pacchetti su domotikpro.it](https://domotikpro.it/progetti/aurora-glass-pacchetti?utm_source=home-assistant&utm_medium=integrazione&utm_campaign=aurora-glass-pacchetti)",
+        "data": {
+          "packs": "Pacchetti"
+        }
+      },
+      "packs_done": {
+        "title": "Fatto",
+        "description": "{summary}\n\nRicarica la pagina del browser (F5, o chiudi e riapri l'app) per vedere le novità nella plancia."
       }
     },
     "error": {
       "no_rooms": "Scegli almeno un'area o aggiungi una stanza senza area.",
-      "name_required": "Dai un nome alla stanza."
+      "name_required": "Dai un nome alla stanza.",
+      "pack_failed": "{detail}"
     }
   },
   "selector": {

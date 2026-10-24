@@ -20,6 +20,7 @@ from homeassistant.helpers.typing import ConfigType
 
 from .const import CONF_URL_PATH, DOMAIN, PANEL_ELEMENT, URL_BASE, VERSION
 from .helpers import build_card_config, panel_title
+from .packs import async_setup_packs
 
 _LOGGER = logging.getLogger(__name__)
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
@@ -29,6 +30,9 @@ MODULE_URL = f"{URL_BASE}/aurora-v3.js?v={VERSION}"
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     await _async_register_frontend(hass)
+    # pacchetti scaricati da Configura → Pacchetti (vedi packs.py)
+    if "packs" not in hass.data.get(DOMAIN, {}):
+        await async_setup_packs(hass)
     return True
 
 

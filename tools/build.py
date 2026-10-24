@@ -15,7 +15,7 @@ import zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SRC = ROOT / "src"
-PARTS = ["disegno.js", "mondi-base.js", "mondi-a.js", "mondi-b.js", "effetti.js", "lingua.js", "aurora-app.js"]
+PARTS = ["disegno.js", "mondi-base.js", "mondi-a.js", "mondi-b.js", "effetti.js", "lingua.js", "pacchetti.js", "aurora-app.js"]
 VERSION = json.loads((ROOT / "custom_components" / "aurora_glass" / "manifest.json").read_text(encoding="utf-8"))["version"]
 
 
