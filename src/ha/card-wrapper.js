@@ -29,7 +29,10 @@
     "i.mdi { display: inline-flex; align-items: center; justify-content: center; line-height: 1; vertical-align: middle; }",
     "i.mdi ha-icon { --mdc-icon-size: 1em; display: flex; width: 1em; height: 1em; }",
     ".scroll { scrollbar-width: thin; }",
-    ":host([data-menu]) .topbar .wrap { padding-left: 60px; }"
+    ":host([data-menu]) .topbar .wrap { padding-left: 60px; }",
+    /* le finestre (immagini, tariffa, stanze e dispositivi) sotto il pulsante del menu di Home Assistant */
+    ":host([data-menu]) .modal { padding-top: 64px; }",
+    ":host([data-menu]) .mcard.hb { height: min(900px, calc(100dvh - 80px)); }"
   ].join("\n");
 
   // Le immagini stanno accanto al file: /hacsfiles/aurora-glass-v3/ (HACS), /aurora_glass/ (integrazione) o /local/aurora-v3/ (a mano).

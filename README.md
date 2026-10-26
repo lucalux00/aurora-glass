@@ -27,7 +27,7 @@ Install it from HACS, restart, and a **wizard** builds the dashboard for you: it
    - **Quick scenes** — what *Good morning*, *Cinema* and *Dinner* turn on (lights, or a scene/script).
 5. The new entry appears in the sidebar. Done.
 
-Change anything later from **Settings → Devices & services → Aurora Glass → Configure**. Want a second dashboard (e.g. for a wall tablet)? *Add service*.
+Change anything later right from the dashboard: **Rooms and devices** (or *Edit* next to each section, admins only) lets you rename rooms, change the image, add or remove lights, sensors, air conditioners and appliances. The same choices are also in **Settings → Devices & services → Aurora Glass → Configure**. Want a second dashboard (e.g. for a wall tablet)? *Add service*.
 
 Without HACS: copy `custom_components/aurora_glass` into your config folder and restart. The [download package](https://domotikpro.it/progetti/aurora-glass-v3?utm_source=github&utm_medium=readme&utm_campaign=aurora-glass&utm_content=package) also contains an `english/` folder with a step-by-step guide and YAML examples for a manual install.
 
@@ -36,9 +36,10 @@ Without HACS: copy `custom_components/aurora_glass` into your config folder and 
 - Sky and colours follow the real time of day
 - Your rooms, your names: as many rooms and lights as you have
 - 50 ready-made button images and GIFs (lights, scenes, sensors, alarm, climate), editable from the dashboard
-- Alarm panel with code, climate control, cameras with live view
+- Alarm panel with code, cameras with live view
+- Climate control for one or more air conditioners (a row to switch between them); infrared ones (SwitchBot, Broadlink…) are shown as "last command", because Home Assistant can't know if they are really on
 - Top bar you can tap: the lights that are on (tap one to turn it off) and the rooms with motion, with when each sensor last saw someone
-- Energy view: live power, kWh today / yesterday / month / year (worked out from your meter's history, no extra sensors needed) and costs = kWh × your tariff
+- Energy view: live power, kWh today / yesterday / month / year (worked out from your meter's history, no extra sensors needed, even if Home Assistant reset the meter's statistics) and costs = kWh × your tariff; appliances with their power sensors
 - English and Italian; automatic mode follows each user's language
 - **Privacy:** everything runs locally. The only external request is Google Fonts (Manrope, Sora).
 

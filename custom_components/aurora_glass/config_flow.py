@@ -32,7 +32,9 @@ from .helpers import (
     MOTION_CLASSES,
     OPEN_CLASSES,
     area_name,
+    as_list,
     currency_symbol,
+    detect_appliances,
     detect_devices,
     detect_room,
     entity_label,
@@ -212,19 +214,25 @@ class AuroraFlowSteps:
     # ---------------------------------------------------------------- dispositivi della casa
     async def async_step_devices(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
-            self._conf[CONF_DEVICES] = {k: user_input.get(k) for k in ("alarm", "weather", "climate", "power", "energy", "cameras", "currency")}
+            keys = ("alarm", "weather", "climate", "power", "energy", "appliances", "cameras", "currency")
+            self._conf[CONF_DEVICES] = {k: user_input.get(k) for k in keys}
+            for k in ("climate", "appliances", "cameras"):
+                self._conf[CONF_DEVICES][k] = as_list(user_input.get(k))
             if not self._conf[CONF_DEVICES].get("currency"):
                 self._conf[CONF_DEVICES]["currency"] = currency_symbol(self.hass)
             if self._only == "devices":
                 return self._finish()
             return await self.async_step_scenes()
         d = self._conf.get(CONF_DEVICES) or detect_devices(self.hass)
+        # configurazioni fatte prima della 3.5: niente elettrodomestici, si propongono quelli trovati
+        appliances = d.get("appliances") if "appliances" in d else detect_appliances(self.hass, d.get("power"))
         schema = vol.Schema({
             vol.Optional("alarm", description=_sv(d.get("alarm"))): _ent(domain="alarm_control_panel"),
             vol.Optional("weather", description=_sv(d.get("weather"))): _ent(domain="weather"),
-            vol.Optional("climate", description=_sv(d.get("climate"))): _ent(domain="climate"),
+            vol.Optional("climate", description=_sv(as_list(d.get("climate")))): _ent(True, domain="climate"),
             vol.Optional("power", description=_sv(d.get("power"))): _ent(filter=[{"domain": "sensor", "device_class": "power"}]),
             vol.Optional("energy", description=_sv(d.get("energy"))): _ent(filter=[{"domain": "sensor", "device_class": "energy"}]),
+            vol.Optional("appliances", description=_sv(appliances)): _ent(True, filter=[{"domain": "sensor", "device_class": "power"}]),
             vol.Optional("cameras", description=_sv(d.get("cameras"))): _ent(True, domain="camera"),
             vol.Required("currency", default=d.get("currency") or currency_symbol(self.hass)): selector.TextSelector(),
         })

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" translate="no">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -45,19 +45,66 @@
     callWS: function (m) { return Promise.resolve({}); }
   };
   function push() { hass = Object.assign({}, hass, { states: Object.assign({}, S) }); panel.hass = hass; }
-  var card = q.get("cfg") === "default" ? { language: lang } : {
-    language: lang,
+  /* 3.5: secondo climatizzatore a infrarossi (stato presunto, senza temperatura), elettrodomestici, una presa tra le luci */
+  S["climate.bedroom_ir"] = st("climate.bedroom_ir", "fan_only", { friendly_name: "Bedroom AC", hvac_modes: ["off", "cool", "heat", "fan_only"], current_temperature: null, temperature: 21, min_temp: 16, max_temp: 30, assumed_state: true });
+  S["switch.coffee_machine"] = st("switch.coffee_machine", "off", { friendly_name: "Coffee machine" });
+  S["sensor.washing_machine_power"] = st("sensor.washing_machine_power", "460", { friendly_name: "Washing machine Power", unit_of_measurement: "W", device_class: "power" });
+  S["sensor.dishwasher_power"] = st("sensor.dishwasher_power", "0.7", { friendly_name: "shelly1pm-E8DB84A07C8F Power", unit_of_measurement: "W", device_class: "power" });
+  S["sensor.house_energy"] = st("sensor.house_energy", "10843.4", { unit_of_measurement: "kWh", device_class: "energy", state_class: "total_increasing" });
+  S["light.hall"] = st("light.hall", "off", { friendly_name: "Hall light" });
+  var entities = {}, devices = { d_ac: { id: "d_ac", area_id: "bedroom", name: "Bedroom AC" } }, areas = { living: { area_id: "living", name: "Living room" }, kitchen: { area_id: "kitchen", name: "Kitchen" }, bedroom: { area_id: "bedroom", name: "Bedroom" } };
+  Object.keys(S).forEach(function (id) { entities[id] = { entity_id: id, area_id: /living|tv_strip/.test(id) ? "living" : /kitchen|coffee/.test(id) ? "kitchen" : null }; });
+  entities["climate.bedroom_ir"] = { entity_id: "climate.bedroom_ir", device_id: "d_ac", area_id: null };
+  /* statistiche del contatore: a settembre Home Assistant ha azzerato la somma (change negativo), il contatore dice +367 kWh */
+  function statRows(per, from) {
+    var now = new Date(), rows = [], d, i;
+    if (per === "month") {
+      var months = [[294.7, 8848.2], [193.9, 9042.1], [217.5, 9259.6], [181.8, 9441.4], [200.4, 9641.7], [197.2, 9839.0], [296.9, 10135.8], [188.0, 10323.9], [-1729.85, 10690.7], [152.6, 10843.4]];
+      for (i = 0; i < months.length; i++) { d = new Date(now.getFullYear(), i, 1); if (d >= new Date(from)) rows.push({ start: d.getTime(), change: months[i][0], state: months[i][1] }); }
+      return rows;
+    }
+    if (per === "day") { for (i = 14; i >= 0; i--) { d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i); rows.push({ start: d.getTime(), change: i === 4 ? -900 : 5 + (i % 4), state: 10800 + (14 - i) * 6 }); } return rows; }
+    for (i = 48; i >= 0; i--) { d = new Date(now.getTime() - i * 3600e3); d.setMinutes(0, 0, 0); rows.push({ start: d.getTime(), change: 0.25, state: 10840 + (48 - i) * 0.25 }); }
+    return rows;
+  }
+  var stored = q.get("cfg") === "default" ? null : {
     rooms: [
-      { name: "Living room", lights: [{ entity: "light.living_room_lamp" }, "light.living_room_ceiling", { entity: "light.tv_strip", name: "TV strip" }], motion: ["binary_sensor.living_motion"], openings: ["binary_sensor.front_door", "lock.front"], temperature: "sensor.living_temp" },
-      { name: "Kitchen", lights: ["light.kitchen", "light.kitchen_island"], motion: "binary_sensor.kitchen_motion", openings: ["binary_sensor.kitchen_window"] },
-      { name: "Bedroom", lights: ["light.bedroom"], temperature: ["sensor.bedroom_temp"] },
-      { name: "Office <b>&</b> study", lights: ["light.office"] },
-      { name: "Bathroom", lights: ["light.bathroom"] }
+      { area_id: "living", name: "Living room", image: "salotto", lights: ["light.living_room_lamp", "light.living_room_ceiling", "light.tv_strip"], motion: ["binary_sensor.living_motion"], openings: ["binary_sensor.front_door", "lock.front"], temperature: ["sensor.living_temp"] },
+      { area_id: "kitchen", name: "Kitchen", image: "cucina", lights: ["light.kitchen", "light.kitchen_island", "switch.coffee_machine"], motion: ["binary_sensor.kitchen_motion"], openings: ["binary_sensor.kitchen_window"], temperature: [] },
+      { area_id: "bedroom", name: "Bedroom", image: "camera", lights: ["light.bedroom"], motion: [], openings: [], temperature: ["sensor.bedroom_temp"] },
+      { area_id: null, name: "Office <b>&</b> study", image: "sgabuzzino", lights: ["light.office"], motion: [], openings: [], temperature: [] },
+      { area_id: null, name: "Bathroom", image: "bagno_piccolo", lights: ["light.bathroom"], motion: [], openings: [], temperature: [] }
     ],
-    scenes: [{ id: "morning", lights: ["light.kitchen", "light.bathroom"] }, { id: "cinema", entity: "scene.movie" }, { id: "dinner", lights: ["light.kitchen", "light.kitchen_island", "light.living_room_lamp"] }],
-    entities: { alarm: "alarm_control_panel.home", weather: "weather.home", climate: "climate.living", energy: { power: "sensor.house_power" } },
-    currency: q.get("cur") || "€"
+    devices: { alarm: "alarm_control_panel.home", weather: "weather.home", climate: ["climate.living", "climate.bedroom_ir"], power: "sensor.house_power", energy: "sensor.house_energy",
+      appliances: ["sensor.washing_machine_power", "sensor.dishwasher_power"], cameras: [], currency: q.get("cur") || "€" },
+    scenes: { morning: ["light.kitchen", "light.bathroom"], cinema: ["scene.movie"], dinner: ["light.kitchen", "light.kitchen_island", "light.living_room_lamp"], night_alarm: true, away_alarm: true }
   };
+  /* come build_card_config in helpers.py */
+  function cardFrom(o) {
+    var d = o.devices, ent = { alarm: d.alarm, weather: d.weather, energy: { power: d.power, energyTotal: d.energy, appliances: d.appliances.map(function (p) { return { p: p }; }) } };
+    if (d.climate.length) { ent.climate = d.climate[0]; ent.climates = d.climate; }
+    var sc = [];
+    ["morning", "cinema", "dinner"].forEach(function (id) { var v = o.scenes[id] || [], ha = v.filter(function (x) { return /^(scene|script)\./.test(x); }); if (ha.length) sc.push({ id: id, entity: ha[0] }); else if (v.length) sc.push({ id: id, lights: v }); });
+    sc.push({ id: "night", alarm: o.scenes.night_alarm && d.alarm ? "armed_night" : null }, { id: "away", alarm: o.scenes.away_alarm && d.alarm ? "armed_away" : null });
+    var c = { language: lang, rooms: o.rooms.map(function (r) { return { name: r.name, area: r.area_id, image: r.image, lights: r.lights, motion: r.motion, openings: r.openings, temperature: r.temperature }; }), scenes: sc, entities: ent, currency: d.currency };
+    if (q.get("edit") !== "0") c.entry_id = "test_entry";
+    return c;
+  }
+  window.SAVES = [];
+  hass.entities = entities; hass.devices = devices; hass.areas = areas;
+  if (q.get("admin") === "0") hass.user.is_admin = false;
+  hass.callWS = function (m) {
+    if (m.type === "aurora_glass/config") return stored ? Promise.resolve(JSON.parse(JSON.stringify(stored))) : Promise.reject({ message: "not found" });
+    if (m.type === "aurora_glass/config/save") {
+      window.SAVES.push(m); stored = { rooms: m.rooms, devices: m.devices, scenes: m.scenes };
+      setTimeout(function () { panel.panel = { config: { card: cardFrom(stored) } }; }, 300);   /* Home Assistant registra di nuovo la pagina */
+      return Promise.resolve({ saved: true });
+    }
+    if (m.type === "recorder/statistics_during_period") { var r = {}; r[m.statistic_ids[0]] = statRows(m.period, m.start_time); return Promise.resolve(r); }
+    if (m.type === "history/history_during_period") return Promise.resolve({});
+    return Promise.resolve({});
+  };
+  var card = q.get("cfg") === "default" ? { language: lang } : cardFrom(stored);
   var panel = document.createElement(window.AuroraGlassPanelTag);
   document.body.appendChild(panel);
   panel.narrow = window.innerWidth < 870;

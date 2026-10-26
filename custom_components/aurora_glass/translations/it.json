@@ -61,16 +61,19 @@
         "data": {
           "alarm": "Centrale allarme",
           "weather": "Meteo",
-          "climate": "Climatizzatore o termostato",
+          "climate": "Climatizzatori o termostati",
           "power": "Sensore di potenza della casa (W)",
           "energy": "Contatore di energia della casa (kWh)",
+          "appliances": "Elettrodomestici (i loro sensori di potenza, W)",
           "cameras": "Telecamere",
           "currency": "Simbolo della valuta"
         },
         "data_description": {
+          "climate": "Puoi sceglierne più di uno: nella plancia compare una riga per passare dall'uno all'altro. Quelli comandati a infrarossi (SwitchBot, Broadlink…) mostrano solo l'ultimo comando inviato.",
           "weather": "Mostra la temperatura esterna nella schermata principale.",
           "power": "Attiva la vista Energia con potenza in tempo reale e costi.",
           "energy": "Un sensore di energia totale (kWh) per lo storico di 14 giorni.",
+          "appliances": "Prese smart e relè di lavatrice, forno, frigo… Compaiono nella vista Energia.",
           "currency": "Usato per i costi dell'energia, per esempio € o $."
         }
       },
@@ -152,11 +155,16 @@
         "data": {
           "alarm": "Centrale allarme",
           "weather": "Meteo",
-          "climate": "Climatizzatore o termostato",
+          "climate": "Climatizzatori o termostati",
           "power": "Sensore di potenza della casa (W)",
           "energy": "Contatore di energia della casa (kWh)",
+          "appliances": "Elettrodomestici (i loro sensori di potenza, W)",
           "cameras": "Telecamere",
           "currency": "Simbolo della valuta"
+        },
+        "data_description": {
+          "climate": "Puoi sceglierne più di uno: nella plancia compare una riga per passare dall'uno all'altro. Quelli comandati a infrarossi (SwitchBot, Broadlink…) mostrano solo l'ultimo comando inviato.",
+          "appliances": "Prese smart e relè di lavatrice, forno, frigo… Compaiono nella vista Energia."
         }
       },
       "scenes": {

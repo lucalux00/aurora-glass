@@ -23,7 +23,7 @@ La installi da HACS, riavvii e una **procedura guidata** crea la plancia al post
    - **Scene rapide** — cosa accendono *Buongiorno*, *Cinema* e *Cena* (luci, oppure una scena o uno script).
 5. A sinistra compare la nuova voce. Fatto.
 
-Per cambiare qualcosa dopo: **Impostazioni → Dispositivi e servizi → Aurora Glass → Configura**. Ti serve una seconda plancia (per esempio per il tablet a muro)? *Aggiungi servizio*.
+Per cambiare qualcosa dopo basta la plancia: **Stanze e dispositivi** (o *Modifica* accanto a ogni sezione, solo per gli amministratori) per rinominare le stanze, cambiare immagine, aggiungere o togliere luci, sensori, climatizzatori ed elettrodomestici. Le stesse scelte sono anche in **Impostazioni → Dispositivi e servizi → Aurora Glass → Configura**. Ti serve una seconda plancia (per esempio per il tablet a muro)? *Aggiungi servizio*.
 
 Senza HACS: copia `custom_components/aurora_glass` nella cartella di configurazione e riavvia. Il [pacchetto da scaricare](https://domotikpro.it/progetti/aurora-glass-v3?utm_source=github&utm_medium=readme&utm_campaign=aurora-glass&utm_content=package) contiene anche la cartella `italiano/` con la guida passo passo e gli esempi YAML per l'installazione a mano (e la cartella `english/`).
 
@@ -32,9 +32,10 @@ Senza HACS: copia `custom_components/aurora_glass` nella cartella di configurazi
 - Cielo e colori seguono l'ora del giorno
 - Le tue stanze con i tuoi nomi: quante stanze e luci hai
 - 50 immagini e GIF pronte per i pulsanti, modificabili dalla plancia
-- Allarme con codice, clima, telecamere con diretta
+- Allarme con codice, telecamere con diretta
+- Clima per uno o più climatizzatori (una riga per passare dall'uno all'altro); quelli a infrarossi (SwitchBot, Broadlink…) compaiono come "ultimo comando", perché Home Assistant non può sapere se sono davvero accesi
 - Barra in alto da toccare: le luci accese (tocchi una luce e si spegne) e le stanze con movimento, con l'ultima volta che ogni sensore ha visto qualcuno
-- Vista Energia: potenza in tempo reale, kWh di oggi / ieri / mese / anno (calcolati dallo storico del contatore, senza sensori in più) e costi = kWh × la tua tariffa
+- Vista Energia: potenza in tempo reale, kWh di oggi / ieri / mese / anno (calcolati dallo storico del contatore, senza sensori in più, anche se Home Assistant ha azzerato le statistiche del contatore) e costi = kWh × la tua tariffa; elettrodomestici con i loro sensori di potenza
 - Italiano e inglese; in automatico segue la lingua di ogni utente
 - **Privacy:** tutto in locale. L'unica richiesta esterna sono i font Google (Manrope, Sora).
 

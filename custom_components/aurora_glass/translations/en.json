@@ -61,16 +61,19 @@
         "data": {
           "alarm": "Alarm panel",
           "weather": "Weather",
-          "climate": "Air conditioner or thermostat",
+          "climate": "Air conditioners or thermostats",
           "power": "Whole-house power sensor (W)",
           "energy": "Whole-house energy meter (kWh)",
+          "appliances": "Appliances (their power sensors, W)",
           "cameras": "Cameras",
           "currency": "Currency symbol"
         },
         "data_description": {
+          "climate": "You can pick more than one: the dashboard shows a row to switch between them. Infrared-controlled ones (SwitchBot, Broadlink…) only show the last command sent.",
           "weather": "Shows the outside temperature on the home screen.",
           "power": "Turns on the Energy view with live power and costs.",
           "energy": "A total energy sensor (kWh) for the 14-day history.",
+          "appliances": "Smart plugs and relays of the washing machine, oven, fridge… They show up in the Energy view.",
           "currency": "Used for the energy costs, for example €, $ or £."
         }
       },
@@ -152,11 +155,16 @@
         "data": {
           "alarm": "Alarm panel",
           "weather": "Weather",
-          "climate": "Air conditioner or thermostat",
+          "climate": "Air conditioners or thermostats",
           "power": "Whole-house power sensor (W)",
           "energy": "Whole-house energy meter (kWh)",
+          "appliances": "Appliances (their power sensors, W)",
           "cameras": "Cameras",
           "currency": "Currency symbol"
+        },
+        "data_description": {
+          "climate": "You can pick more than one: the dashboard shows a row to switch between them. Infrared-controlled ones (SwitchBot, Broadlink…) only show the last command sent.",
+          "appliances": "Smart plugs and relays of the washing machine, oven, fridge… They show up in the Energy view."
         }
       },
       "scenes": {

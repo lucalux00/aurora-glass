@@ -31,17 +31,28 @@ BAD_HINTS = ("channel", "canale", "_ch1", "_ch2", "elettrodomestic", "appliance"
              "giorn", "ieri", "yesterday", "mese", "month", "anno", "year", "media", "average", "avg", "lavatric", "frigo", "forno")
 # dispositivi che hanno una luce solo come spia (purificatori, sensori di presenza, TV...): quella luce non è una lampada
 NOT_A_LAMP_DOMAINS = ("fan", "humidifier", "vacuum", "media_player", "climate", "water_heater", "lawn_mower")
-# interruttori che non sono relè di una lampada: dispositivi che fanno altro, nomi da impostazione o da elettrodomestico, integrazioni di rete
+# interruttori che non sono relè di una lampada: dispositivi che fanno altro, nomi da impostazione, integrazioni di rete
 NOT_A_SWITCH_DOMAINS = NOT_A_LAMP_DOMAINS + ("camera", "alarm_control_panel", "lock", "cover", "siren", "valve", "remote")
 SWITCH_SKIP_WORDS = (
     "siren", "sirena", "detection", "rilevament", "stream", "record", "registra", "privacy", "notif", "protez", "protection",
     "filter", "filtro", "adguard", "pihole", "pi_hole", "vpn", "wifi", "wi-fi", "guest", "ospit", "blocco", "child", "infrared",
     "infraross", "indicator", "indicatore", "disturb", "automation", "automazion", "update", "aggiorn", "sleep", "boost", "turbo",
-    "mute", "audio", "alexa", "echo", "shuffle", "repeat", "schedule", "programm", "presa", "plug", "outlet", "socket", "lavatric",
-    "asciugatric", "lavastovigl", "frigo", "forno", "boiler", "scaldabagn", "caldaia", "pompa", "pump", "irrig", "sprinkler",
-    "valvol", "condizionat", "clima", "deumid", "ventil", "purific", "router", "server", "computer", "stampante", "printer",
-    "caricator", "charger", "wallbox", "power on behav", "relay type", "anti_flicker", "eco mode",
+    "mute", "audio", "alexa", "echo", "shuffle", "repeat", "schedule", "programm", "caldaia", "irrig", "sprinkler", "valvol",
+    "router", "server", "power on behav", "relay type", "anti_flicker", "eco mode",
 )
+# elettrodomestici: un interruttore con questi nomi non è una lampada, un sensore di potenza con questi nomi va tra gli elettrodomestici
+APPLIANCE_RE = re.compile(
+    r"(?:^|[^a-z])(?:tv|pc)(?:$|[^a-z])|lavatric|washing|washer|asciugatric|dryer|lavastovigl|dishwasher|frigo|fridge|freezer|congelat"
+    r"|forno|oven|microonde|microwave|bimby|thermomix|friggitric|fryer|sterilizz|caff|coffee|bollitor|kettle|tostapan|toaster"
+    r"|piastra|induzion|cappa|frullat|blender|boiler|scaldabagn|stufa|heater|termosif|radiator|deumid|dehumid|condizionat"
+    r"|climatizzat|clima|purific|ventil|aspirap|vacuum|televis|playstation|xbox|console|computer|monitor|stampante|printer"
+    r"|acquario|aquarium|asciugacapell|phon|caricator|charger|wallbox|pompa|pump"
+)
+# ...ma con una di queste parole è una lampada anche se collegata a una presa (piantana, albero di Natale, striscia LED)
+LAMP_RE = re.compile(r"lamp|luce|luci|light|(?:^|[^a-z])led|strip|striscia|farett|abat|piantana|lume|lantern|plafonier|applique|neon|albero|natale|insegna")
+# prese e multiprese (dal modello del dispositivo) e contatori di energia (Shelly EM, 3EM, Pro EM): non sono lampade
+PLUG_RE = re.compile(r"plug|presa|prese|outlet|socket|power strip|multipresa|ciabatta")
+METER_RE = re.compile(r"(?:^|[^a-z0-9])(?:pro\s*)?3?em(?:$|[^a-z0-9])|shem|energy meter|contatore")
 SWITCH_SKIP_PLATFORMS = ("adguard", "pi_hole", "unifi", "fritz", "synology_dsm", "plex", "spotify", "mobile_app", "browser_mod",
                          "alexa_media", "hacs", "ring", "reolink", "ezviz", "frigate", "sonos", "octoprint", "proxmoxve",
                          "wake_on_lan", "homekit", "tapo_control", "onvif", "go2rtc", "backup")
@@ -98,12 +109,28 @@ def entity_label(hass: HomeAssistant, entity_id: str) -> str:
     return entity_id.split(".", 1)[-1].replace("_", " ")
 
 
+def _device_text(device: dr.DeviceEntry | None) -> str:
+    if not device:
+        return ""
+    return " ".join(str(x) for x in (device.model, device.name, device.name_by_user) if x).lower()
+
+
+def is_appliance_switch(text: str, outlet: bool = False, device: dr.DeviceEntry | None = None) -> bool:
+    """Interruttore di un elettrodomestico o di una presa (Bimby, friggitrice, presa smart...), non di una lampada.
+
+    Una presa con un nome da lampada (piantana, albero di Natale, striscia LED) resta una lampada.
+    """
+    if LAMP_RE.search(text):
+        return False
+    return outlet or bool(APPLIANCE_RE.search(text) or PLUG_RE.search(text) or PLUG_RE.search(_device_text(device)))
+
+
 def lamp_candidates(hass: HomeAssistant) -> dict[str, str | None]:
     """Tutto ciò che può essere una lampada, con la sua area (None = in nessuna area).
 
     Luci vere, tranne le spie di dispositivi che fanno altro (il LED di un purificatore o di un sensore
-    di presenza). Interruttori dei relè (Shelly, Sonoff...), tranne quelli di telecamere, elettrodomestici,
-    prese e impostazioni (sirena, rilevamento, privacy, protezioni di rete...).
+    di presenza). Interruttori dei relè (Shelly, Sonoff...), tranne quelli di telecamere, contatori di energia,
+    elettrodomestici, prese e impostazioni (sirena, rilevamento, privacy, protezioni di rete...).
     """
     ent_reg = er.async_get(hass)
     dev_reg = dr.async_get(hass)
@@ -124,8 +151,11 @@ def lamp_candidates(hass: HomeAssistant) -> dict[str, str | None]:
             if "camera" not in domains and (presence or domains & set(NOT_A_LAMP_DOMAINS)):
                 continue
         else:
+            device = dev_reg.async_get(entry.device_id) if entry.device_id else None
             text = (entry.entity_id + " " + entity_label(hass, entry.entity_id)).lower()
-            if _device_class(hass, entry) == "outlet" or domains & set(NOT_A_SWITCH_DOMAINS) or presence:
+            if domains & set(NOT_A_SWITCH_DOMAINS) or presence or METER_RE.search(_device_text(device)):
+                continue
+            if is_appliance_switch(text, _device_class(hass, entry) == "outlet", device):
                 continue
             if any(w in text for w in SWITCH_SKIP_WORDS):
                 continue
@@ -137,7 +167,7 @@ def lamp_candidates(hass: HomeAssistant) -> dict[str, str | None]:
         if state.entity_id in out or ent_reg.async_get(state.entity_id) or state.attributes.get("entity_id"):
             continue   # già visto, oppure un gruppo (ha l'elenco delle sue luci)
         text = (state.entity_id + " " + str(state.attributes.get("friendly_name", ""))).lower()
-        if state.domain == "switch" and (state.attributes.get("device_class") == "outlet" or any(w in text for w in SWITCH_SKIP_WORDS)):
+        if state.domain == "switch" and (is_appliance_switch(text, state.attributes.get("device_class") == "outlet") or any(w in text for w in SWITCH_SKIP_WORDS)):
             continue
         out[state.entity_id] = None
     return out
@@ -239,8 +269,80 @@ def _best_meter(hass: HomeAssistant, test) -> str | None:
     return best
 
 
+def as_list(value: Any) -> list[str]:
+    """Un'entità o un elenco di entità (le versioni fino alla 3.4 salvavano un solo climatizzatore)."""
+    if not value:
+        return []
+    return [v for v in value if v] if isinstance(value, list) else [value]
+
+
+def detect_climates(hass: HomeAssistant) -> list[str]:
+    """Climatizzatori e termostati che rispondono, uno per dispositivo.
+
+    Quelli comandati a infrarossi (assumed_state: Home Assistant ricorda solo l'ultimo comando, non sa se sono
+    accesi) entrano solo se non c'è nient'altro: spesso sono un secondo telecomando dello stesso climatizzatore.
+    """
+    ent_reg = er.async_get(hass)
+    real: list[str] = []
+    assumed: list[str] = []
+    devices: set[str] = set()
+    for state in hass.states.async_all("climate"):
+        if state.state in ("unavailable", "unknown"):
+            continue
+        entry = ent_reg.async_get(state.entity_id)
+        if entry and not _usable(entry):
+            continue
+        if entry and entry.device_id:
+            if entry.device_id in devices:
+                continue
+            devices.add(entry.device_id)
+        (assumed if state.attributes.get("assumed_state") else real).append(state.entity_id)
+    return real or assumed[:1]
+
+
+def appliance_key(text: str) -> str:
+    """Nome dell'elettrodomestico senza «potenza», «power», numeri e simboli: serve a non proporlo due volte."""
+    low = re.sub(r"potenza|power|meter|consumo|consumption|watt|_\d+$", " ", (text or "").lower())
+    return re.sub(r"[^a-zà-ù]+", "", low)
+
+
+def detect_appliances(hass: HomeAssistant, main_power: str | None = None) -> list[str]:
+    """Sensori di potenza degli elettrodomestici: prese smart e relè con il nome di un elettrodomestico.
+
+    Esclusi il contatore di tutta la casa (e gli altri canali dello stesso contatore), i sensori calcolati
+    senza dispositivo e quelli che adesso non rispondono. Un solo sensore per nome (lavatrice con due integrazioni).
+    """
+    ent_reg = er.async_get(hass)
+    dev_reg = dr.async_get(hass)
+    main_entry = ent_reg.async_get(main_power) if main_power else None
+    main_device = main_entry.device_id if main_entry else None
+    out: list[str] = []
+    seen: set[str] = set()
+    for state in hass.states.async_all("sensor"):
+        attrs = state.attributes
+        if attrs.get("device_class") != "power" or attrs.get("unit_of_measurement") not in ("W", "kW"):
+            continue
+        if state.entity_id == main_power or state.state in ("unavailable", "unknown"):
+            continue
+        entry = ent_reg.async_get(state.entity_id)
+        if not entry or not entry.device_id or not _usable(entry) or entry.device_id == main_device:
+            continue
+        device = dev_reg.async_get(entry.device_id)
+        if METER_RE.search(_device_text(device)):
+            continue
+        text = (state.entity_id + " " + str(attrs.get("friendly_name", ""))).lower()
+        if LAMP_RE.search(text) or not (APPLIANCE_RE.search(text) or PLUG_RE.search(text + " " + _device_text(device))):
+            continue
+        key = appliance_key(state.entity_id.split(".", 1)[-1]) if re.search(r"[0-9a-f]{8}", text) else appliance_key(str(attrs.get("friendly_name") or state.entity_id))
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(state.entity_id)
+    return out[:12]
+
+
 def detect_devices(hass: HomeAssistant) -> dict[str, Any]:
-    """Allarme, meteo, clima, energia e telecamere già presenti."""
+    """Allarme, meteo, clima, energia, elettrodomestici e telecamere già presenti."""
 
     def is_power(s):
         return s.attributes.get("device_class") == "power" and s.attributes.get("unit_of_measurement") in ("W", "kW")
@@ -248,12 +350,14 @@ def detect_devices(hass: HomeAssistant) -> dict[str, Any]:
     def is_energy(s):
         return s.attributes.get("device_class") == "energy" and s.attributes.get("state_class") == "total_increasing"
 
+    power = _best_meter(hass, is_power)
     return {
         "alarm": _first(hass, "alarm_control_panel"),
         "weather": _first(hass, "weather", ("forecast_home", "home", "casa")),
-        "climate": _first(hass, "climate"),
-        "power": _best_meter(hass, is_power),
+        "climate": detect_climates(hass),
+        "power": power,
         "energy": _best_meter(hass, is_energy),
+        "appliances": detect_appliances(hass, power),
         "cameras": [s.entity_id for s in hass.states.async_all("camera")][:4],
     }
 
@@ -275,19 +379,30 @@ def unique_url_path(hass: HomeAssistant, name: str, current: str | None = None) 
     return path
 
 
-def build_card_config(conf: dict[str, Any]) -> dict[str, Any]:
-    """Dalla config salvata dall'integrazione alla config della scheda aurora-v3-card."""
+def build_card_config(conf: dict[str, Any], entry_id: str | None = None) -> dict[str, Any]:
+    """Dalla config salvata dall'integrazione alla config della scheda aurora-v3-card.
+
+    entry_id: la voce dell'integrazione; con questo la plancia permette agli amministratori di cambiare
+    stanze e dispositivi senza passare dalle impostazioni.
+    """
     devices = conf.get(CONF_DEVICES, {})
     entities: dict[str, Any] = {}
-    for key in ("alarm", "weather", "climate"):
+    for key in ("alarm", "weather"):
         if devices.get(key):
             entities[key] = devices[key]
+    climates = as_list(devices.get("climate"))
+    if climates:
+        entities["climate"] = climates[0]
+        entities["climates"] = climates
     energy: dict[str, Any] = {}
     if devices.get("power"):
         energy["power"] = devices["power"]
         entities["power"] = devices["power"]
     if devices.get("energy"):
         energy["energyTotal"] = devices["energy"]
+    appliances = as_list(devices.get("appliances"))
+    if appliances:
+        energy["appliances"] = [{"p": a} for a in appliances]
     if energy:
         entities["energy"] = energy
     cams = devices.get("cameras") or []
@@ -298,6 +413,7 @@ def build_card_config(conf: dict[str, Any]) -> dict[str, Any]:
     for room in conf.get(CONF_ROOMS, []):
         rooms.append({
             "name": room.get("name") or "",
+            "area": room.get("area_id"),
             "image": room.get("image") or guess_image(room.get("name", "")),
             "lights": list(room.get("lights") or []),
             "motion": list(room.get("motion") or []),
@@ -328,6 +444,8 @@ def build_card_config(conf: dict[str, Any]) -> dict[str, Any]:
         "entities": entities,
         "currency": devices.get("currency") or "€",
     }
+    if entry_id:
+        card["entry_id"] = entry_id
     return card
 
 

@@ -19,6 +19,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.typing import ConfigType
 
 from .const import CONF_URL_PATH, DOMAIN, PANEL_ELEMENT, URL_BASE, VERSION
+from .editor import async_setup_editor
 from .helpers import build_card_config, panel_title
 from .packs import async_setup_packs
 
@@ -33,6 +34,10 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     # pacchetti scaricati da Configura → Pacchetti (vedi packs.py)
     if "packs" not in hass.data.get(DOMAIN, {}):
         await async_setup_packs(hass)
+    # «Stanze e dispositivi» nella plancia (vedi editor.py)
+    if not hass.data[DOMAIN].get("editor"):
+        async_setup_editor(hass)
+        hass.data[DOMAIN]["editor"] = True
     return True
 
 
@@ -65,7 +70,7 @@ async def _async_register_panel(hass: HomeAssistant, entry: ConfigEntry) -> None
         sidebar_title=title,
         sidebar_icon=icon,
         module_url=MODULE_URL,
-        config={"card": build_card_config(conf)},
+        config={"card": build_card_config(conf, entry.entry_id)},
         require_admin=False,
     )
     _LOGGER.debug("Aurora Glass: pagina /%s registrata", url_path)

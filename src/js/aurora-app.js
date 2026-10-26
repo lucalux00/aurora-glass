@@ -242,6 +242,10 @@
       }
       else ["lights", "motion", "opens", "temps"].forEach(function (g2) { if (e[g2]) Object.keys(e[g2]).forEach(function (k) { ENT[g2][k] = e[g2][k]; }); });
       ["alarm", "weather", "power", "climate", "cameras"].forEach(function (k) { if (e[k] !== undefined) ENT[k] = e[k]; });
+      /* più climatizzatori: climates: [climate.a, climate.b]; quello mostrato si sceglie con la riga sopra i comandi */
+      ENT.climates = arrIds(e.climates !== undefined ? e.climates : ENT.climate);
+      var clSel = store("clima");
+      ENT.climate = ENT.climates.indexOf(clSel) > -1 ? clSel : (ENT.climates[0] || null);
       if (e.energy) Object.keys(e.energy).forEach(function (k) { ENT.energy[k] = e.energy[k]; });
       /* luci oltre alle 11 standard: extraLights: [{ k: "strip_led", n: "Strip LED", id: "light.strip_led", room: "Cucina", ic: "mdi-led-strip-variant" }] */
       if (!CUSTOM) (e.extraLights || []).forEach(function (x) {
@@ -868,10 +872,31 @@
     $("#editor").addEventListener("click", function (e) { if (e.target === this) closeEditor(); });
     on(document, "keydown", function (e) { if (e.key === "Escape") { if ($("#codebox").classList.contains("open")) closeCode(); else if ($("#editor").classList.contains("open")) closeEditor(); else if (drawerOpen) closeDrawer(); else if (HOST.dataset.edit === "1") setEdit(false); } });
 
+    /* ------------------------------------------------------------------ stanze e dispositivi (vedi stanze-dispositivi.js)
+       Solo dentro Home Assistant, con la pagina creata dall'integrazione (entry_id) e un utente amministratore. */
+    var HE = null;
+    function homeEditable() { return LIVE && !!CFG.entry_id && !!g.AuroraHomeEditor && !!(HASS && HASS.user && HASS.user.is_admin); }
+    function openHome(tab) {
+      if (!homeEditable()) return;
+      closeDrawer(); closePop();
+      if (!HE) HE = g.AuroraHomeEditor({
+        $: $, $$: $$, el: el, esc: esc, hydrate: hydrate, T: T, toast: toast, entryId: CFG.entry_id, hass: function () { return HASS; },
+        images: Object.keys(IMG).filter(function (k) { return k.indexOf("luce_") === 0; }).map(function (k) { return k.slice(5); }),
+        imageSrc: function (k) { return (IMG["luce_" + k] || IMG.luce_salotto).off; },
+        imageName: function (k) { return LIBNAMES["luce_" + k] || k; },
+        appName: appName,
+        /* dopo il salvataggio Home Assistant registra di nuovo la pagina e la scheda riparte con le scelte nuove
+           (il messaggio «salvato» lo mostra lei); se dopo qualche secondo è ancora questa, si ricarica la pagina */
+        saved: function () { if (!running) return; store("saved", String(Date.now())); later(function () { location.reload(); }, 4000); }
+      });
+      HE.open(tab);
+    }
+    $$("[data-home]").forEach(function (b) { b.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); openHome(b.dataset.home); }); });
+
     /* ------------------------------------------------------------------ Home Assistant: sincronizzazione */
     var tracked = {};
     function trackedIds() {
-      var ids = [ENT.alarm, ENT.weather, ENT.power, ENT.climate];
+      var ids = [ENT.alarm, ENT.weather, ENT.power].concat(ENT.climates);
       Object.keys(ENT.lights).forEach(function (k) { ids.push(ENT.lights[k]); });
       Object.keys(ENT.motion).forEach(function (k) { (ENT.motion[k] || []).forEach(function (i) { ids.push(i); }); });
       Object.keys(ENT.opens).forEach(function (k) { ids.push(ENT.opens[k]); });
@@ -1009,6 +1034,7 @@
       HASS = h;
       if (!LIVE) return;
       var dirty = firstTime, ids = trackedIds();
+      if (homeEditable() !== (HOST.dataset.homeedit === "1")) { if (homeEditable()) HOST.dataset.homeedit = "1"; else delete HOST.dataset.homeedit; }
       for (var i = 0; i < ids.length; i++) { var s = h.states[ids[i]]; if (tracked[ids[i]] !== s) { tracked[ids[i]] = s; dirty = true; } }
       if (dirty) syncLive(firstTime);
       if (firstTime) buildCams();
@@ -1028,13 +1054,45 @@
     var clima = { avail: true, name: T("Aria salone"), mode: "off", action: "off", cur: 23, tgt: 25, min: 16, max: 30, step: .5, modes: ["off", "heat_cool", "cool", "dry", "fan_only", "heat"],
       fan: "Auto", fans: ["Auto", "Low", "LowMid", "Mid", "HighMid", "High"], swing: "Up", swings: ["Auto", "Up", "UpMid", "Mid", "DownMid", "Down"], hswing: "Auto", hswings: ["Auto", "Left", "LeftMid", "Mid", "RightMid", "Right"], preset: "none", presets: ["none", "quiet", "powerful"] };
     var clTimer = 0;
+    /* area di un'entità (sua o del suo dispositivo), dal registro che Home Assistant passa alla pagina */
+    function areaOf(id) {
+      var e = HASS && HASS.entities && HASS.entities[id];
+      if (!e) return null;
+      if (e.area_id) return e.area_id;
+      var d = e.device_id && HASS.devices ? HASS.devices[e.device_id] : null;
+      return d ? d.area_id || null : null;
+    }
+    /* stanza di un climatizzatore: stessa area, poi una parola del nome della stanza nel suo nome, poi il tipo di stanza */
+    function climaRoom(id) {
+      var rooms = CUSTOM ? CFG.rooms : [], area = areaOf(id), name = niceName(id).toLowerCase(), i;
+      if (area) for (i = 0; i < rooms.length; i++) if (rooms[i] && rooms[i].area === area) return i;
+      for (i = 0; i < rooms.length; i++) {
+        var words = String((rooms[i] && rooms[i].name) || "").toLowerCase().split(/[^a-zà-ù0-9]+/).filter(function (w) { return w.length >= 4; });
+        if (words.some(function (w) { return name.indexOf(w) > -1; })) return i;
+      }
+      var kind = guessImg(name), same = [];
+      if (kind) for (i = 0; i < rooms.length; i++) if (rooms[i] && (libImg(rooms[i].image) || guessImg(rooms[i].name)) === kind) same.push(i);
+      return same.length === 1 ? same[0] : -1;
+    }
+    /* temperatura di casa: quella del climatizzatore; se non la misura (i comandi a infrarossi), il sensore della sua stanza */
+    function climaTemp(id, a) {
+      var ct = parseFloat(a.current_temperature);
+      if (!isNaN(ct)) return { v: ct, src: "" };
+      var i = climaRoom(id);
+      if (i < 0 || !hasTemp("r" + i)) return null;
+      var r = roomTemp("r" + i);
+      return r.na ? null : { v: r.v, src: TLBL["r" + i] || "" };
+    }
     function climaFromHass() {
       var s = sv(ENT.climate);
+      if (!s) { var alt = ENT.climates.filter(function (id) { return sv(id); })[0]; if (alt) { ENT.climate = alt; s = sv(alt); } }
       if (!s) { clima.avail = false; return; }
       var a = s.attributes;
       clima.avail = s.state !== "unavailable";
       clima.name = a.friendly_name || clima.name; clima.mode = (s.state === "unavailable" || s.state === "unknown") ? "off" : s.state; clima.action = a.hvac_action || "";
-      if (a.current_temperature !== undefined && a.current_temperature !== null) clima.cur = a.current_temperature;
+      clima.assumed = !!a.assumed_state;
+      var ct = climaTemp(ENT.climate, a);
+      clima.cur = ct ? ct.v : null; clima.curSrc = ct ? ct.src : "";
       if (a.temperature !== undefined && a.temperature !== null && !clTimer) clima.tgt = a.temperature;
       clima.min = a.min_temp || 16; clima.max = a.max_temp || 30; clima.step = a.target_temp_step || a.target_temperature_step || .5;
       clima.modes = a.hvac_modes || clima.modes;
@@ -1057,22 +1115,43 @@
       if (sel.dataset.sig !== sig) { sel.innerHTML = list.map(function (k) { return '<option value="' + k + '">' + it(k) + "</option>"; }).join(""); sel.dataset.sig = sig; }
       sel.value = cur;
     }
+    /* riga dei climatizzatori (solo se sono più di uno): nome e modalità di ognuno, tocca per comandarlo */
+    function renderClimaPick() {
+      var row = $("#cl-pick");
+      if (!row) return;
+      var ids = ENT.climates.filter(function (id) { return !LIVE || sv(id); });
+      row.hidden = ids.length < 2;
+      if (row.hidden) return;
+      var html = ids.map(function (id) {
+        var s = sv(id), mode = !s || isUnavail(s) ? "na" : s.state, lab = mode === "na" ? T("Non disponibile") : (CL_STATUS[mode] || mode);
+        if (s && s.attributes.assumed_state && mode !== "na") lab = T("ultimo comando") + ": " + lab.toLowerCase();
+        return '<button class="cl-pk" type="button" role="tab" data-cl="' + esc(id) + '" aria-selected="' + (id === ENT.climate ? "true" : "false") + '" style="--cl:' + (CL_COL[mode] || CL_COL.off) + '">' +
+          '<span class="cl-pk-dot" aria-hidden="true"></span><span class="cl-pk-t"><b>' + esc(niceName(id)) + "</b><small>" + esc(lab) + "</small></span></button>";
+      }).join("");
+      if (row.dataset.sig !== html) { row.dataset.sig = html; row.innerHTML = html; }
+    }
     function renderClima() {
       var wrap = $("#clima-wrap"), box = $("#clima");
       if (!wrap) return;
       if (LIVE && !sv(ENT.climate)) { wrap.hidden = true; return; }
       wrap.hidden = false;
-      var m = clima.mode, col = CL_COL[m] || CL_COL.off;
+      var m = clima.mode, col = CL_COL[m] || CL_COL.off, known = clima.cur !== null && clima.cur !== undefined;
       box.style.setProperty("--cl", col); box.dataset.mode = m; box.classList.toggle("na", !clima.avail);
-      $("#cl-name").textContent = clima.name; $("#cl-sub").textContent = clima.name;
-      var st = !clima.avail ? T("Non disponibile") : (CL_STATUS[m] || m);
-      if (clima.avail && m !== "off" && clima.action === "idle") st += " · " + T("in pausa");
+      $("#cl-name").textContent = clima.name + (clima.assumed ? " · " + T("infrarossi") : "");
+      $("#cl-sub").textContent = ENT.climates.length > 1 ? T("{n} climatizzatori", { n: ENT.climates.length }) : clima.name;
+      renderClimaPick();
+      /* a infrarossi Home Assistant sa solo quale comando ha mandato: lo diciamo, invece di dare per certo che sia acceso */
+      var st = !clima.avail ? T("Non disponibile") : clima.assumed ? T("Ultimo comando: {m}", { m: CL_STATUS[m] || m }) : (CL_STATUS[m] || m);
+      if (clima.avail && !clima.assumed && m !== "off" && clima.action === "idle") st += " · " + T("in pausa");
       $("#cl-status").textContent = st;
-      $("#cl-cur").textContent = T("In casa {t} °C", { t: fmt(clima.cur) });
+      var cc = $("#cl-cur");
+      cc.hidden = !known;
+      cc.textContent = !known ? "" : clima.curSrc ? T("{n}: {t} °C", { n: clima.curSrc, t: fmt(clima.cur) }) : T("In casa {t} °C", { t: fmt(clima.cur) });
       var hint = "";
       if (!clima.avail) hint = T("Il climatizzatore non risponde: controlla la sua integrazione in Home Assistant.");
-      else if (m === "cool" && clima.action !== "cooling" && clima.tgt >= clima.cur) hint = T("Acceso ma in pausa: in casa ci sono {c}° e hai impostato {t}°. Abbassa la temperatura per far partire il raffrescamento.", { c: fmt(clima.cur), t: fmt(clima.tgt) });
-      else if (m === "heat" && clima.action !== "heating" && clima.tgt <= clima.cur) hint = T("Acceso ma in pausa: in casa ci sono {c}° e hai impostato {t}°. Alza la temperatura per far partire il riscaldamento.", { c: fmt(clima.cur), t: fmt(clima.tgt) });
+      else if (clima.assumed) hint = T("Comandato a infrarossi: Home Assistant ricorda l'ultimo comando inviato, ma non sa se il climatizzatore è davvero acceso. Se lo spegni col telecomando, qui lo stato resta quello di prima.");
+      else if (known && m === "cool" && clima.action !== "cooling" && clima.tgt >= clima.cur) hint = T("Acceso ma in pausa: in casa ci sono {c}° e hai impostato {t}°. Abbassa la temperatura per far partire il raffrescamento.", { c: fmt(clima.cur), t: fmt(clima.tgt) });
+      else if (known && m === "heat" && clima.action !== "heating" && clima.tgt <= clima.cur) hint = T("Acceso ma in pausa: in casa ci sono {c}° e hai impostato {t}°. Alza la temperatura per far partire il riscaldamento.", { c: fmt(clima.cur), t: fmt(clima.tgt) });
       var hn = $("#cl-hint"); hn.textContent = hint; hn.hidden = !hint;
       $("#cl-tgt").textContent = Number(clima.tgt).toLocaleString(LOC, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
       var art = $("#cl-art"); art.dataset.img = climaArt(); refreshImg(art);
@@ -1108,10 +1187,10 @@
         var b = e.target.closest("[data-mode]"); if (!b) return; var m = b.dataset.mode, wasOff = clima.mode === "off";
         if (LIVE && !clima.avail) { toast(T("Climatizzatore non raggiungibile: nessun comando inviato"), "mdi-alert-circle", "var(--warn)"); return; }
         climaCall(m === "off" ? "turn_off" : "set_hvac_mode", m === "off" ? {} : { hvac_mode: m }, function () { clima.mode = m; clima.action = m === "off" ? "off" : ""; });
-        // accendendo in freddo/caldo, se la temperatura impostata non farebbe partire nulla, la porto 2° oltre quella di casa
-        var nt = null, st = clima.step || .5;
-        if (wasOff && m === "cool" && clima.tgt >= clima.cur) nt = Math.max(clima.min, Math.floor((clima.cur - 2) / st) * st);
-        if (wasOff && m === "heat" && clima.tgt <= clima.cur) nt = Math.min(clima.max, Math.ceil((clima.cur + 2) / st) * st);
+        // accendendo in freddo/caldo, se la temperatura impostata non farebbe partire nulla, la porto 2° oltre quella di casa (se la conosco)
+        var nt = null, st = clima.step || .5, known = clima.cur !== null && clima.cur !== undefined;
+        if (known && wasOff && m === "cool" && clima.tgt >= clima.cur) nt = Math.max(clima.min, Math.floor((clima.cur - 2) / st) * st);
+        if (known && wasOff && m === "heat" && clima.tgt <= clima.cur) nt = Math.min(clima.max, Math.ceil((clima.cur + 2) / st) * st);
         if (nt !== null && nt !== clima.tgt) {
           clima.tgt = nt;
           if (LIVE) setTimeout(function () { call("climate", "set_temperature", { entity_id: ENT.climate, temperature: nt }); }, 1200);
@@ -1132,6 +1211,13 @@
       }
       $("#cl-minus").addEventListener("click", function () { step(-1); });
       $("#cl-plus").addEventListener("click", function () { step(1); });
+      $("#cl-pick").addEventListener("click", function (e) {
+        var b = e.target.closest("[data-cl]"); if (!b || b.dataset.cl === ENT.climate) return;
+        /* una temperatura ancora da inviare va al climatizzatore di prima, non a quello nuovo */
+        if (clTimer) { clearTimeout(clTimer); clTimer = 0; if (LIVE) call("climate", "set_temperature", { entity_id: ENT.climate, temperature: clima.tgt }); }
+        ENT.climate = b.dataset.cl; store("clima", ENT.climate);
+        climaFromHass(); renderClima();
+      });
       renderClima();
     }
 
@@ -1195,6 +1281,18 @@
     /* kWh di oggi, ieri, mese e anno: dai sensori se ci sono, altrimenti dallo storico del contatore totale (energyTotal) */
     var KS = { at: 0, v: {} };
     function kpi(id, k) { var v = enNum(id); return v !== null ? v : (KS.v[k] !== undefined ? KS.v[k] : null); }
+    /* consumi per periodo dalle statistiche (change). Se Home Assistant ha azzerato la somma del contatore
+       (succede dopo certi errori o riparazioni del database) un periodo risulta negativo: lì vale la differenza
+       tra le letture del contatore (state, a fine periodo). Un consumo non è mai negativo. */
+    function goodChanges(rows) {
+      var prev = null;
+      return (rows || []).map(function (x) {
+        var c = x.change, st = x.state, ok = st !== null && st !== undefined;
+        if (c !== null && c !== undefined && c < 0) c = (prev !== null && ok && st >= prev) ? st - prev : 0;
+        if (ok) prev = st;
+        return { start: x.start, change: c };
+      });
+    }
     function kpiStats() {
       var id = ENT.energy.energyTotal, E = ENT.energy;
       if (!LIVE || !HASS || !id || !sv(id) || Date.now() - KS.at < 300000) return;
@@ -1202,14 +1300,30 @@
       KS.at = Date.now();
       var now = new Date(), d0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()), y0 = new Date(d0.getTime() - 864e5);
       var m0 = new Date(now.getFullYear(), now.getMonth(), 1), lm0 = new Date(now.getFullYear(), now.getMonth() - 1, 1), yr0 = new Date(now.getFullYear(), 0, 1);
-      var q = function (from, per) { return HASS.callWS({ type: "recorder/statistics_during_period", start_time: from.toISOString(), end_time: now.toISOString(), statistic_ids: [id], period: per, types: ["change"] }).then(function (r) { return r[id] || []; }); };
-      Promise.all([q(y0, "hour"), q(lm0 < yr0 ? lm0 : yr0, "month")]).then(function (r) {
+      var q = function (from, per) { return HASS.callWS({ type: "recorder/statistics_during_period", start_time: from.toISOString(), end_time: now.toISOString(), statistic_ids: [id], period: per, types: ["change", "state"] }).then(function (r) { return goodChanges(r[id]); }); };
+      /* un periodo in più prima dell'inizio: serve la lettura da cui partire se il primo periodo va corretto */
+      var lmPrev = new Date(now.getFullYear(), now.getMonth() - 2, 1), yrPrev = new Date(now.getFullYear() - 1, 11, 1);
+      Promise.all([q(new Date(y0.getTime() - 3600e3), "hour"), q(lm0 < yr0 ? lmPrev : yrPrev, "month")]).then(function (r) {
         var sum = function (arr, a, b) { return arr.reduce(function (t, x) { var s = tms(x.start); return s >= a && s < b && x.change !== null && x.change !== undefined ? t + x.change : t; }, 0); };
         var far = now.getTime() + 864e5;
         KS.v = { today: sum(r[0], d0.getTime(), far), yest: sum(r[0], y0.getTime(), d0.getTime()), month: sum(r[1], m0.getTime(), far), lmonth: sum(r[1], lm0.getTime(), m0.getTime()), year: sum(r[1], yr0.getTime(), far) };
         renderEnergy();
       }).catch(function () { KS.v = {}; });
     }
+    /* nome di un elettrodomestico dal suo sensore di potenza: «Lavatrice Potenza» → Lavatrice; se il nome è un codice
+       («shelly1pm-E8DB84A07C8F Potenza») si usa l'entità (sensor.lavastoviglie_power → Lavastoviglie) */
+    function appName(id) {
+      var n = niceName(id).replace(/\s+(potenza|power( meter)?|consumo( attuale)?|consumption|watt|assorbimento)\s*$/i, "").trim();
+      if (!n || /[0-9a-f]{8,}/i.test(n)) n = String(id).split(".").pop().replace(/_(power|potenza|power_meter|consumo|consumption|w)(_\d+)?$/i, "").replace(/_/g, " ");
+      return n.charAt(0).toUpperCase() + n.slice(1);
+    }
+    var APP_ICONS = [[/lavatric|washing|washer/i, "mdi-washing-machine"], [/asciugatric|dryer/i, "mdi-tumble-dryer"], [/lavastovigl|dishwasher/i, "mdi-dishwasher"],
+      [/frigo|fridge|freezer|congelat/i, "mdi-fridge"], [/microonde|microwave/i, "mdi-microwave"], [/forno|oven|stove|induzion|piastra/i, "mdi-stove"],
+      [/bimby|thermomix|frullat|blender/i, "mdi-pot-mix"], [/friggitric|fryer/i, "mdi-pot-steam"], [/caff|coffee/i, "mdi-coffee-maker"], [/bollitor|kettle/i, "mdi-kettle"],
+      [/sterilizz/i, "mdi-baby-bottle-outline"], [/(^|[^a-z])tv([^a-z]|$)|televis/i, "mdi-television"], [/(^|[^a-z])pc([^a-z]|$)|computer|server|monitor/i, "mdi-desktop-tower-monitor"],
+      [/condizionat|climatizzat|clima|air.?condition/i, "mdi-air-conditioner"], [/boiler|scaldabagn/i, "mdi-water-boiler"], [/stufa|heater|termosif|radiator/i, "mdi-radiator"],
+      [/deumid|dehumid/i, "mdi-air-humidifier"], [/caricator|charger|wallbox/i, "mdi-ev-station"], [/multipres|ciabatt|strip/i, "mdi-power-socket-eu"]];
+    function appIcon(txt) { for (var i = 0; i < APP_ICONS.length; i++) if (APP_ICONS[i][0].test(txt || "")) return APP_ICONS[i][1]; return "mdi-power-plug"; }
     function enModel() {
       var E = ENT.energy, m, sc = {};
       if (!LIVE) {
@@ -1220,7 +1334,7 @@
         m = { power: enNum(E.power) !== null ? enNum(E.power) : enNum(ENT.power), volt: enNum(E.voltage), base: enNum(E.base), avg3: enNum(E.avg3), limit: lim,
           today: kpi(E.today, "today"), yest: kpi(E.yesterday, "yest"), month: kpi(E.month, "month"), lmonth: kpi(E.lastMonth, "lmonth"), year: kpi(E.year, "year"),
           na: isUnavail(sv(E.power)),
-          apps: E.appliances.map(function (x, i) { var s = sv(x.p); return { n: x.n || niceName(x.p), w: enNum(x.p), e: x.e ? enNum(x.e) : null, ic: mdi(x.ic) || "mdi-power-plug", c: x.c || ROOM_COLORS[i % ROOM_COLORS.length], na: !s || isUnavail(s) }; }) };
+          apps: E.appliances.map(function (x, i) { var s = sv(x.p), n = x.n || appName(x.p); return { n: n, w: enNum(x.p), e: x.e ? enNum(x.e) : null, ic: mdi(x.ic) || appIcon(n + " " + x.p), c: x.c || ROOM_COLORS[i % ROOM_COLORS.length], na: !s || isUnavail(s) }; }) };
         sc = { today: enNum(E.costToday), yest: enNum(E.costYesterday), month: enNum(E.costMonth), lmonth: enNum(E.costLastMonth), year: enNum(E.costYear) };
       }
       var pi = priceInfo(), implied = null;
@@ -1417,9 +1531,10 @@
       if (Date.now() - EN.daysAt < 600000 && EN.days.length) return;
       EN.daysAt = Date.now();
       if (!LIVE) { var d0 = new Date(), a = []; for (var i = 13; i >= 0; i--) { var dd = new Date(d0 - i * 864e5); a.push({ d: dd, v: i === 0 ? 3.4 : 6 + 5 * Math.abs(Math.sin(i * 1.3)) + (i % 5 === 0 ? 3 : 0) }); } EN.days = a; drawDays(); return; }
-      var st = new Date(); st.setDate(st.getDate() - 13); st.setHours(0, 0, 0, 0);
-      HASS.callWS({ type: "recorder/statistics_during_period", start_time: st.toISOString(), end_time: new Date().toISOString(), statistic_ids: [ENT.energy.energyTotal], period: "day", types: ["change"] }).then(function (r) {
-        EN.days = (r[ENT.energy.energyTotal] || []).map(function (x) { return { d: new Date(tms(x.start)), v: x.change }; }).filter(function (x) { return x.v !== null && x.v !== undefined; }); drawDays();
+      var st = new Date(); st.setDate(st.getDate() - 14); st.setHours(0, 0, 0, 0);
+      var first = new Date(st.getTime()); first.setDate(first.getDate() + 1);   /* il giorno in più serve solo come lettura di partenza */
+      HASS.callWS({ type: "recorder/statistics_during_period", start_time: st.toISOString(), end_time: new Date().toISOString(), statistic_ids: [ENT.energy.energyTotal], period: "day", types: ["change", "state"] }).then(function (r) {
+        EN.days = goodChanges(r[ENT.energy.energyTotal]).map(function (x) { return { d: new Date(tms(x.start)), v: x.change }; }).filter(function (x) { return x.v !== null && x.v !== undefined && x.d >= first; }); drawDays();
       }).catch(function () { EN.days = []; drawDays(); });
     }
     function drawDays() {
@@ -1570,6 +1685,8 @@
     start();
     later(function () { Object.keys(IMG).forEach(function (k) { var it = IMG[k]; [it.on, it.src].forEach(function (u) { if (u) { var i = new Image(); i.src = u; } }); }); }, 1200);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(movePill);
+    var savedAt = +store("saved") || 0;
+    if (LIVE && savedAt) { store("saved", "0"); if (Date.now() - savedAt < 20000) later(function () { toast(T("Stanze e dispositivi salvati"), "mdi-content-save-check", "var(--ok)"); }, 600); }
     if (g.AuroraPacks) PK = g.AuroraPacks.attach({ version: VERSION, root: ROOT, embedded: EMB, makeApi: packApi, hass: function () { return HASS; } });
 
     return { clima: clima, state: state, S: S, setHass: setHass, start: start, stop: stop, destroy: destroy, setWorld: setWorld, applyHour: applyHour, openDrawer: openDrawer, setEdit: setEdit, fxHero: fxHero, setAlarm: setAlarm, show: show, openPrice: openPrice, ENT: ENT, runScene: function (id) { var sc = SCENES.filter(function (x) { return x.id === id; })[0]; runScene(sc, $('[data-scene="' + id + '"]')); } };
