@@ -325,7 +325,8 @@ def detect_appliances(hass: HomeAssistant, main_power: str | None = None) -> lis
         if state.entity_id == main_power or state.state in ("unavailable", "unknown"):
             continue
         entry = ent_reg.async_get(state.entity_id)
-        if not entry or not entry.device_id or not _usable(entry) or entry.device_id == main_device:
+        # la potenza di molte prese Zigbee è «diagnostica»: va bene lo stesso, basta che non sia disattivata o nascosta
+        if not entry or not entry.device_id or entry.disabled_by or entry.hidden_by or entry.device_id == main_device:
             continue
         device = dev_reg.async_get(entry.device_id)
         if METER_RE.search(_device_text(device)):
