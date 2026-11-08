@@ -6,26 +6,35 @@
 
 Una plancia viva: cielo, sole, luna e le finestre della casetta seguono l'ora vera, dieci mondi animati, undici effetti meteo, pulsanti fatti di immagini e GIF, allarme, clima, telecamere e una vista energia con i costi calcolati dalla tua tariffa.
 
-La installi da HACS, riavvii e una **procedura guidata** crea la plancia al posto tuo: trova le stanze dalle aree di Home Assistant, ti fa scegliere i nomi e aggiunge la plancia alla **barra laterale**. Niente YAML. In italiano e in inglese.
+La aggiungi dal **Marketplace** di Home Assistant (o da HACS sulle versioni più vecchie) e una **procedura guidata** crea la plancia al posto tuo: trova le stanze dalle aree di Home Assistant, ti fa scegliere i nomi e aggiunge la plancia alla **barra laterale**. Niente YAML. In italiano e in inglese.
 
 - **Demo dal vivo (senza installare):** [provala nel browser](https://domotikpro.it/aurora-glass-v3-demo/index.html?utm_source=github&utm_medium=readme&utm_campaign=aurora-glass&utm_content=demo)
 - **Guida completa:** [domotikpro.it/progetti/aurora-glass-v3](https://domotikpro.it/progetti/aurora-glass-v3?utm_source=github&utm_medium=readme&utm_campaign=aurora-glass&utm_content=guide)
 
 ## Installazione
+**Home Assistant 2026.11 o più recente** (HACS ora è integrato e si chiama Marketplace):
+1. **Impostazioni → Marketplace** → pulsante in alto a destra per aggiungere da link (*Add from link*) → scrivi `https://github.com/lucalux00/aurora-glass` → **Aggiungi**. La prima volta il Marketplace chiede di collegare GitHub (accesso dal sito di GitHub, solo lettura, nessuna password in Home Assistant). Se chiede il tipo, scegli **Integrazione**.
+2. Apri **Aurora Glass** nell'elenco → **Installa**. La procedura guidata parte subito, senza riavviare. (Se non parte: **Impostazioni → Dispositivi e servizi → Aggiungi integrazione → Aurora Glass**.)
+
+**Versioni più vecchie, con HACS:**
 1. **HACS** → ⋮ → *Archivi digitali personalizzati* → aggiungi `https://github.com/lucalux00/aurora-glass`, tipo **Integrazione** → cerca **Aurora Glass** → *Scarica*.
 2. **Riavvia** Home Assistant.
 3. Home Assistant trova Aurora Glass da solo: in **Impostazioni → Dispositivi e servizi** compare tra le integrazioni rilevate → **Aggiungi**. (Oppure *Aggiungi integrazione* → *Aurora Glass*.)
-4. Segui la procedura:
-   - **La tua plancia** — nome nella barra laterale, icona, lingua (automatica, italiano, inglese).
-   - **Stanze** — le aree con delle luci sono già selezionate. Per ogni stanza scrivi il nome che vuoi e controlla luci, sensori di movimento, porte/finestre/serrature e temperatura (già compilati). Puoi aggiungere anche stanze senza area.
-   - **Luci senza stanza** — le luci e i relè (Shelly, Sonoff…) che non sono in nessuna area sono in un'unica schermata, già messi nella stanza giusta in base al nome («Lampadario cucina» → Cucina). Controlli, sistemi, fatto: anche con 10 stanze. Se vuoi, finiscono anche nelle aree di Home Assistant.
-   - **La tua casa** — centrale allarme, meteo, climatizzatore, potenza (W) ed energia (kWh) della casa, telecamere, valuta. Se lasci vuoto un campo, quella parte non compare.
-   - **Scene rapide** — cosa accendono *Buongiorno*, *Cinema* e *Cena* (luci, oppure una scena o uno script).
-5. A sinistra compare la nuova voce. Fatto.
+
+L'avevi già installata con HACS? Con l'aggiornamento alla 2026.11 passa da sola al Marketplace: non devi fare niente e gli aggiornamenti continuano ad arrivare (li trovi in **Impostazioni → Aggiornamenti**).
+
+**La procedura:**
+- **La tua plancia** — nome nella barra laterale, icona, lingua (automatica, italiano, inglese).
+- **Stanze** — le aree con delle luci sono già selezionate. Per ogni stanza scrivi il nome che vuoi e controlla luci, sensori di movimento, porte/finestre/serrature e temperatura (già compilati). Puoi aggiungere anche stanze senza area.
+- **Luci senza stanza** — le luci e i relè (Shelly, Sonoff…) che non sono in nessuna area sono in un'unica schermata, già messi nella stanza giusta in base al nome («Lampadario cucina» → Cucina). Controlli, sistemi, fatto: anche con 10 stanze. Se vuoi, finiscono anche nelle aree di Home Assistant.
+- **La tua casa** — centrale allarme, meteo, climatizzatore, potenza (W) ed energia (kWh) della casa, telecamere, valuta. Se lasci vuoto un campo, quella parte non compare.
+- **Scene rapide** — cosa accendono *Buongiorno*, *Cinema* e *Cena* (luci, oppure una scena o uno script).
+
+A sinistra compare la nuova voce. Fatto.
 
 Per cambiare qualcosa dopo basta la plancia: **Stanze e dispositivi** (o *Modifica* accanto a ogni sezione, solo per gli amministratori) per rinominare le stanze, cambiare immagine, aggiungere o togliere luci, sensori, climatizzatori ed elettrodomestici. Le stesse scelte sono anche in **Impostazioni → Dispositivi e servizi → Aurora Glass → Configura**. Ti serve una seconda plancia (per esempio per il tablet a muro)? *Aggiungi servizio*.
 
-Senza HACS: copia `custom_components/aurora_glass` nella cartella di configurazione e riavvia. Il [pacchetto da scaricare](https://domotikpro.it/progetti/aurora-glass-v3?utm_source=github&utm_medium=readme&utm_campaign=aurora-glass&utm_content=package) contiene anche la cartella `italiano/` con la guida passo passo e gli esempi YAML per l'installazione a mano (e la cartella `english/`).
+Senza Marketplace né HACS: copia `custom_components/aurora_glass` nella cartella di configurazione e riavvia. Il [pacchetto da scaricare](https://domotikpro.it/progetti/aurora-glass-v3?utm_source=github&utm_medium=readme&utm_campaign=aurora-glass&utm_content=package) contiene anche la cartella `italiano/` con la guida passo passo e gli esempi YAML per l'installazione a mano (e la cartella `english/`).
 
 ## Cosa fa
 - 10 mondi animati e 11 effetti meteo (pioggia, neve, temporale, lucciole, petali, fuochi d'artificio…)
@@ -76,7 +85,7 @@ Tutte le opzioni sono in [`package/italiano/scheda-esempio.yaml`](package/italia
 - *Costi a zero* — nella vista Energia tocca la barra *Tariffa* e scrivi quanto paghi un kWh.
 
 ## Rimuovere
-Impostazioni → Dispositivi e servizi → Aurora Glass → Elimina, poi rimuovila da HACS.
+Impostazioni → Dispositivi e servizi → Aurora Glass → Elimina, poi disinstallala dal Marketplace (o da HACS).
 
 ## Licenza
 [GPL-3.0](LICENSE). Puoi usarla, studiarla, modificarla e condividerla, anche a scopo commerciale, purché ogni versione modificata che distribuisci resti GPL-3.0, abbia il codice sorgente e mantenga la nota originale: © 2026 DomotikPro.it (Luca Pinelli).

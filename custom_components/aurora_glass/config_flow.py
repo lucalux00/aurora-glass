@@ -298,7 +298,7 @@ class AuroraGlassConfigFlow(AuroraFlowSteps, ConfigFlow, domain=DOMAIN):
         return self.async_show_form(step_id="user", data_schema=self._general_schema(), last_step=False)
 
     async def async_step_zeroconf(self, discovery_info: Any) -> ConfigFlowResult:
-        """Dopo l'installazione da HACS e il riavvio: Home Assistant trova sé stesso in rete e propone Aurora Glass.
+        """Dopo l'installazione da HACS (o dal Marketplace) e il riavvio: Home Assistant trova sé stesso in rete e propone Aurora Glass.
 
         Si risponde solo all'annuncio di questa istanza (stesso uuid) e solo se non c'è ancora nessuna plancia.
         """

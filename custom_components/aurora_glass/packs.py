@@ -54,7 +54,7 @@ MSG = {
         "too_big": "Il pacchetto «{n}» è troppo grande.",
         "checksum": "Il file di «{n}» non corrisponde a quello del catalogo: non lo installo.",
         "zip": "Il pacchetto «{n}» non è valido ({e}).",
-        "glass": "«{n}» richiede Aurora Glass {v} o più recente: aggiorna prima Aurora Glass da HACS.",
+        "glass": "«{n}» richiede Aurora Glass {v} o più recente: aggiorna prima Aurora Glass dal Marketplace (o da HACS).",
     },
     "en": {
         "catalog": "Can't read the pack catalog ({e}).",
@@ -63,7 +63,7 @@ MSG = {
         "too_big": "The pack “{n}” is too large.",
         "checksum": "The file of “{n}” doesn't match the catalog: not installing it.",
         "zip": "The pack “{n}” is not valid ({e}).",
-        "glass": "“{n}” needs Aurora Glass {v} or newer: update Aurora Glass from HACS first.",
+        "glass": "“{n}” needs Aurora Glass {v} or newer: update Aurora Glass from the Marketplace (or HACS) first.",
     },
 }
 
