@@ -44,6 +44,7 @@ Without Marketplace or HACS: copy `custom_components/aurora_glass` into your con
 - 10 animated worlds and 11 weather effects (rain, snow, storm, fireflies, petals, fireworks…)
 - Sky and colours follow the real time of day
 - Your rooms, your names: as many rooms and lights as you have
+- Dimmable lights show their brightness on the button ("On · 60%" and a thin level bar); tap to switch, press and hold for the Home Assistant dialog with brightness and color
 - 50 ready-made button images and GIFs (lights, scenes, sensors, alarm, climate), editable from the dashboard
 - Alarm panel with code, cameras with live view
 - Climate control for one or more air conditioners (a row to switch between them); infrared ones (SwitchBot, Broadlink…) are shown as "last command", because Home Assistant can't know if they are really on

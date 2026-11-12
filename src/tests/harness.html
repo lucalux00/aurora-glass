@@ -16,6 +16,9 @@
   [["light.living_room_lamp", "on", "Living room lamp"], ["light.living_room_ceiling", "off", "Ceiling"], ["light.tv_strip", "on", "TV strip"],
    ["light.kitchen", "off", "Kitchen"], ["light.kitchen_island", "on", "Island"], ["light.bedroom", "off", "Bedroom"], ["light.office", "unavailable", "Office desk"],
    ["light.bathroom", "off", "Bathroom mirror"]].forEach(function (x) { S[x[0]] = st(x[0], x[1], { friendly_name: x[2] }); });
+  /* 3.6: luminosità come in Home Assistant (0-255, null da spenta); Island resta una luce solo on/off */
+  var LASTB = { "light.living_room_lamp": 153, "light.living_room_ceiling": 200, "light.tv_strip": 255, "light.kitchen": 3, "light.bedroom": 77, "light.bathroom": 255 };
+  Object.keys(LASTB).forEach(function (id) { S[id].attributes.supported_color_modes = ["brightness"]; S[id].attributes.brightness = S[id].state === "on" ? LASTB[id] : null; });
   S["binary_sensor.living_motion"] = st("binary_sensor.living_motion", "on", { friendly_name: "Living motion", device_class: "motion" });
   S["binary_sensor.kitchen_motion"] = st("binary_sensor.kitchen_motion", "off", { device_class: "motion" });
   S["binary_sensor.front_door"] = st("binary_sensor.front_door", "off", { friendly_name: "Front door", device_class: "door" });
@@ -37,7 +40,11 @@
       ids.forEach(function (id) {
         var o = S[id]; if (!o) return;
         var ns = s === "toggle" ? (o.state === "on" ? "off" : "on") : s === "turn_on" ? "on" : s === "turn_off" ? "off" : o.state;
-        if (/^light\./.test(id) && o.state !== "unavailable") S[id] = st(id, ns, o.attributes);
+        if (/^light\./.test(id) && o.state !== "unavailable") {
+          var at = Object.assign({}, o.attributes);
+          if (LASTB[id] !== undefined) { if (o.state === "on" && at.brightness) LASTB[id] = at.brightness; at.brightness = ns === "on" ? LASTB[id] : null; }
+          S[id] = st(id, ns, at);
+        }
       });
       push();
       return Promise.resolve();
@@ -111,6 +118,8 @@
   panel.panel = { config: { card: card } };
   panel.hass = hass;
   window.PANEL = panel; window.push = push; window.S = S; window.st = st;
+  /* come muovere il cursore nella finestra di Home Assistant: setB("light.tv_strip", 128) */
+  window.setB = function (id, b) { var o = S[id]; S[id] = st(id, b > 0 ? "on" : "off", Object.assign({}, o.attributes, { brightness: b > 0 ? b : null })); if (b > 0) LASTB[id] = b; push(); };
 </script>
 </body>
 </html>

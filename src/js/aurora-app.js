@@ -262,6 +262,11 @@
     function sv(id) { return HASS && id && HASS.states[id] ? HASS.states[id] : null; }
     function availId(ids) { ids = Array.isArray(ids) ? ids : [ids]; for (var i = 0; i < ids.length; i++) { var s = sv(ids[i]); if (s && s.state !== "unavailable" && s.state !== "unknown") return ids[i]; } return ids[0]; }
     function isUnavail(s) { return !s || s.state === "unavailable" || s.state === "unknown"; }
+    /* luminosità di una luce accesa e regolabile, da 1 a 100 come nella finestra di Home Assistant; null per relè e luci solo on/off */
+    function lightPct(k) {
+      var s = LIVE ? sv(ENT.lights[k]) : null, b = s && s.state === "on" && s.attributes ? s.attributes.brightness : null;
+      return typeof b === "number" && isFinite(b) ? Math.min(100, Math.max(1, Math.round(b * 100 / 255))) : null;
+    }
     function call(domain, service, data) {
       if (!ctx.call) return Promise.resolve();
       try { return Promise.resolve(ctx.call(domain, service, data)).catch(function (e) { toast(T("Non riuscito: {e}", { e: (e && e.message) || T("errore di Home Assistant") }), "mdi-alert-circle", "var(--warn)"); }); }
@@ -339,7 +344,7 @@
         r.l.forEach(function (k) {
           var L = LIGHTS[k];
           orbs += '<button class="orb" type="button" data-light="' + k + '" data-img="' + L[1] + '"' + (L[3] ? ' data-ov="' + L[3] + '"' : "") + ' data-label="' + esc(T("Luce {n}", { n: L[0].toLowerCase() })) + '" data-on="0" aria-pressed="false">' +
-            '<img class="o-img" alt="" draggable="false"><span class="o-shade"></span><span class="sw"></span><span class="o-ico"><i class="mdi ' + L[2] + '"></i></span>' +
+            '<img class="o-img" alt="" draggable="false"><span class="o-shade"></span><span class="o-lvl" aria-hidden="true"></span><span class="sw"></span><span class="o-ico"><i class="mdi ' + L[2] + '"></i></span>' +
             '<span class="o-txt"><span class="o-name">' + esc(L[0]) + '</span><span class="o-state">' + T("Spenta") + '</span></span>' + PEN + "</button>";
         });
         var chips = r.s.filter(hasMotion).map(sensChip).join("") + (r.t || []).filter(hasTemp).map(tempChip).join("") + r.o.map(openChip).join("");
@@ -407,7 +412,10 @@
         var na = LIVE && isUnavail(sv(ENT.lights[o.dataset.light]));
         if (na) nUn++;
         o.classList.toggle("na", na);
-        $(".o-state", o).textContent = na ? T("Non disponibile") : (on ? T("Accesa") : T("Spenta"));
+        var pct = on && !na ? lightPct(o.dataset.light) : null;
+        $(".o-state", o).textContent = na ? T("Non disponibile") : !on ? T("Spenta") : pct === null ? T("Accesa") : T("Accesa · {p}%", { p: pct });
+        o.classList.toggle("lvl", pct !== null);
+        if (pct !== null) o.style.setProperty("--lvl", pct + "%");
         refreshImg(o);
       });
       $$(".room").forEach(function (r) {
@@ -584,7 +592,7 @@
     /* first: entrata animata; poi si ridisegna solo se cambia qualcosa, senza animazione */
     function renderPop(first) {
       var list = $("#st-list"), foot = $("#st-foot");
-      var sig = stOpen + "|" + (stOpen === "lights" ? litKeys().join(",") + "|" + state.alarm : motRooms().map(function (m) { var mi = motInfo(m[0]); return m[0] + (mi.on ? 1 : 0) + (mi.na ? 1 : 0) + ago(mi.last); }).join(","));
+      var sig = stOpen + "|" + (stOpen === "lights" ? litKeys().map(function (k) { return k + ":" + (lightPct(k) || ""); }).join(",") + "|" + state.alarm : motRooms().map(function (m) { var mi = motInfo(m[0]); return m[0] + (mi.on ? 1 : 0) + (mi.na ? 1 : 0) + ago(mi.last); }).join(","));
       if (!first && sig === stSig) return;
       stSig = sig;
       list.classList.toggle("st-still", !first);
@@ -594,8 +602,8 @@
         $("#st-pop-title").textContent = T("Luci accese");
         $("#st-pop-sub").textContent = keys.length ? T("Tocca una luce per spegnerla") : "";
         keys.forEach(function (k, i) {
-          var L = LIGHTS[k], src = resolve(L[3] || L[1], L[1], true);
-          var b = stItem(i, "", '<img class="st-thumb" alt="" draggable="false" src="' + esc(src) + '"><span class="st-txt"><b>' + esc(L[0]) + "</b><small>" + esc(lightRoom(k)) + '</small></span><span class="st-act" aria-hidden="true"><i class="mdi mdi-power"></i></span>');
+          var L = LIGHTS[k], src = resolve(L[3] || L[1], L[1], true), pc = lightPct(k), sub = [lightRoom(k), pc === null ? "" : pc + "%"].filter(Boolean).join(" · ");
+          var b = stItem(i, "", '<img class="st-thumb" alt="" draggable="false" src="' + esc(src) + '"><span class="st-txt"><b>' + esc(L[0]) + "</b><small>" + esc(sub) + '</small></span><span class="st-act" aria-hidden="true"><i class="mdi mdi-power"></i></span>');
           b.setAttribute("aria-label", T("Spegni {n}", { n: L[0] }));
           b.addEventListener("click", function () { lightOff(k, b); });
           list.appendChild(b);
@@ -1673,7 +1681,7 @@
       while ((cn = cw.nextNode())) if (cn.nodeValue.indexOf("€") > -1) cn.nodeValue = cn.nodeValue.replace(/€/g, CUR);
       var be = $('#en-dunit [data-u="eur"]'); if (be) be.textContent = CUR;
     }
-    if (LIVE) { HOST.setAttribute("data-live", "1"); var fnote = $("footer.note"); if (fnote) fnote.textContent = T("Aurora Glass v3 · collegata a Home Assistant"); }
+    if (LIVE) { HOST.setAttribute("data-live", "1"); var fnote = $("footer.note"); if (fnote) fnote.textContent = T("Aurora Glass v3 · collegata a Home Assistant"); var rhint = $("#rooms-hint"); if (rhint) rhint.textContent = T("tocca per accendere, tieni premuto per la luminosità"); }
     if (EMB) HOST.setAttribute("data-embedded", "1");
     hydrate(ROOT);
 

@@ -40,6 +40,7 @@ Senza Marketplace né HACS: copia `custom_components/aurora_glass` nella cartell
 - 10 mondi animati e 11 effetti meteo (pioggia, neve, temporale, lucciole, petali, fuochi d'artificio…)
 - Cielo e colori seguono l'ora del giorno
 - Le tue stanze con i tuoi nomi: quante stanze e luci hai
+- Le luci dimmerabili mostrano la luminosità sul pulsante («Accesa · 60%» e una barretta del livello); un tocco accende o spegne, tenendo premuto si apre la finestra di Home Assistant con luminosità e colore
 - 50 immagini e GIF pronte per i pulsanti, modificabili dalla plancia
 - Allarme con codice, telecamere con diretta
 - Clima per uno o più climatizzatori (una riga per passare dall'uno all'altro); quelli a infrarossi (SwitchBot, Broadlink…) compaiono come "ultimo comando", perché Home Assistant non può sapere se sono davvero accesi

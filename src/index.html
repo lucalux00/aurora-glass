@@ -239,6 +239,9 @@ main { display: flex; flex-direction: column; gap: 22px; padding: 18px 0 150px; 
 .orb.pop { animation: pop .55s var(--spring); }
 @keyframes pop { 0% { transform: scale(1); } 35% { transform: scale(.92); } 70% { transform: scale(1.05); } 100% { transform: scale(1); } }
 .o-shade { position: absolute; inset: auto 0 0 0; height: 56%; background: linear-gradient(to top, rgba(4,6,18,.86), transparent); pointer-events: none; }
+/* livello di luminosità: barretta in fondo al pulsante, solo per le luci regolabili accese */
+.orb .o-lvl { position: absolute; left: 0; bottom: 0; height: 4px; width: var(--lvl, 0%); background: linear-gradient(90deg, var(--room), color-mix(in srgb, var(--room) 55%, #fff)); box-shadow: 0 0 10px var(--room); opacity: 0; transition: width .5s var(--ease), opacity .3s; z-index: 3; pointer-events: none; }
+.orb.lvl .o-lvl { opacity: 1; }
 .o-ico { display: none; position: relative; width: 46px; height: 46px; border-radius: 15px; place-items: center; font-size: 1.6rem; background: var(--surface-2); color: var(--dim); transition: background .4s, color .4s; }
 .o-txt { position: absolute; left: 14px; right: 14px; bottom: 12px; display: flex; flex-direction: column; z-index: 2; }
 .o-name { font-weight: 800; font-size: .95rem; text-shadow: 0 1px 6px rgba(0,0,0,.5); }
@@ -828,7 +831,7 @@ footer.note { text-align: center; color: var(--faint); font-size: .78rem; paddin
       </div>
 
       <div style="--i:2">
-        <h2 class="sec-title">Luci e stanze <small>tocca l'immagine per accendere</small><button class="sec-edit home-edit" type="button" data-home="rooms"><i class="mdi mdi-pencil"></i>Modifica</button></h2>
+        <h2 class="sec-title">Luci e stanze <small id="rooms-hint">tocca l'immagine per accendere</small><button class="sec-edit home-edit" type="button" data-home="rooms"><i class="mdi mdi-pencil"></i>Modifica</button></h2>
         <div class="rooms" id="rooms"></div>
       </div>
 

@@ -38,7 +38,7 @@
     "Serve il codice per: {m}": "Code needed for: {m}", "Invio: {m}…": "Sending: {m}…", "Allarme attivo!": "Alarm triggered!",
     /* luci e sensori */
     "Non riuscito: {e}": "Failed: {e}", "errore di Home Assistant": "Home Assistant error",
-    "Movimento {n}": "Motion {n}", "Luce {n}": "Light {n}", "Spenta": "Off", "Accesa": "On",
+    "Movimento {n}": "Motion {n}", "Luce {n}": "Light {n}", "Spenta": "Off", "Accesa": "On", "Accesa · {p}%": "On · {p}%",
     "{n}: dispositivo non disponibile": "{n}: device unavailable", "{n}: non risponde, non so se il comando è arrivato": "{n}: not responding, the command may not have arrived",
     "{n}: il comando non ha avuto effetto": "{n}: the command had no effect",
     "Nessun movimento": "No motion", "Non disponibile": "Unavailable", "Movimento!": "Motion!", "Movimento: {n}": "Motion: {n}", "Casa tranquilla": "All quiet at home",
@@ -116,7 +116,7 @@
     "Fine": "Done", "Tocca scene e luci": "Tap scenes and lights", "Cambia mondo, effetti e ora": "Change world, effects and time", "Modifica le immagini": "Edit the images",
     "Simula intrusione": "Simulate intrusion", "Casa": "Home", "Lunedì 12 ottobre": "Monday 12 October", "Buonasera, Alex": "Good evening, Alex", "Esterno": "Outside",
     "Apri i consumi": "Open energy", "Consumo": "Power", "Aggiornamento in tempo reale": "Live updates", "Scene rapide": "Quick scenes", "un tocco, tutta la casa": "one tap, the whole house",
-    "Luci e stanze": "Lights and rooms", "tocca l'immagine per accendere": "tap the image to switch on", "In casa 23 °C": "Indoors 23 °C", "Temperatura desiderata": "Target temperature",
+    "Luci e stanze": "Lights and rooms", "tocca l'immagine per accendere": "tap the image to switch on", "tocca per accendere, tieni premuto per la luminosità": "tap to switch on, hold for brightness", "In casa 23 °C": "Indoors 23 °C", "Temperatura desiderata": "Target temperature",
     "Abbassa": "Lower", "Alza": "Raise", "Modalità": "Mode", "Alette verticali": "Vertical vanes", "Alette orizzontali": "Horizontal vanes", "Preset": "Preset",
     "Sicurezza": "Security", "ALLARME — movimento rilevato in Ingresso": "ALARM — motion detected at the Entrance", "Disattiva": "Disarm", "Centrale allarme": "Alarm panel",
     "Casa libera.": "Nobody is watching.", "Modalità allarme": "Alarm mode", "Fuori casa": "Away", "Porte, finestre e cancello": "Doors, windows and gate", "LIVE": "LIVE",
