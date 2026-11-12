@@ -94,6 +94,14 @@ Settings → Devices & services → Aurora Glass → Delete, then uninstall it f
 ## For developers
 The card sources are in `src/` (open `src/index.html` for the preview, `src/tests/harness.html` for a simulated Home Assistant). `python tools/build.py` builds the integration's frontend, `dist/` and the download zip.
 
+## Support Aurora Glass
+Aurora Glass is free and will stay free. I build it in my spare time and test every release on my own Home Assistant. If it is useful to you:
+
+- ⭐ **Star this repository**: it is free and helps other people find it.
+- ☕ **[Buy me a coffee on Ko-fi](https://ko-fi.com/domotikpro)**: one-time or monthly, by card or PayPal.
+
+Contributions are voluntary: Aurora Glass is the same for everyone.
+
 ## License
 [GPL-3.0](LICENSE). You can use, study, modify and share it, commercially too, as long as every modified version you distribute stays under GPL-3.0, comes with its source code and keeps the original notice: © 2026 DomotikPro.it (Luca Pinelli).
 

@@ -87,6 +87,14 @@ Tutte le opzioni sono in [`package/italiano/scheda-esempio.yaml`](package/italia
 ## Rimuovere
 Impostazioni → Dispositivi e servizi → Aurora Glass → Elimina, poi disinstallala dal Marketplace (o da HACS).
 
+## Sostieni Aurora Glass
+Aurora Glass è gratis e resterà gratis. La sviluppo nel tempo libero e provo ogni versione sul mio Home Assistant. Se ti è utile:
+
+- ⭐ **Metti una stella a questo repository**: è gratis e aiuta altre persone a trovarlo.
+- ☕ **[Offrimi un caffè su Ko-fi](https://ko-fi.com/domotikpro)**: una volta sola o ogni mese, con carta o PayPal.
+
+I contributi sono volontari: Aurora Glass è uguale per tutti.
+
 ## Licenza
 [GPL-3.0](LICENSE). Puoi usarla, studiarla, modificarla e condividerla, anche a scopo commerciale, purché ogni versione modificata che distribuisci resti GPL-3.0, abbia il codice sorgente e mantenga la nota originale: © 2026 DomotikPro.it (Luca Pinelli).
 
