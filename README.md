@@ -60,7 +60,7 @@ Extra features you can add and remove whenever you like: **Settings → Devices 
 
 The pack list and files come from [domotikpro.it](https://domotikpro.it/progetti/aurora-glass-pacchetti?utm_source=github&utm_medium=readme&utm_campaign=aurora-glass-pacchetti); every file is checked against the SHA-256 in the list before it is installed. No data about your home is sent.
 
-**Paid packs** (from 3.7.0): some packs are paid, to support Aurora Glass, which stays free and open source. Buy the pack on the site, then paste the key you receive by email in **Configure → License keys**: it is activated on that Home Assistant and the pack can be ticked under Packs. Removing the key frees it for another installation. The **Atelier** themes pack is a free gift for DomotikPro newsletter subscribers: sign up on the packs page and the key comes in the welcome email. Only the key and an anonymous fingerprint of the installation are sent to domotikpro.it (never your home's data).
+**Packs with a key** (from 3.7.0): the extra packs (Atelier themes, Frame screensaver, Italian worlds, Holidays, Living icons) are a free gift for DomotikPro newsletter subscribers. Sign up on the [packs page](https://domotikpro.it/progetti/aurora-glass-pacchetti) and the key arrives in the welcome email; paste it in **Configure → License keys**, then tick the packs under Packs. Aurora Glass stays free and open source. Only the key and an anonymous fingerprint of the installation are sent to domotikpro.it (never your home's data).
 
 ## Use the card in your own dashboards
 The integration also loads the card everywhere, so you can use it in any dashboard (panel view recommended):

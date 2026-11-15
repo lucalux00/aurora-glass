@@ -1,4 +1,4 @@
-/* Aurora Glass v3.7.0 — scheda per Home Assistant (generata da tools/build.py) */
+/* Aurora Glass v3.7.1 — scheda per Home Assistant (generata da tools/build.py) */
 
 /* ---- disegno.js ---- */
 /* ============================================================================
@@ -3295,7 +3295,7 @@
   var App = window.AuroraApp;
   /* nomi con la versione per la pagina della barra laterale: dopo un aggiornamento la versione nuova
      non trova mai i nomi già occupati da quella vecchia rimasta in memoria nel browser */
-  var VER = "3.7.0".replace(/\./g, "-");
+  var VER = "3.7.1".replace(/\./g, "-");
   var CARD_TAG = "aurora-glass-card-" + VER, PANEL_TAG = "aurora-glass-panel-" + VER;
   var OVERRIDES = [
     ":host { display: block; position: relative; --lp: absolute; --sp: absolute; --so: hidden auto; height: var(--aurora-height, calc(100vh - var(--header-height, 56px))); min-height: 520px; overflow: hidden; }",
@@ -3347,7 +3347,7 @@
       var self = this, cfg = JSON.parse(this._sig || "{}");
       this._app = new App({
         root: this._root, host: this, layer: this._root.querySelector("#shell"), scroll: this._root.querySelector("#scroll"),
-        assets: cfg.assets || defaultAssets(), live: true, embedded: true, haIcons: true, config: cfg, hass: this._hass, lang: haLang(this._hass, cfg), version: "3.7.0",
+        assets: cfg.assets || defaultAssets(), live: true, embedded: true, haIcons: true, config: cfg, hass: this._hass, lang: haLang(this._hass, cfg), version: "3.7.1",
         call: function (domain, service, data) { return self._hass.callService(domain, service, data); },
         moreInfo: function (entityId) { self.dispatchEvent(new CustomEvent("hass-more-info", { bubbles: true, composed: true, detail: { entityId: entityId } })); }
       });
