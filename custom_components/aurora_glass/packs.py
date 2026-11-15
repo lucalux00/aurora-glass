@@ -90,6 +90,22 @@ MSG = {
 }
 
 
+async def read_capped(resp: Any, limit: int) -> bytes:
+    """Legge TUTTO il corpo della risposta, fino a limit+1 byte.
+
+    `resp.content.read(n)` restituisce solo i byte già arrivati (di solito il primo blocco da 8 KB): con uno zip più
+    grande il file risultava troncato e il controllo sha256 lo rifiutava. Qui si legge a blocchi fino alla fine.
+    """
+    chunks: list[bytes] = []
+    total = 0
+    async for chunk in resp.content.iter_chunked(65536):
+        chunks.append(chunk)
+        total += len(chunk)
+        if total > limit:
+            break
+    return b"".join(chunks)
+
+
 class PackError(Exception):
     """Errore da mostrare così com'è nella schermata Pacchetti."""
 
@@ -231,7 +247,7 @@ class PackManager:
                 resp = await session.post(url, json={**payload, "lingua": lang_of(self.hass), "glass": VERSION})
                 if int(resp.headers.get("Content-Length") or 0) > MAX_ZIP:
                     raise PackError(self._msg("too_big", n=payload.get("id", "")))
-                body = await resp.content.read(MAX_ZIP + 1)
+                body = await read_capped(resp, MAX_ZIP)
                 return resp.status, body, resp.headers.get("Content-Type", "")
         except PackError:
             raise
@@ -312,7 +328,7 @@ class PackManager:
                 resp.raise_for_status()
                 if int(resp.headers.get("Content-Length") or 0) > MAX_ZIP:
                     raise PackError(self._msg("too_big", n=name))
-                blob = await resp.content.read(MAX_ZIP + 1)
+                blob = await read_capped(resp, MAX_ZIP)
         except PackError:
             raise
         except Exception as err:
