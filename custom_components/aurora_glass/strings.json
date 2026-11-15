@@ -108,7 +108,8 @@
           "areas": "Rooms, lights and sensors",
           "devices": "Alarm, weather, climate, energy and cameras",
           "scenes": "Quick scenes",
-          "packs": "Packs (new features to download)"
+          "packs": "Packs (new features to download)",
+          "license": "License keys (paid packs)"
         }
       },
       "general": {
@@ -188,6 +189,14 @@
       "packs_done": {
         "title": "Done",
         "description": "{summary}\n\nReload the browser page (F5, or close and reopen the app) to see the changes on the dashboard."
+      },
+      "license": {
+        "title": "License keys",
+        "description": "{status}\n\nBought a pack, or signed up to the newsletter for the gift? Paste the key you received by email: it gets activated on this Home Assistant and then you'll find the pack under Packs. A key works on a limited number of installations: removing it here frees it for another Home Assistant.\n\n[Packs and prices on domotikpro.it]({packs_url})",
+        "data": {
+          "key": "License key",
+          "remove": "Remove these keys from this Home Assistant"
+        }
       }
     },
     "error": {

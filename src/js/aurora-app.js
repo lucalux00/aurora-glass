@@ -711,6 +711,8 @@
 
     /* ------------------------------------------------------------------ mondo + ora del giorno */
     var S = { world: store("world") || "casetta", fx: store("fx") || "none", fxPage: store("fxpage") === "1", cycle: false, btn: store("btn") || "img" };
+    /* un mondo di un pacchetto arriva dopo l'avvio: lo ricordo e lo rimetto quando il pacchetto lo registra */
+    var worldWanted = AMB.W[S.world] ? null : S.world;
     if (!AMB.W[S.world]) S.world = "casetta";
     if (S.fx !== "none" && !FX.E[S.fx]) S.fx = "none";
     var drawerOpen = false;
@@ -780,12 +782,7 @@
 
     /* ------------------------------------------------------------------ pannello Stile */
     function buildDrawer() {
-      var w = $("#worlds");
-      Object.keys(AMB.W).forEach(function (id) {
-        var d = AMB.W[id], b = el("button", "wcard", '<img alt="" draggable="false"><span><i class="mdi ' + d.icon + '"></i>' + T(d.name) + "</span>", { type: "button", "data-world": id, title: T(d.desc) });
-        b.addEventListener("click", function () { setWorld(id); });
-        w.appendChild(b);
-      });
+      Object.keys(AMB.W).forEach(worldCard);
       var fg = $("#fxgrid");
       var none = el("button", "fxchip", '<i class="mdi mdi-cancel"></i>' + T("Nessuno"), { type: "button", "data-fx": "none" });
       none.addEventListener("click", function () { S.fx = "none"; applyFx(); });
@@ -795,6 +792,17 @@
         c.addEventListener("click", function () { S.fx = id; applyFx(); });
         fg.appendChild(c);
       });
+    }
+    function worldCard(id) {
+      var w = $("#worlds");
+      if (!w || $('.wcard[data-world="' + id + '"]', w)) return;
+      var d = AMB.W[id], b = el("button", "wcard", '<img alt="" draggable="false"><span><i class="mdi ' + d.icon + '"></i>' + T(d.name) + "</span>", { type: "button", "data-world": id, title: T(d.desc) });
+      b.addEventListener("click", function () { setWorld(id); });
+      w.appendChild(b);
+      if (drawerOpen) $("img", b).src = AMB.dataURL(id, snap(hour));
+      /* «10 paesaggi animati…»: il numero segue i mondi aggiunti dai pacchetti */
+      var sm = w.parentNode && w.parentNode.querySelector("h3 small");
+      if (sm) sm.textContent = sm.textContent.replace(/^\d+/, String(Object.keys(AMB.W).length));
     }
     function refreshWorldThumbs() { $$(".wcard").forEach(function (c) { $("img", c).src = AMB.dataURL(c.dataset.world, snap(hour)); }); }
     function openDrawer() { drawerOpen = true; refreshWorldThumbs(); $("#drawer").classList.add("open"); $("#drawer").setAttribute("aria-hidden", "false"); $("#scrim").classList.add("open"); later(function () { $("#dr-close").focus({ preventScroll: true }); }, 350); }
@@ -1655,6 +1663,40 @@
           return sec;
         },
         viewId: function (id) { return "pk-" + id; },
+        /* 3.7.0 · un mondo in più nell'hero e nel pannello Stile: def come i mondi di Glass
+           { name, icon, desc, windows: [{ k, x, y, w, h }], css, draw: function (K, h, B) { return "svg"; } } (640×260).
+           Nome e descrizione arrivano già nella lingua giusta (api.lang). */
+        addWorld: function (id, def) {
+          if (!/^[a-z0-9_-]+$/.test(id) || !def || typeof def.draw !== "function") return false;
+          AMB.W[id] = def;
+          worldCard(id);
+          if (worldWanted === id) { worldWanted = null; S.world = id; applyWorld(); }
+          return true;
+        },
+        setWorld: function (id, quiet) { if (AMB.W[id]) setWorld(id, quiet); },
+        world: function () { return S.world; },
+        worlds: AMB,
+        /* 3.7.0 · immagini in più nella libreria dei pulsanti (modalità modifica), con una scheda tutta loro.
+           items: [{ key, name, off, on }] (pulsanti con acceso/spento) o [{ key, name, src }] (immagine unica) */
+        addImages: function (label, prefix, items) {
+          if (!/^[a-z0-9_]+_$/.test(prefix || "")) return false;
+          if (!LIBGROUPS.some(function (g2) { return g2[1] === prefix; })) LIBGROUPS.push([label, prefix]);
+          (items || []).forEach(function (it) {
+            var k = prefix + it.key;
+            IMG[k] = it.src ? { kind: "single", src: it.src } : { kind: "pair", off: it.off, on: it.on };
+            LIBNAMES[k] = it.name || it.key;
+          });
+          return true;
+        },
+        /* 3.7.0 · i pulsanti con immagine della plancia e le immagini scelte per ognuno */
+        buttons: function () {
+          var seen = {};
+          return Array.prototype.slice.call(ROOT.querySelectorAll("[data-img]")).map(function (n) {
+            return { ov: n.dataset.ov || n.dataset.img, img: n.dataset.img, label: n.dataset.label || "", kind: IMG[n.dataset.img] ? IMG[n.dataset.img].kind : null, custom: OV[n.dataset.ov || n.dataset.img] || null };
+          }).filter(function (b) { if (seen[b.ov]) return false; seen[b.ov] = 1; return true; });
+        },
+        /* v: { off, on } o { src }; null = torna all'immagine di Glass */
+        setImage: function (ov, v) { if (v) OV[ov] = v; else delete OV[ov]; var ok = saveOV(); refreshAll(); return ok; },
         /* dati del pacchetto: in Home Assistant restano nell'integrazione (uguali su tutti i dispositivi).
            get() dà null se il pacchetto non ha mai salvato niente e fallisce se non riesce a leggere:
            così un errore non diventa mai "dati vuoti" da sovrascrivere */

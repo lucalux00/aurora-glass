@@ -108,7 +108,8 @@
           "areas": "Stanze, luci e sensori",
           "devices": "Allarme, meteo, clima, energia e telecamere",
           "scenes": "Scene rapide",
-          "packs": "Pacchetti (nuove funzioni da scaricare)"
+          "packs": "Pacchetti (nuove funzioni da scaricare)",
+          "license": "Chiavi di licenza (pacchetti a pagamento)"
         }
       },
       "general": {
@@ -188,6 +189,14 @@
       "packs_done": {
         "title": "Fatto",
         "description": "{summary}\n\nRicarica la pagina del browser (F5, o chiudi e riapri l'app) per vedere le novità nella plancia."
+      },
+      "license": {
+        "title": "Chiavi di licenza",
+        "description": "{status}\n\nHai comprato un pacchetto, o ti sei iscritto alla newsletter per il regalo? Incolla qui la chiave che ti è arrivata per mail: si attiva su questo Home Assistant e poi trovi il pacchetto in Pacchetti. Una chiave vale per un numero limitato di installazioni: togliendola da qui la liberi per un altro Home Assistant.\n\n[Pacchetti e prezzi su domotikpro.it]({packs_url})",
+        "data": {
+          "key": "Chiave di licenza",
+          "remove": "Togli queste chiavi da questo Home Assistant"
+        }
       }
     },
     "error": {

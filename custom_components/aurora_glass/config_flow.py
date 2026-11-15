@@ -346,6 +346,7 @@ class AuroraGlassOptionsFlow(AuroraFlowSteps, OptionsFlow):
         self._catalog: list[dict[str, Any]] | None = None
         self._catalog_error = ""
         self._done: list[str] = []
+        self._notice = ""
 
     def _load(self) -> None:
         if not self._conf:
@@ -353,21 +354,69 @@ class AuroraGlassOptionsFlow(AuroraFlowSteps, OptionsFlow):
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         self._load()
-        return self.async_show_menu(step_id="init", menu_options=["general", "areas", "devices", "scenes", "packs"])
+        return self.async_show_menu(step_id="init", menu_options=["general", "areas", "devices", "scenes", "packs", "license"])
 
-    async def async_step_packs(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        """Pacchetti: spunta per scaricare e attivare, togli la spunta per rimuovere."""
+    async def _ensure_catalog(self) -> dict[str, dict[str, Any]]:
         mgr = self.hass.data[DOMAIN]["packs"]
-        it = lang_of(self.hass) == "it"
         if self._catalog is None:
             try:
                 self._catalog = await mgr.async_catalog()
                 self._catalog_error = ""
             except PackError as err:
                 self._catalog, self._catalog_error = [], str(err)
-        cat = {p["id"]: p for p in self._catalog}
+        return {p["id"]: p for p in self._catalog}
+
+    async def async_step_license(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Chiavi di licenza dei pacchetti a pagamento: aggiungi una chiave, o togline una (libera l'attivazione)."""
+        mgr = self.hass.data[DOMAIN]["packs"]
+        it = lang_of(self.hass) == "it"
+        cat = await self._ensure_catalog()
         errors: dict[str, str] = {}
         detail = ""
+        if user_input is not None:
+            for key in user_input.get("remove", []):
+                await mgr.async_remove_license(key)
+            key = (user_input.get("key") or "").strip()
+            if key:
+                try:
+                    lic = await mgr.async_add_license(key)
+                except PackError as err:
+                    errors["base"], detail = "pack_failed", str(err)
+                else:
+                    names = [self._pack_text(cat[p])[0] for p in cat if cat[p].get("licenza") and (lic["all"] or p in lic["packs"])]
+                    what = ", ".join(names) or lic.get("name") or ("i pacchetti della chiave" if it else "the key's packs")
+                    self._notice = (f"Chiave attivata: sblocca {what}. Spunta i pacchetti da installare." if it
+                                    else f"Key activated: it unlocks {what}. Tick the packs to install.")
+                    return await self.async_step_packs()
+            if not errors:
+                return self.async_create_entry(data=dict(self.config_entry.options))
+        paid = [p for p in cat.values() if p.get("licenza")]
+        lines = []
+        for lic in mgr.licenses:
+            covered = [self._pack_text(p)[0] for p in paid if lic.get("all") or p["id"] in lic.get("packs", [])]
+            lines.append(f"- {lic.get('name') or ('Chiave' if it else 'Key')} {lic.get('display', '')}: {', '.join(covered) or '—'}")
+        if self._catalog_error:
+            status = self._catalog_error
+        elif lines:
+            status = ("Chiavi attive su questo Home Assistant:\n" if it else "Keys active on this Home Assistant:\n") + "\n".join(lines)
+        else:
+            status = "Nessuna chiave inserita." if it else "No key entered yet."
+        options = [selector.SelectOptionDict(value=x["key"], label=f"{x.get('name') or ('Chiave' if it else 'Key')} {x.get('display', '')}") for x in mgr.licenses]
+        fields: dict[Any, Any] = {vol.Optional("key", default=""): selector.TextSelector(selector.TextSelectorConfig(type=selector.TextSelectorType.TEXT))}
+        if options:
+            fields[vol.Optional("remove", default=[])] = selector.SelectSelector(
+                selector.SelectSelectorConfig(options=options, multiple=True, mode=selector.SelectSelectorMode.LIST))
+        return self.async_show_form(step_id="license", data_schema=vol.Schema(fields), errors=errors,
+                                    description_placeholders={"status": status, "detail": detail, "packs_url": PACKS_PAGE})
+
+    async def async_step_packs(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Pacchetti: spunta per scaricare e attivare, togli la spunta per rimuovere."""
+        mgr = self.hass.data[DOMAIN]["packs"]
+        it = lang_of(self.hass) == "it"
+        cat = await self._ensure_catalog()
+        errors: dict[str, str] = {}
+        detail = ""
+        notice, self._notice = self._notice, ""
         if user_input is not None:
             chosen = set(user_input.get("packs", []))
             self._done = []
@@ -394,6 +443,14 @@ class AuroraGlassOptionsFlow(AuroraFlowSteps, OptionsFlow):
             name, desc = self._pack_text(entry)
             have = mgr.installed.get(pid, {}).get("version")
             label = f"{name} {entry.get('versione', '')} — {desc}"
+            if entry.get("licenza") and not have:
+                if mgr.license_for(pid):
+                    label += " (" + ("chiave attiva" if it else "key active") + ")"
+                elif entry.get("gratis"):
+                    label += " (" + ("regalo con la newsletter: serve la chiave che ti arriva per email" if it else "newsletter gift: needs the key from the email") + ")"
+                else:
+                    price = (not it and entry.get("prezzo_en")) or entry.get("prezzo") or ""
+                    label += " (" + ("a pagamento" if it else "paid") + (f", {price}" if price else "") + (": serve la chiave" if it else ": needs a key") + ")"
             if have and version_tuple(have) < version_tuple(entry.get("versione")):
                 label += f" ({'installato' if it else 'installed'} {have}, {'aggiornamento disponibile' if it else 'update available'})"
             options.append(selector.SelectOptionDict(value=pid, label=label))
@@ -406,6 +463,8 @@ class AuroraGlassOptionsFlow(AuroraFlowSteps, OptionsFlow):
             status = "Nessun pacchetto disponibile per ora." if it else "No packs available yet."
         else:
             status = (f"{len(mgr.installed)} installati su {len(options)} disponibili." if it else f"{len(mgr.installed)} installed of {len(options)} available.")
+        if notice:
+            status = notice + "\n\n" + status
         schema = vol.Schema({
             vol.Optional("packs", default=sorted(mgr.installed)): selector.SelectSelector(
                 selector.SelectSelectorConfig(options=options, multiple=True, mode=selector.SelectSelectorMode.LIST)

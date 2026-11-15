@@ -56,6 +56,8 @@ Funzioni in più da aggiungere e togliere quando vuoi: **Impostazioni → Dispos
 
 Elenco e file dei pacchetti arrivano da [domotikpro.it](https://domotikpro.it/progetti/aurora-glass-pacchetti?utm_source=github&utm_medium=readme&utm_campaign=aurora-glass-pacchetti); ogni file viene controllato con lo SHA-256 dell'elenco prima di installarlo. Nessun dato della tua casa viene inviato.
 
+**Pacchetti a pagamento** (dalla 3.7.0): alcuni pacchetti sono a pagamento, per sostenere Aurora Glass, che resta gratis e open source. Compri il pacchetto sul sito, poi incolli la chiave che ti arriva per mail in **Configura → Chiavi di licenza**: si attiva su quell'Home Assistant e il pacchetto si può spuntare in Pacchetti. Togliendo la chiave la liberi per un'altra installazione. Il pacchetto **Atelier** (temi) è un regalo per chi si iscrive alla newsletter di DomotikPro: ti iscrivi dalla pagina dei pacchetti e la chiave arriva nella mail di benvenuto. A domotikpro.it arrivano solo la chiave e un'impronta anonima dell'installazione (mai i dati della casa).
+
 ## La scheda nelle tue plance
 L'integrazione carica la scheda ovunque, quindi puoi usarla in qualsiasi plancia (meglio in una vista a pannello):
 

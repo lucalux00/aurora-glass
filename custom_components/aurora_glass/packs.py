@@ -8,6 +8,12 @@ e si agganciano da soli alle plance Aurora aperte.
 
 Catalogo: quello pubblicato su domotikpro.it (i pacchetti passano dal sito). Se esiste /config/aurora_glass/catalogo.json si usa
 quello (installazione senza internet, prove dei pacchetti nuovi).
+
+Pacchetti a pagamento (3.7.0): nel catalogo hanno "licenza": true e l'indirizzo dello zip è una rotta del sito.
+La chiave comprata si inserisce in Configura → Chiavi di licenza: l'integrazione la attiva una volta sul sito
+(che parla con il negozio) e conserva l'attivazione; per scaricare manda chiave + attivazione e il sito
+consegna lo zip solo se la chiave è valida e copre quel pacchetto. Il controllo sha256 resta lo stesso.
+Verso il sito vanno solo la chiave, l'attivazione e un'impronta dell'installazione (non l'uuid).
 """
 
 from __future__ import annotations
@@ -28,6 +34,7 @@ import voluptuous as vol
 from homeassistant.components import frontend, websocket_api
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import instance_id
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.storage import Store
 
@@ -38,7 +45,10 @@ _LOGGER = logging.getLogger(__name__)
 PACKS_URL = "/aurora_glass_pacchetti"
 CATALOG_URL = "https://domotikpro.it/aurora-glass/pacchetti/catalogo.json"
 PACKS_PAGE = "https://domotikpro.it/progetti/aurora-glass-pacchetti?utm_source=home-assistant&utm_medium=integrazione&utm_campaign=aurora-glass-pacchetti"
+LICENSE_URL = "https://domotikpro.it/api/aurora-glass/licenza"
 STORE_KEY = f"{DOMAIN}.pacchetti"
+LICENSE_STORE_KEY = f"{DOMAIN}.licenze"
+KEY_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{5,127}$")
 DATA_KEY = f"{DOMAIN}.pacchetti_dati"
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,39}$")
 ALLOWED = {".js", ".css", ".json", ".png", ".gif", ".webp", ".jpg", ".jpeg", ".svg", ".woff2", ".txt", ".md"}
@@ -55,6 +65,12 @@ MSG = {
         "checksum": "Il file di «{n}» non corrisponde a quello del catalogo: non lo installo.",
         "zip": "Il pacchetto «{n}» non è valido ({e}).",
         "glass": "«{n}» richiede Aurora Glass {v} o più recente: aggiorna prima Aurora Glass dal Marketplace (o da HACS).",
+        "needs_key": "«{n}» è a pagamento ({p}): acquistalo su domotikpro.it, poi inserisci la chiave in Configura → Chiavi di licenza.",
+        "needs_gift": "«{n}» è un regalo per chi si iscrive alla newsletter di DomotikPro: iscriviti su domotikpro.it/progetti/aurora-glass-pacchetti, poi inserisci la chiave che ti arriva per email in Configura → Chiavi di licenza.",
+        "key_format": "La chiave non sembra valida: copiala intera dalla mail.",
+        "key_dup": "Questa chiave è già attiva su questo Home Assistant.",
+        "shop": "Il negozio non risponde ({e}). Riprova tra qualche minuto.",
+        "denied": "{e}",
     },
     "en": {
         "catalog": "Can't read the pack catalog ({e}).",
@@ -64,6 +80,12 @@ MSG = {
         "checksum": "The file of “{n}” doesn't match the catalog: not installing it.",
         "zip": "The pack “{n}” is not valid ({e}).",
         "glass": "“{n}” needs Aurora Glass {v} or newer: update Aurora Glass from the Marketplace (or HACS) first.",
+        "needs_key": "“{n}” is a paid pack ({p}): buy it on domotikpro.it, then enter the key in Configure → License keys.",
+        "needs_gift": "“{n}” is a gift for DomotikPro newsletter subscribers: sign up at domotikpro.it/progetti/aurora-glass-pacchetti, then enter the key from the email in Configure → License keys.",
+        "key_format": "This doesn't look like a valid key: copy it in full from the email.",
+        "key_dup": "This key is already active on this Home Assistant.",
+        "shop": "The shop is not answering ({e}). Try again in a few minutes.",
+        "denied": "{e}",
     },
 }
 
@@ -93,6 +115,10 @@ class PackManager:
         self.local_catalog = Path(hass.config.path("aurora_glass", "catalogo.json"))
         self._store: Store = Store(hass, 1, STORE_KEY)
         self._data_store: Store = Store(hass, 1, DATA_KEY)
+        self._license_store: Store = Store(hass, 1, LICENSE_STORE_KEY)
+        self.licenses: list[dict[str, Any]] = []
+        self.license_url = LICENSE_URL
+        self._local_shop = False
         self.installed: dict[str, dict[str, Any]] = {}
         self.data: dict[str, Any] = {}
         self._urls: dict[str, str] = {}
@@ -105,6 +131,7 @@ class PackManager:
         stored = await self._store.async_load() or {}
         self.installed = dict(stored.get("installed", {}))
         self.data = dict((await self._data_store.async_load() or {}).get("packs", {}))
+        self.licenses = [x for x in (await self._license_store.async_load() or {}).get("licenses", []) if isinstance(x, dict) and x.get("key")]
         await self.hass.async_add_executor_job(lambda: self.dir.mkdir(parents=True, exist_ok=True))
         await self.hass.http.async_register_static_paths([StaticPathConfig(PACKS_URL, str(self.dir), False)])
         for pid, info in list(self.installed.items()):
@@ -152,6 +179,10 @@ class PackManager:
         packs = data.get("pacchetti") if isinstance(data, dict) else None
         if not isinstance(packs, list):
             raise PackError(self._msg("catalog_bad"))
+        shop = str(data.get("licenze") or "")
+        # indirizzo delle chiavi: dal catalogo (https), o qualsiasi dal catalogo locale di prova
+        self.license_url = shop if shop and (local or shop.startswith("https://")) else LICENSE_URL
+        self._local_shop = local
         out = []
         for p in packs:
             if not isinstance(p, dict) or not ID_RE.match(str(p.get("id", ""))) or not p.get("url") or not p.get("sha256"):
@@ -179,8 +210,96 @@ class PackManager:
             self._activate(pid, self.installed[pid]["version"])
             _LOGGER.info("Aurora Glass: installato il pacchetto %s %s", pid, self.installed[pid]["version"])
 
+    # ------------------------------------------------------------------ licenze
+    def license_for(self, pid: str) -> dict[str, Any] | None:
+        for lic in self.licenses:
+            if lic.get("all") or pid in (lic.get("packs") or []):
+                return lic
+        return None
+
+    async def _instance_label(self) -> str:
+        """Un'impronta dell'installazione per riconoscere l'attivazione, non l'uuid vero."""
+        uid = await instance_id.async_get(self.hass)
+        return "Home Assistant " + hashlib.sha256(f"aurora-glass:{uid}".encode()).hexdigest()[:10]
+
+    async def _shop(self, url: str, payload: dict[str, Any]) -> tuple[int, bytes, str]:
+        if not url.startswith("https://") and not self._local_shop:
+            raise PackError(self._msg("shop", e="https"))
+        try:
+            session = async_get_clientsession(self.hass)
+            async with asyncio.timeout(60):
+                resp = await session.post(url, json={**payload, "lingua": lang_of(self.hass), "glass": VERSION})
+                if int(resp.headers.get("Content-Length") or 0) > MAX_ZIP:
+                    raise PackError(self._msg("too_big", n=payload.get("id", "")))
+                body = await resp.content.read(MAX_ZIP + 1)
+                return resp.status, body, resp.headers.get("Content-Type", "")
+        except PackError:
+            raise
+        except Exception as err:  # rete, tempo scaduto
+            raise PackError(self._msg("shop", e=err)) from err
+
+    def _refusal(self, status: int, body: bytes) -> PackError:
+        """Il sito spiega il rifiuto con {"errore": "..."} nella lingua di HA."""
+        try:
+            text = str(json.loads(body.decode("utf-8")).get("errore") or "")
+        except (ValueError, AttributeError, UnicodeDecodeError):
+            text = ""
+        return PackError(self._msg("denied", e=text) if text else self._msg("shop", e=f"HTTP {status}"))
+
+    async def async_add_license(self, key: str) -> dict[str, Any]:
+        key = key.strip()
+        if not KEY_RE.match(key):
+            raise PackError(self._msg("key_format"))
+        if any(x["key"] == key for x in self.licenses):
+            raise PackError(self._msg("key_dup"))
+        status, body, _ = await self._shop(self.license_url, {"azione": "attiva", "chiave": key, "istanza": await self._instance_label()})
+        if status != 200:
+            raise self._refusal(status, body)
+        try:
+            res = json.loads(body.decode("utf-8"))
+        except (ValueError, UnicodeDecodeError) as err:
+            raise PackError(self._msg("shop", e="json")) from err
+        lic = {
+            "key": key,
+            "activation": str(res.get("attivazione") or ""),
+            "packs": [p for p in (res.get("pacchetti") or []) if isinstance(p, str) and ID_RE.match(p)],
+            "all": bool(res.get("tutti")),
+            "name": str(res.get("nome") or ""),
+            "display": str(res.get("chiave_visibile") or ("…" + key[-4:])),
+        }
+        self.licenses.append(lic)
+        await self._license_store.async_save({"licenses": self.licenses})
+        _LOGGER.info("Aurora Glass: chiave di licenza attivata (%s)", lic["display"])
+        return lic
+
+    async def async_remove_license(self, key: str) -> None:
+        """Libera l'attivazione sul negozio (per usarla su un altro HA) e toglie la chiave da qui.
+        Anche se il negozio non risponde la chiave si toglie: l'attivazione si libera dal portale del negozio."""
+        lic = next((x for x in self.licenses if x["key"] == key), None)
+        if not lic:
+            return
+        try:
+            await self._shop(self.license_url, {"azione": "togli", "chiave": key, "attivazione": lic.get("activation", "")})
+        except PackError as err:
+            _LOGGER.warning("Aurora Glass: non riesco a liberare l'attivazione sul negozio: %s", err)
+        self.licenses = [x for x in self.licenses if x["key"] != key]
+        await self._license_store.async_save({"licenses": self.licenses})
+
     async def _download(self, entry: dict[str, Any], name: str) -> bytes:
         url = str(entry["url"])
+        if entry.get("licenza"):
+            lic = self.license_for(entry["id"])
+            if not lic and entry.get("gratis"):
+                raise PackError(self._msg("needs_gift", n=name))
+            if not lic:
+                price = entry.get("prezzo_en" if lang_of(self.hass) == "en" else "prezzo") or entry.get("prezzo") or ""
+                raise PackError(self._msg("needs_key", n=name, p=price))
+            status, blob, ctype = await self._shop(url, {"id": entry["id"], "chiave": lic["key"], "attivazione": lic.get("activation", "")})
+            if status != 200 or "json" in ctype:
+                raise self._refusal(status, blob)
+            if len(blob) > MAX_ZIP:
+                raise PackError(self._msg("too_big", n=name))
+            return blob
         try:
             if url.startswith("file:"):
                 path = Path(url[5:].lstrip("/") if re.match(r"^file:/*[A-Za-z]:", url) else url[5:])
