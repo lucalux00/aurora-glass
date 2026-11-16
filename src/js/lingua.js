@@ -57,7 +57,9 @@
     "Nessun sensore di movimento risponde": "No motion sensor is responding", "Nessun movimento recente": "No recent motion",
     /* mondo, ora, effetti */
     "Mondo: {n}": "World: {n}", "Buon pomeriggio": "Good afternoon", "Buonasera": "Good evening", "Ora reale ripristinata": "Real time restored",
-    "Nessuno": "None", "Il mondo cambierà ogni 30 secondi": "The world will change every 30 seconds",
+    "Nessuno": "None", "Meteo reale": "Real weather", "Gli effetti seguono il meteo reale": "Effects now follow the real weather",
+    "Pioggia, neve, temporale e nebbia seguono il meteo di Home Assistant": "Rain, snow, storms and fog follow the Home Assistant weather",
+    "Scegli un'entità meteo per seguire il meteo reale": "Pick a weather entity to follow the real weather", "Il mondo cambierà ogni 30 secondi": "The world will change every 30 seconds",
     "Casetta": "Little house", "Sole, luna, nuvole e la tua casetta con le finestre che si accendono": "Sun, moon, clouds and your little house with windows that light up",
     "Città": "City", "Grattacieli con finestre che si accendono, auto, aereo e insegne al neon": "Skyscrapers with windows that light up, cars, a plane and neon signs",
     "Montagna": "Mountains", "Cime innevate, funivia, baita, aurora boreale e neve che cade": "Snowy peaks, cable car, chalet, northern lights and falling snow",
