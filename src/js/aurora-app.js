@@ -182,7 +182,7 @@
           if (!x || !x.entity) return;
           var k = rk + "l" + j, lname = x.name || niceName(x.entity) || name;
           var img = libImg(x.image) || guessImg(x.name || "") || rImg;
-          LIGHTS[k] = [lname, img, mdi(x.icon) || IMG_ICON[img] || "mdi-lightbulb", "luce_" + k];
+          LIGHTS[k] = [lname, img, mdi(x.icon) || IMG_ICON[img] || "mdi-lightbulb", "luce_" + k, !!(x.icon_only || CFG.button_style === "icon")];
           ENT.lights[k] = x.entity; room.l.push(k); state.lights[k] = false;
         });
         var mot = arrIds(r.motion).map(function (x) { return typeof x === "string" ? x : x && x.entity; }).filter(Boolean);
@@ -208,6 +208,27 @@
       var byEnt = {};
       Object.keys(ENT.lights).forEach(function (k) { byEnt[ENT.lights[k]] = k; });
       var list = Array.isArray(CFG.scenes) ? CFG.scenes : [];
+      /* Aggiunge le scene personalizzate oltre a quelle predefinite */
+      list.forEach(function (c) {
+        if (!c || !c.id) return;
+        var existing = SCENES.filter(function (x) { return x.id === c.id; })[0];
+        if (!existing) {
+          var newSc = {
+            id: c.id,
+            n: c.name || niceName(c.entity) || c.id,
+            sub: c.sub || (c.entity ? niceName(c.entity) : T("Scena personalizzata")),
+            img: c.image || "scena_cinema",
+            ic: mdi(c.icon) || "mdi-palette",
+            s1: c.color1 || "#8B5CF6",
+            s2: c.color2 || "#EC4899",
+            lights: [],
+            alarm: c.alarm || null,
+            msg: T("Scena {n} avviata.", { n: c.name || c.id })
+          };
+          if (c.entity) newSc.entity = c.entity;
+          SCENES.push(newSc);
+        }
+      });
       SCENES.forEach(function (sc) {
         var c = list.filter(function (x) { return x && x.id === sc.id; })[0];
         if (CUSTOM) { sc.lights = []; if (!c && !sc.alarm) sc.hide = true; }
@@ -216,6 +237,9 @@
         if (c.show === false) { sc.hide = true; return; }
         sc.hide = false;
         if (c.name) sc.n = c.name;
+        if (c.icon) sc.ic = mdi(c.icon);
+        if (c.color1) sc.s1 = c.color1;
+        if (c.color2) sc.s2 = c.color2;
         if (c.alarm !== undefined) sc.alarm = c.alarm || null;
         if (!sc.alarm && (sc.id === "night" || sc.id === "away")) { sc.sub = T("Spegne tutte le luci"); sc.msg = T("Luci spente."); }
         if (c.entity) { sc.entity = c.entity; sc.lights = []; }
@@ -242,6 +266,14 @@
       }
       else ["lights", "motion", "opens", "temps"].forEach(function (g2) { if (e[g2]) Object.keys(e[g2]).forEach(function (k) { ENT[g2][k] = e[g2][k]; }); });
       ["alarm", "weather", "power", "climate", "cameras"].forEach(function (k) { if (e[k] !== undefined) ENT[k] = e[k]; });
+      /* nuove funzionalità: robot, giardino, meteo avanzato, clima stile, server e ups */
+      ENT.vacuum = e.vacuum || CFG.vacuum || null;
+      ENT.garden = e.garden || CFG.garden || null;
+      ENT.weather_station = e.weather_station || CFG.weather_station || null;
+      ENT.weather_ai = e.weather_ai || CFG.weather_ai || CFG.ai_forecast || null;
+      ENT.climate_style = e.climate_style || CFG.climate_style || "ac";
+      ENT.server = e.server || CFG.server || null;
+      ENT.ups = e.ups || CFG.ups || null;
       /* più climatizzatori: climates: [climate.a, climate.b]; quello mostrato si sceglie con la riga sopra i comandi */
       ENT.climates = arrIds(e.climates !== undefined ? e.climates : ENT.climate);
       var clSel = store("clima");
@@ -251,7 +283,7 @@
       if (!CUSTOM) (e.extraLights || []).forEach(function (x) {
         if (!x || !x.k || !x.id || LIGHTS[x.k]) return;
         var room = ROOMS.filter(function (r) { return r.n === x.room || r.n === T(x.room); })[0] || ROOMS[0];
-        LIGHTS[x.k] = [x.n || x.k, x.img || LIGHTS[room.l[0]][1], x.ic || "mdi-lightbulb", "luce_" + x.k];
+        LIGHTS[x.k] = [x.n || x.k, x.img || LIGHTS[room.l[0]][1], x.ic || "mdi-lightbulb", "luce_" + x.k, !!x.icon_only];
         ENT.lights[x.k] = x.id; room.l.push(x.k); state.lights[x.k] = false;
       });
       if (CFG.windows) Object.keys(CFG.windows).forEach(function (slot) { var v = CFG.windows[slot]; WINMAP[slot] = LIGHTS[v] ? v : Object.keys(ENT.lights).filter(function (k) { return ENT.lights[k] === v; })[0] || null; });
@@ -343,7 +375,8 @@
         var orbs = "";
         r.l.forEach(function (k) {
           var L = LIGHTS[k];
-          orbs += '<button class="orb" type="button" data-light="' + k + '" data-img="' + L[1] + '"' + (L[3] ? ' data-ov="' + L[3] + '"' : "") + ' data-label="' + esc(T("Luce {n}", { n: L[0].toLowerCase() })) + '" data-on="0" aria-pressed="false">' +
+          var isIcon = L[4] || (CFG.button_style === "icon") || (S.btn === "icon");
+          orbs += '<button class="orb' + (isIcon ? " icon-only" : "") + '" type="button" data-light="' + k + '" data-img="' + L[1] + '"' + (L[3] ? ' data-ov="' + L[3] + '"' : "") + ' data-label="' + esc(T("Luce {n}", { n: L[0].toLowerCase() })) + '" data-on="0" aria-pressed="false">' +
             '<img class="o-img" alt="" draggable="false"><span class="o-shade"></span><span class="o-lvl" aria-hidden="true"></span><span class="sw"></span><span class="o-ico"><i class="mdi ' + L[2] + '"></i></span>' +
             '<span class="o-txt"><span class="o-name">' + esc(L[0]) + '</span><span class="o-state">' + T("Spenta") + '</span></span>' + PEN + "</button>";
         });
@@ -710,7 +743,7 @@
     $("#code-in").addEventListener("keydown", function (e) { if (e.key === "Enter") $("#code-ok").click(); });
 
     /* ------------------------------------------------------------------ mondo + ora del giorno */
-    var S = { world: store("world") || "casetta", fx: store("fx") || "none", fxPage: store("fxpage") === "1", cycle: false, btn: store("btn") || "img" };
+    var S = { world: store("world") || "casetta", fx: store("fx") || "none", fxPage: store("fxpage") === "1", cycle: false, btn: CFG.button_style || store("btn") || "img" };
     /* un mondo di un pacchetto arriva dopo l'avvio: lo ricordo e lo rimetto quando il pacchetto lo registra */
     var worldWanted = AMB.W[S.world] ? null : S.world;
     if (!AMB.W[S.world]) S.world = "casetta";
@@ -816,6 +849,26 @@
       if (S.cycle) { cycleT = setInterval(function () { var ids = Object.keys(AMB.W), i = ids.indexOf(S.world); setWorld(ids[(i + 1) % ids.length], true); }, 30000); timers.push(cycleT); toast(T("Il mondo cambierà ogni 30 secondi"), "mdi-shuffle-variant", "var(--acc-text)"); }
     });
     $$("#btn-style button").forEach(function (b) { b.addEventListener("click", function () { setBtn(b.dataset.v); }); });
+
+    function setClimaStyle(v) {
+      S.climaStyle = v; store("clima_style", v);
+      $$("#clima-style button").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.v === v ? "true" : "false"); });
+      var box = $("#clima"); if (box) { box.dataset.style = v; renderClima(); }
+    }
+    $$("#clima-style button").forEach(function (b) { b.addEventListener("click", function () { setClimaStyle(b.dataset.v); toast(T("Stile clima: {s}", { s: b.dataset.v === "thermostat" ? T("Cronotermostato") : "Split AC" }), "mdi-thermostat", "var(--ok)"); }); });
+
+    function setRobotModel(m) {
+      S.robotModel = m; store("robot_model", m);
+      $$("#robot-style button").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.v === m.toLowerCase() ? "true" : "false"); });
+      var vacName = $("#vac-name"), vacIco = $("#vac-icon-wrap i") || $(".vac-ico i");
+      var modelNames = { roborock: "Roborock Saros 10R", dreame: "Dreame X40 Pro", roomba: "iRobot Roomba Combo", mower: "Robot Tagliaerba" };
+      var modelIcons = { roborock: "mdi-robot-vacuum", dreame: "mdi-robot-vacuum-variant", roomba: "mdi-robot-vacuum", mower: "mdi-robot-mower" };
+      var k = m.toLowerCase();
+      if (vacName && !LIVE) vacName.textContent = modelNames[k] || m;
+      if (vacIco && modelIcons[k]) setIco(vacIco, modelIcons[k]);
+      var modTag = $("#vac-model"); if (modTag) modTag.textContent = (modelNames[k] || m).split(" ")[0];
+    }
+    $$("#robot-style button").forEach(function (b) { b.addEventListener("click", function () { setRobotModel(b.dataset.v); toast(T("Modello robot impostato: {m}", { m: b.textContent }), "mdi-robot-vacuum", "var(--ok)"); }); });
     $("#reset-all").addEventListener("click", function () { try { Object.keys(localStorage).filter(function (k) { return k.indexOf("aurora-v3-") === 0; }).forEach(function (k) { localStorage.removeItem(k); }); } catch (e) {} location.reload(); });
 
     /* ------------------------------------------------------------------ modalità modifica + editor */
@@ -912,14 +965,40 @@
     /* ------------------------------------------------------------------ Home Assistant: sincronizzazione */
     var tracked = {};
     function trackedIds() {
-      var ids = [ENT.alarm, ENT.weather, ENT.power].concat(ENT.climates);
+      var ids = [ENT.alarm, ENT.weather, ENT.power, ENT.vacuum, ENT.weather_ai].concat(ENT.climates);
       Object.keys(ENT.lights).forEach(function (k) { ids.push(ENT.lights[k]); });
       Object.keys(ENT.motion).forEach(function (k) { (ENT.motion[k] || []).forEach(function (i) { ids.push(i); }); });
       Object.keys(ENT.opens).forEach(function (k) { ids.push(ENT.opens[k]); });
       Object.keys(ENT.temps).forEach(function (k) { arrIds(ENT.temps[k]).forEach(function (i) { ids.push(i); }); });
-      (ENT.cameras || []).forEach(function (c) { if (c.cam) ids.push(c.cam); });
+      (ENT.cameras || []).forEach(function (c) {
+        if (c.cam) ids.push(c.cam);
+        if (c.light) ids.push(c.light);
+        if (c.siren) ids.push(c.siren);
+      });
       Object.keys(ENT.energy).forEach(function (k) { var v = ENT.energy[k]; if (typeof v === 'string' && v.indexOf('.') > 0) ids.push(v); });
-      ENT.energy.appliances.forEach(function (x) { ids.push(x.p); if (x.e) ids.push(x.e); });
+      ENT.energy.appliances.forEach(function (x) {
+        ids.push(x.p);
+        if (x.e) ids.push(x.e);
+        if (x.month) ids.push(x.month);
+        if (x.counter) ids.push(x.counter);
+      });
+      if (ENT.garden && Array.isArray(ENT.garden.zones)) {
+        ENT.garden.zones.forEach(function (z) {
+          if (z.switch) ids.push(z.switch);
+          if (z.moisture) ids.push(z.moisture);
+        });
+      }
+      if (ENT.weather_station) {
+        ["rain_rate", "rain_today", "wind_speed", "wind_direction", "wind_gust", "uv_index", "solar_radiation", "pressure", "lightning_count", "lightning_distance", "lightning_time"].forEach(function (k) {
+          if (ENT.weather_station[k]) ids.push(ENT.weather_station[k]);
+        });
+      }
+      if (ENT.server) {
+        ["cpu", "ram", "temp", "disk", "uptime"].forEach(function (k) { if (ENT.server[k]) ids.push(ENT.server[k]); });
+      }
+      if (ENT.ups) {
+        ["battery", "load", "power", "runtime", "status", "voltage"].forEach(function (k) { if (ENT.ups[k]) ids.push(ENT.ups[k]); });
+      }
       return ids.filter(Boolean);
     }
     function condIcon(c) { return { sunny: "mdi-weather-sunny", "clear-night": "mdi-weather-night", cloudy: "mdi-weather-cloudy", partlycloudy: "mdi-weather-partly-cloudy", rainy: "mdi-weather-rainy", pouring: "mdi-weather-pouring", snowy: "mdi-weather-snowy", "snowy-rainy": "mdi-weather-snowy-rainy", fog: "mdi-weather-fog", lightning: "mdi-weather-lightning", "lightning-rainy": "mdi-weather-lightning-rainy", windy: "mdi-weather-windy", hail: "mdi-weather-hail" }[c] || "mdi-weather-partly-cloudy"; }
@@ -965,6 +1044,10 @@
       var nm = HASS && HASS.user && HASS.user.name ? HASS.user.name.split(" ")[0] : "";
       if (nm && nm !== userName) { userName = nm; tickClock(); if (!clockLive) applyHour(hour); }
       climaFromHass(); renderClima();
+      syncVacuum();
+      syncGarden();
+      syncWeatherForecasts();
+      syncInfra();
       var enBtn = $('.dock [data-view="en"]'); if (enBtn) enBtn.hidden = !(sv(ENT.energy.power) || sv(ENT.power));
       renderEnergy(); if (!$("#view-en").hidden) enLoad(false);
       camsStatus();
@@ -995,6 +1078,14 @@
       if (t.off) t.off.hidden = !off;
       var msg = t.na.querySelector("span");
       if (msg) msg.innerHTML = off ? T("Telecamera offline") + "<br>" + T("HA non la raggiunge in questo momento") : T("Anteprima non disponibile") + "<br>" + T("tocca per aprire la telecamera");
+      if (t.c.light && t.card) {
+        var ls = sv(t.c.light), lb = $('[data-cam-act="light"]', t.card);
+        if (lb) lb.classList.toggle("active", !!ls && ls.state === "on");
+      }
+      if (t.c.siren && t.card) {
+        var ss = sv(t.c.siren), sb = $('[data-cam-act="siren"]', t.card);
+        if (sb) sb.classList.toggle("active", !!ss && ss.state === "on");
+      }
     }
     function camsStatus() { camTiles.forEach(camMeta); }
     function camLive(t, onOff) {
@@ -1025,16 +1116,24 @@
       var list = (ENT.cameras || []).filter(function (c) { return sv(c.img) || sv(c.live) || sv(c.cam); });
       if (!list.length) { box.hidden = true; return; }
       list.forEach(function (c) {
+        var actHtml = "";
+        if (c.light || c.siren) {
+          actHtml = '<div class="cam-actions">' +
+            (c.light ? '<button class="cam-act-btn light-btn" type="button" data-cam-act="light" title="' + T("Luce") + '"><i class="mdi mdi-lightbulb-spot"></i><span>' + T("Luce") + '</span></button>' : '') +
+            (c.siren ? '<button class="cam-act-btn siren-btn" type="button" data-cam-act="siren" title="' + T("Sirena") + '"><i class="mdi mdi-bullhorn"></i><span>' + T("Sirena") + '</span></button>' : '') +
+          '</div>';
+        }
         var card = el("article", "card cam",
           '<div class="cam-head"><h4>' + esc(c.n || niceName(c.cam || c.img || c.live)) + '</h4><span class="cam-off" hidden>Offline</span><span class="cam-meta"></span>' +
           '<button class="cbtn" type="button" data-a="refresh" title="' + T("Aggiorna anteprima") + '"><i class="mdi mdi-refresh"></i></button>' +
           (c.live ? '<button class="cbtn go" type="button" data-a="live"><i class="mdi mdi-play-circle"></i><span>' + T("Diretta") + '</span></button>' : "") +
           '<button class="cbtn" type="button" data-a="open" title="' + T("Apri") + '"><i class="mdi mdi-arrow-expand"></i></button></div>' +
           '<div class="feed-live"><img class="cam-img" alt="" draggable="false"><div class="live-box" hidden></div>' +
-          '<div class="cam-na" hidden><i class="mdi mdi-video-off-outline"></i><span>' + T("Anteprima non disponibile") + "<br>" + T("tocca per aprire la telecamera") + '</span></div></div>');
+          '<div class="cam-na" hidden><i class="mdi mdi-video-off-outline"></i><span>' + T("Anteprima non disponibile") + "<br>" + T("tocca per aprire la telecamera") + '</span></div></div>' +
+          actHtml);
         box.appendChild(card);
         hydrate(card);
-        var t = { c: c, last: 0, im: $(".cam-img", card), na: $(".cam-na", card), liveBox: $(".live-box", card), meta: $(".cam-meta", card), off: $(".cam-off", card), bLive: $('[data-a="live"]', card), liveEl: null, timer: 0 };
+        var t = { c: c, card: card, last: 0, im: $(".cam-img", card), na: $(".cam-na", card), liveBox: $(".live-box", card), meta: $(".cam-meta", card), off: $(".cam-off", card), bLive: $('[data-a="live"]', card), liveEl: null, timer: 0 };
         camTiles.push(t);
         $('[data-a="refresh"]', card).addEventListener("click", function () { camRefresh(t); });
         if (t.bLive) t.bLive.addEventListener("click", function () { camLive(t, !t.liveEl); });
@@ -1042,9 +1141,418 @@
         $('[data-a="open"]', card).addEventListener("click", function () { moreInfo(target); });
         t.na.addEventListener("click", function () { moreInfo(target); });
         t.im.addEventListener("click", function () { moreInfo(target); });
+        if (c.light) {
+          var lb = $('[data-cam-act="light"]', card);
+          if (lb) lb.addEventListener("click", function (e) {
+            e.stopPropagation();
+            if (LIVE) {
+              var dom = c.light.split(".")[0];
+              call(dom === "switch" ? "switch" : "light", "toggle", { entity_id: c.light });
+            }
+          });
+        }
+        if (c.siren) {
+          var sb = $('[data-cam-act="siren"]', card);
+          if (sb) sb.addEventListener("click", function (e) {
+            e.stopPropagation();
+            if (LIVE) {
+              var sSt = sv(c.siren), isOn = sSt && sSt.state === "on";
+              var dom = c.siren.split(".")[0];
+              call(dom === "switch" ? "switch" : "siren", isOn ? "turn_off" : "turn_on", { entity_id: c.siren });
+            }
+          });
+        }
       });
       camsEnter();
     }
+
+    /* ------------------------------------------------------------------ robot aspirapolvere */
+    function buildVacuum() {
+      var wrap = $("#vacuum-wrap");
+      if (!wrap) return;
+      var startBtn = $("#vac-act-play") || $("#vac-start-btn"),
+          pauseBtn = $("#vac-act-pause") || $("#vac-pause-btn"),
+          dockBtn = $("#vac-act-dock") || $("#vac-dock-btn");
+      if (startBtn) startBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        if (LIVE && ENT.vacuum) call("vacuum", "start", { entity_id: ENT.vacuum });
+        else {
+          wrap.classList.add("is-cleaning");
+          var st = $("#vac-status") || $("#vac-state"); if (st) st.textContent = T("In pulizia");
+          toast(T("Robot: avvio pulizia"), "mdi-robot-vacuum", "var(--ok)");
+        }
+      });
+      if (pauseBtn) pauseBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        if (LIVE && ENT.vacuum) call("vacuum", "pause", { entity_id: ENT.vacuum });
+        else {
+          wrap.classList.remove("is-cleaning");
+          var st = $("#vac-status") || $("#vac-state"); if (st) st.textContent = T("In pausa");
+          toast(T("Robot: in pausa"), "mdi-pause", "var(--warn)");
+        }
+      });
+      if (dockBtn) dockBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        if (LIVE && ENT.vacuum) call("vacuum", "return_to_base", { entity_id: ENT.vacuum });
+        else {
+          wrap.classList.remove("is-cleaning");
+          var st = $("#vac-status") || $("#vac-state"); if (st) st.textContent = T("Alla base");
+          toast(T("Robot: rientro alla base"), "mdi-home-map-marker", "var(--acc-text)");
+        }
+      });
+      wrap.addEventListener("click", function () {
+        if (LIVE && ENT.vacuum) moreInfo(ENT.vacuum);
+        else toast("Roborock Saros 10R · " + T("Batteria") + " 95%", "mdi-robot-vacuum", "var(--ok)");
+      });
+      syncVacuum();
+    }
+    function syncVacuum() {
+      var wrap = $("#vacuum-wrap");
+      if (!wrap) return;
+      if (LIVE && (!ENT.vacuum || !sv(ENT.vacuum))) {
+        wrap.hidden = true;
+        return;
+      }
+      wrap.hidden = false;
+      var nameEl = $("#vac-name"),
+          stateEl = $("#vac-status") || $("#vac-state"),
+          batEl = $("#vac-batt-val") || $("#vac-bat"),
+          batIco = $("#vac-batt-ico") || $("#vac-bat-icon");
+      if (!LIVE) {
+        if (nameEl) nameEl.textContent = "Roborock Saros 10R";
+        if (stateEl && !wrap.classList.contains("is-cleaning")) stateEl.textContent = T("In carica");
+        if (batEl) batEl.textContent = "95%";
+        if (batIco) setIco(batIco, "mdi-battery-charging");
+        return;
+      }
+      var s = sv(ENT.vacuum), st = s ? s.state : "docked", a = (s && s.attributes) || {};
+      if (nameEl) nameEl.textContent = a.friendly_name || niceName(ENT.vacuum);
+      var isCleaning = st === "cleaning" || st === "on";
+      wrap.classList.toggle("is-cleaning", isCleaning);
+
+      var stateMap = {
+        docked: T("Alla base"),
+        charging: T("In carica"),
+        cleaning: T("In pulizia"),
+        paused: T("In pausa"),
+        idle: T("In attesa"),
+        returning: T("Rientro alla base"),
+        error: T("Errore")
+      };
+      if (stateEl) stateEl.textContent = stateMap[st] || st;
+      var bat = a.battery_level !== undefined ? a.battery_level : a.battery;
+      if (batEl) {
+        if (bat !== undefined && bat !== null) {
+          batEl.textContent = bat + "%";
+          if (batIco) {
+            var bIco = (st === "charging" || st === "docked") ? "mdi-battery-charging" :
+              bat > 80 ? "mdi-battery" : bat > 60 ? "mdi-battery-70" : bat > 40 ? "mdi-battery-50" : bat > 20 ? "mdi-battery-30" : "mdi-battery-alert";
+            setIco(batIco, bIco);
+          }
+        } else {
+          batEl.textContent = "--";
+        }
+      }
+    }
+
+    /* ------------------------------------------------------------------ giardino e irrigazione */
+    function buildGarden() {
+      var wrap = $("#garden-wrap"), grid = $("#garden-zones") || $("#garden-grid");
+      if (!wrap || !grid) return;
+      var zones = (CFG.garden && CFG.garden.zones) || [];
+      if (!LIVE && !zones.length) {
+        zones = [
+          { name: T("Zona Prato"), switch: "demo_sw_prato", moisture: "demo_m_prato", moistDemo: 48 },
+          { name: T("Zona Siepe"), switch: "demo_sw_siepe", moisture: "demo_m_siepe", moistDemo: 26 }
+        ];
+      }
+      if (!zones.length) {
+        wrap.hidden = true;
+        return;
+      }
+      wrap.hidden = false;
+      grid.innerHTML = zones.map(function (z, idx) {
+        return '<div class="garden-card glass-card" data-zone-idx="' + idx + '" data-active="false">' +
+          '<div class="g-header">' +
+            '<div class="g-ico"><i class="mdi mdi-sprinkler-variant"></i></div>' +
+            '<div class="g-title">' +
+              '<h4>' + esc(z.name || (T("Zona") + " " + (idx + 1))) + '</h4>' +
+              '<span class="g-state g-status-txt">' + T("Spento") + '</span>' +
+            '</div>' +
+            '<button class="g-toggle-btn g-valve-btn" type="button" data-sw="' + esc(z.switch || "sw") + '" title="' + T("Irriga") + '" aria-label="' + T("Irriga") + '" aria-pressed="false"><i class="mdi mdi-sprinkler"></i></button>' +
+          '</div>' +
+          '<div class="g-water-flow"><div class="flow-wave"></div></div>' +
+          '<div class="g-footer">' +
+            '<div class="g-moisture">' +
+              '<span class="gm-lbl"><i class="mdi mdi-water-percent"></i> ' + T("Umidità terreno") + '</span>' +
+              '<div class="gm-bar"><i style="width:' + (z.moistDemo || 40) + '%"></i></div>' +
+              '<span class="gm-val g-moist-txt">' + (z.moistDemo ? z.moistDemo + " %" : "-- %") + '</span>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }).join("");
+
+      grid.addEventListener("click", function (e) {
+        var vb = e.target.closest(".g-valve-btn") || e.target.closest(".g-toggle-btn");
+        if (vb) {
+          e.stopPropagation();
+          var card = vb.closest(".garden-card");
+          var sw = vb.dataset.sw;
+          if (LIVE && sw) {
+            call("switch", "toggle", { entity_id: sw });
+          } else if (card) {
+            var active = card.classList.toggle("is-active");
+            card.dataset.active = active ? "true" : "false";
+            vb.setAttribute("aria-pressed", active ? "true" : "false");
+            var stTxt = $(".g-status-txt", card) || $(".g-state", card);
+            if (stTxt) stTxt.textContent = active ? T("In irrigazione") : T("Spento");
+            toast(active ? T("Irrigazione avviata") : T("Irrigazione spenta"), "mdi-sprinkler", active ? "var(--ok)" : "var(--warn)");
+          }
+          return;
+        }
+        var c = e.target.closest(".garden-card");
+        if (c && LIVE) {
+          var idx = parseInt(c.dataset.zoneIdx, 10);
+          var z = zones[idx];
+          if (z) moreInfo(z.moisture || z.switch);
+        }
+      });
+      syncGarden();
+    }
+    function syncGarden() {
+      var wrap = $("#garden-wrap"), grid = $("#garden-zones") || $("#garden-grid");
+      if (!wrap || !grid) return;
+      var zones = (CFG.garden && CFG.garden.zones) || [];
+      if (!LIVE && !zones.length) { wrap.hidden = false; return; }
+      if (LIVE && !zones.length) { wrap.hidden = true; return; }
+      wrap.hidden = false;
+      $$(".garden-card", grid).forEach(function (card) {
+        var idx = parseInt(card.dataset.zoneIdx, 10);
+        var z = zones[idx];
+        if (!z) return;
+        var swSt = z.switch ? sv(z.switch) : null;
+        var isOn = swSt && swSt.state === "on";
+        card.classList.toggle("is-active", !!isOn);
+        card.dataset.active = isOn ? "true" : "false";
+        var vb = $(".g-valve-btn", card);
+        if (vb) vb.setAttribute("aria-pressed", isOn ? "true" : "false");
+        var stTxt = $(".g-status-txt", card);
+        if (stTxt) stTxt.textContent = isOn ? T("In irrigazione") : T("Spento");
+        if (z.moisture) {
+          var mSt = sv(z.moisture);
+          var moistTxt = $(".g-moist-txt", card);
+          if (moistTxt) {
+            if (mSt && !isUnavail(mSt)) {
+              var u = mSt.attributes.unit_of_measurement || "%";
+              moistTxt.textContent = mSt.state + " " + u;
+              var mv = parseFloat(mSt.state);
+              if (!isNaN(mv) && mv < 30) moistTxt.style.color = "var(--warn)";
+              else moistTxt.style.color = "";
+            } else if (!LIVE && z.moistDemo) {
+              moistTxt.textContent = z.moistDemo + " %";
+              if (z.moistDemo < 30) moistTxt.style.color = "var(--warn)";
+            } else {
+              moistTxt.textContent = "--";
+            }
+          }
+        }
+      });
+    }
+
+    /* ------------------------------------------------------------------ meteo dinamico e stazione meteo */
+    function buildWeatherStation() {
+      var openBtn = $("#ws-open-btn"), modal = $("#ws-modal"), closeBtn = $("#ws-close");
+      if (openBtn && modal) {
+        openBtn.addEventListener("click", function () { modal.classList.add("active"); });
+      }
+      if (closeBtn && modal) {
+        closeBtn.addEventListener("click", function () { modal.classList.remove("active"); });
+      }
+      if (modal) {
+        modal.addEventListener("click", function (e) {
+          if (e.target === modal) modal.classList.remove("active");
+        });
+      }
+      syncWeatherForecasts();
+    }
+    function syncWeatherForecasts() {
+      var ws = ENT.weather_station || {};
+      var hasWs = ws.wind || ws.rain || ws.uv || ws.pressure || ws.lightning_distance || ws.lightning_count;
+      var openBtn = $("#ws-open-btn"), hwBox = $("#hero-weather-box");
+
+      if (!LIVE) {
+        if (hwBox) hwBox.hidden = false;
+        if (openBtn) openBtn.hidden = false;
+        var todayEl = $("#w-fc-today"), tmrowEl = $("#w-fc-tomorrow");
+        if (todayEl) todayEl.innerHTML = '<i class="mdi mdi-weather-partly-cloudy"></i> <span>' + T("Oggi") + ': <b>14° / 8°</b></span>';
+        if (tmrowEl) tmrowEl.innerHTML = '<i class="mdi mdi-weather-cloudy"></i> <span>' + T("Domani") + ': <b>17° / 7°</b></span>';
+        var aiBox = $("#w-ai-summary");
+        if (aiBox) {
+          aiBox.hidden = false;
+          aiBox.innerHTML = '<i class="mdi mdi-creation"></i> <span>' + T("Pomeriggio con nubi sparse e schiarite. Vento moderato e clima mite.") + '</span>';
+        }
+        var windEl = $("#ws-wind"), rainEl = $("#ws-rain"), uvEl = $("#ws-uv"), pressEl = $("#ws-press");
+        if (windEl) windEl.textContent = "18.5 km/h";
+        if (rainEl) rainEl.textContent = "4.2 mm";
+        if (uvEl) uvEl.textContent = "3.1 UV";
+        if (pressEl) pressEl.textContent = "1014 hPa";
+        var lightBox = $("#ws-lightning-box"), lightDist = $("#ws-light-dist"), lightCount = $("#ws-light-count");
+        if (lightBox) {
+          lightBox.hidden = false;
+          if (lightDist) lightDist.textContent = "12 km";
+          if (lightCount) lightCount.textContent = "4";
+          lightBox.style.borderColor = "var(--warn)";
+        }
+        return;
+      }
+
+      if (openBtn) openBtn.hidden = !hasWs;
+      if (hwBox) hwBox.hidden = !(hasWs || ENT.weather_ai || (wSt && wSt.attributes && wSt.attributes.forecast));
+
+      /* previsioni oggi e domani da Home Assistant weather */
+      var wSt = sv(ENT.weather);
+      if (wSt && wSt.attributes) {
+        var fc = wSt.attributes.forecast;
+        if (fc && fc.length > 0) {
+          var d0 = fc[0];
+          var d1 = fc[1] || fc[0];
+          var todayEl = $("#w-fc-today"), tmrowEl = $("#w-fc-tomorrow");
+          if (todayEl && d0) {
+            var t0 = (d0.temperature !== undefined ? d0.temperature : "--") + "°";
+            if (d0.templow !== undefined) t0 += " / " + d0.templow + "°";
+            todayEl.innerHTML = '<i class="mdi mdi-weather-partly-cloudy"></i> <span>' + T("Oggi") + ': <b>' + t0 + '</b></span>';
+          }
+          if (tmrowEl && d1) {
+            var t1 = (d1.temperature !== undefined ? d1.temperature : "--") + "°";
+            if (d1.templow !== undefined) t1 += " / " + d1.templow + "°";
+            tmrowEl.innerHTML = '<i class="mdi mdi-weather-cloudy"></i> <span>' + T("Domani") + ': <b>' + t1 + '</b></span>';
+          }
+        }
+      }
+
+      /* frase o riepilogo meteo AI */
+      var aiBox = $("#w-ai-summary");
+      if (aiBox) {
+        if (ENT.weather_ai) {
+          var aiSt = sv(ENT.weather_ai);
+          if (aiSt && aiSt.state && !isUnavail(aiSt)) {
+            aiBox.hidden = false;
+            aiBox.innerHTML = '<i class="mdi mdi-creation"></i> <span>' + esc(aiSt.state) + '</span>';
+          } else {
+            aiBox.hidden = true;
+          }
+        } else {
+          aiBox.hidden = true;
+        }
+      }
+
+      /* stazione meteo modale (es. Ecowitt) */
+      if (hasWs) {
+        var windSt = ws.wind ? sv(ws.wind) : null;
+        var rainSt = ws.rain ? sv(ws.rain) : null;
+        var uvSt = ws.uv ? sv(ws.uv) : null;
+        var pressSt = ws.pressure ? sv(ws.pressure) : null;
+        var lDistSt = ws.lightning_distance ? sv(ws.lightning_distance) : null;
+        var lCountSt = ws.lightning_count ? sv(ws.lightning_count) : null;
+
+        var windEl = $("#ws-wind"), rainEl = $("#ws-rain"), uvEl = $("#ws-uv"), pressEl = $("#ws-press");
+        if (windEl && windSt) windEl.textContent = windSt.state + " " + (windSt.attributes.unit_of_measurement || "km/h");
+        if (rainEl && rainSt) rainEl.textContent = rainSt.state + " " + (rainSt.attributes.unit_of_measurement || "mm");
+        if (uvEl && uvSt) uvEl.textContent = uvSt.state + " UV";
+        if (pressEl && pressSt) pressEl.textContent = pressSt.state + " " + (pressSt.attributes.unit_of_measurement || "hPa");
+
+        var lightBox = $("#ws-lightning-box"), lightDist = $("#ws-light-dist"), lightCount = $("#ws-light-count");
+        if (lightBox) {
+          var hasLightning = lDistSt || lCountSt;
+          lightBox.hidden = !hasLightning;
+          if (hasLightning) {
+            var distVal = lDistSt ? parseFloat(lDistSt.state) : NaN;
+            if (lightDist) lightDist.textContent = !isNaN(distVal) ? (distVal + " " + (lDistSt.attributes.unit_of_measurement || "km")) : "--";
+            if (lightCount) lightCount.textContent = lCountSt ? lCountSt.state : "--";
+            if (!isNaN(distVal) && distVal < 25) {
+              lightBox.style.borderColor = "var(--warn)";
+            } else {
+              lightBox.style.borderColor = "";
+            }
+          }
+        }
+      }
+    }
+
+    /* ------------------------------------------------------------------ infrastruttura: Server e UPS (NUT) */
+    function syncInfra() {
+      var wrap = $("#infra-wrap");
+      if (!wrap) return;
+      if (!LIVE) {
+        wrap.hidden = false;
+        var cpuEl = $("#srv-cpu"), ramEl = $("#srv-ram"), tempEl = $("#srv-temp"), diskEl = $("#srv-disk");
+        if (cpuEl) { cpuEl.textContent = "18%"; var cb = $("#srv-cpu-bar"); if (cb) cb.style.width = "18%"; }
+        if (ramEl) { ramEl.textContent = "42%"; var rb = $("#srv-ram-bar"); if (rb) rb.style.width = "42%"; }
+        if (tempEl) { tempEl.textContent = "38.5°C"; var tb = $("#srv-temp-bar"); if (tb) tb.style.width = "38%"; }
+        if (diskEl) diskEl.textContent = "35%";
+        var batEl = $("#ups-batt-val") || $("#ups-bat"), fillEl = $("#ups-bar") || $("#ups-bat-fill");
+        if (batEl) batEl.textContent = "100%";
+        if (fillEl) fillEl.style.width = "100%";
+        var loadEl = $("#ups-load"), runEl = $("#ups-runtime") || $("#ups-time"), stEl = $("#ups-status-txt") || $("#ups-status"), voltEl = $("#ups-volt");
+        if (loadEl) loadEl.textContent = "24%";
+        if (runEl) runEl.textContent = "45 min";
+        if (stEl) { stEl.textContent = T("Rete Online"); stEl.style.color = ""; }
+        if (voltEl) voltEl.textContent = "230 V";
+        return;
+      }
+      var srv = ENT.server || {}, ups = ENT.ups || {};
+      var hasSrv = srv.cpu || srv.ram || srv.temp || srv.disk;
+      var hasUps = ups.battery || ups.load || ups.power || ups.runtime || ups.status || ups.voltage;
+      if (!hasSrv && !hasUps) {
+        wrap.hidden = true;
+        return;
+      }
+      wrap.hidden = false;
+      var srvCard = $("#infra-server") || $("#srv-card");
+      if (srvCard) {
+        srvCard.hidden = !hasSrv;
+        if (hasSrv) {
+          var cpuSt = srv.cpu ? sv(srv.cpu) : null;
+          var ramSt = srv.ram ? sv(srv.ram) : null;
+          var tempSt = srv.temp ? sv(srv.temp) : null;
+          var diskSt = srv.disk ? sv(srv.disk) : null;
+          var cpuEl = $("#srv-cpu"), ramEl = $("#srv-ram"), tempEl = $("#srv-temp"), diskEl = $("#srv-disk");
+          if (cpuEl && cpuSt) { cpuEl.textContent = cpuSt.state + "%"; var cb2 = $("#srv-cpu-bar"); if (cb2) cb2.style.width = cpuSt.state + "%"; }
+          if (ramEl && ramSt) { ramEl.textContent = ramSt.state + "%"; var rb2 = $("#srv-ram-bar"); if (rb2) rb2.style.width = ramSt.state + "%"; }
+          if (tempEl && tempSt) { tempEl.textContent = tempSt.state + "°C"; var tb2 = $("#srv-temp-bar"); if (tb2) tb2.style.width = Math.min(100, parseFloat(tempSt.state) * 1.2) + "%"; }
+          if (diskEl && diskSt) diskEl.textContent = diskSt.state + "%";
+        }
+      }
+      var upsCard = $("#infra-ups") || $("#ups-card");
+      if (upsCard) {
+        upsCard.hidden = !hasUps;
+        if (hasUps) {
+          var batSt = ups.battery ? sv(ups.battery) : null;
+          var loadSt = ups.load ? sv(ups.load) : null;
+          var runSt = ups.runtime ? sv(ups.runtime) : null;
+          var statSt = ups.status ? sv(ups.status) : null;
+          var voltSt = ups.voltage ? sv(ups.voltage) : null;
+
+          var batVal = batSt ? parseFloat(batSt.state) : NaN;
+          var batEl2 = $("#ups-batt-val") || $("#ups-bat"), fillEl2 = $("#ups-bar") || $("#ups-bat-fill");
+          if (batEl2) batEl2.textContent = !isNaN(batVal) ? (batVal + "%") : "--";
+          if (fillEl2 && !isNaN(batVal)) fillEl2.style.width = Math.min(100, Math.max(0, batVal)) + "%";
+
+          var loadEl2 = $("#ups-load"), runEl2 = $("#ups-runtime") || $("#ups-time"), stEl2 = $("#ups-status-txt") || $("#ups-status"), voltEl2 = $("#ups-volt");
+          if (loadEl2 && loadSt) loadEl2.textContent = loadSt.state + (loadSt.attributes.unit_of_measurement || "%");
+          if (runEl2 && runSt) runEl2.textContent = runSt.state + " " + (runSt.attributes.unit_of_measurement || "min");
+          if (stEl2 && statSt) {
+            var raw = (statSt.state || "").toUpperCase();
+            var stLabel = raw.indexOf("OL") > -1 ? T("Rete Online") : raw.indexOf("OB") > -1 ? T("Su Batteria!") : statSt.state;
+            stEl2.textContent = stLabel;
+            if (raw.indexOf("OB") > -1) stEl2.style.color = "var(--warn)";
+            else stEl2.style.color = "";
+          }
+          if (voltEl2 && voltSt) voltEl2.textContent = voltSt.state + " V";
+        }
+      }
+    }
+
     function setHass(h) {
       var firstTime = !HASS;
       HASS = h;
@@ -1170,7 +1678,28 @@
       else if (known && m === "heat" && clima.action !== "heating" && clima.tgt <= clima.cur) hint = T("Acceso ma in pausa: in casa ci sono {c}° e hai impostato {t}°. Alza la temperatura per far partire il riscaldamento.", { c: fmt(clima.cur), t: fmt(clima.tgt) });
       var hn = $("#cl-hint"); hn.textContent = hint; hn.hidden = !hint;
       $("#cl-tgt").textContent = Number(clima.tgt).toLocaleString(LOC, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-      var art = $("#cl-art"); art.dataset.img = climaArt(); refreshImg(art);
+      var isThermo = (S.climaStyle || CFG.climate_style) === "thermostat";
+      box.dataset.style = isThermo ? "thermostat" : "split";
+      var dial = $("#thermo-dial"), art = $("#cl-art"), artImg = $("#cl-art > img");
+      if (isThermo) {
+        if (artImg) artImg.hidden = true;
+        if (dial) {
+          dial.hidden = false;
+          var valEl = $("#thermo-temp") || $("#th-cur-val");
+          if (valEl) valEl.textContent = (known ? fmt(clima.cur) : fmt(clima.tgt || 21)) + "°";
+          var flEl = $("#thermo-flame");
+          if (flEl) {
+            var actIco = (clima.action === "heating" || m === "heat") ? "mdi-fire" :
+                         (clima.action === "cooling" || m === "cool") ? "mdi-snowflake" : "mdi-thermostat";
+            flEl.className = "mdi " + actIco + " thermo-flame";
+            flEl.style.color = (clima.action === "cooling" || m === "cool") ? "var(--cyan)" : "#FB923C";
+          }
+        }
+      } else {
+        if (dial) dial.hidden = true;
+        if (artImg) artImg.hidden = false;
+        if (art) { art.dataset.img = climaArt(); refreshImg(art); }
+      }
       var mw = $("#cl-modes"), msig = clima.modes.join("|") + "#" + m;
       if (mw.dataset.sig !== msig) {
         mw.dataset.sig = msig; mw.innerHTML = "";
@@ -1344,13 +1873,35 @@
       var E = ENT.energy, m, sc = {};
       if (!LIVE) {
         m = { power: demoPower(), volt: 229.8, base: 98, avg3: 204, limit: 3400, today: 3.4, yest: 10.3, month: 71.4, lmonth: 211.3, year: 2043.9, na: false,
-          apps: [{ n: T("Lavatrice"), w: 460, e: .42, ic: "mdi-washing-machine", c: "#38BDF8" }, { n: T("Asciugatrice"), w: 0, e: .01, ic: "mdi-tumble-dryer", c: "#F472B6" }, { n: T("Lavastoviglie"), w: 1080, e: .55, ic: "mdi-dishwasher", c: "#22D3EE" }, { n: T("Forno"), w: 0, e: 0, ic: "mdi-stove", c: "#FB923C" }, { n: T("Multipresa"), w: 12, e: .14, ic: "mdi-power-socket-eu", c: "#A78BFA" }, { n: T("Frigorifero"), w: 74, e: .62, ic: "mdi-fridge", c: "#34D399" }] };
+          apps: [
+            { n: T("Lavatrice"), w: 460, e: .42, month: 28.4, counter: 22, counterLimit: 30, ic: "mdi-washing-machine", c: "#38BDF8" },
+            { n: T("Asciugatrice"), w: 0, e: .01, month: 12.1, counter: null, ic: "mdi-tumble-dryer", c: "#F472B6" },
+            { n: T("Lavastoviglie"), w: 1080, e: .55, month: 34.6, counter: 30, counterLimit: 30, ic: "mdi-dishwasher", c: "#22D3EE" },
+            { n: T("Forno"), w: 0, e: 0, month: 15.2, counter: null, ic: "mdi-stove", c: "#FB923C" },
+            { n: T("Multipresa"), w: 12, e: .14, month: 8.5, counter: null, ic: "mdi-power-socket-eu", c: "#A78BFA" },
+            { n: T("Frigorifero"), w: 74, e: .62, month: 21.0, counter: null, ic: "mdi-fridge", c: "#34D399" }
+          ] };
       } else {
         var lim = enNum(E.limit) || E.limitDefault;
         m = { power: enNum(E.power) !== null ? enNum(E.power) : enNum(ENT.power), volt: enNum(E.voltage), base: enNum(E.base), avg3: enNum(E.avg3), limit: lim,
           today: kpi(E.today, "today"), yest: kpi(E.yesterday, "yest"), month: kpi(E.month, "month"), lmonth: kpi(E.lastMonth, "lmonth"), year: kpi(E.year, "year"),
           na: isUnavail(sv(E.power)),
-          apps: E.appliances.map(function (x, i) { var s = sv(x.p), n = x.n || appName(x.p); return { n: n, w: enNum(x.p), e: x.e ? enNum(x.e) : null, ic: mdi(x.ic) || appIcon(n + " " + x.p), c: x.c || ROOM_COLORS[i % ROOM_COLORS.length], na: !s || isUnavail(s) }; }) };
+          apps: E.appliances.map(function (x, i) {
+            var s = sv(x.p), n = x.n || appName(x.p);
+            var cnt = x.counter ? enNum(x.counter) : null;
+            return {
+              n: n,
+              w: enNum(x.p),
+              e: x.e ? enNum(x.e) : null,
+              month: x.month ? enNum(x.month) : null,
+              counter: cnt,
+              counterLimit: x.counter_limit || x.counterLimit || 30,
+              counterEntity: x.counter || null,
+              ic: mdi(x.ic) || appIcon(n + " " + x.p),
+              c: x.c || ROOM_COLORS[i % ROOM_COLORS.length],
+              na: !s || isUnavail(s)
+            };
+          }) };
         sc = { today: enNum(E.costToday), yest: enNum(E.costYesterday), month: enNum(E.costMonth), lmonth: enNum(E.costLastMonth), year: enNum(E.costYear) };
       }
       var pi = priceInfo(), implied = null;
@@ -1422,9 +1973,42 @@
       lg.innerHTML = segs.map(function (g2) { return '<span style="--c:' + g2[1] + '">' + g2[0] + " <b>" + Math.round(g2[2]) + " W</b></span>"; }).join("") || '<span style="--c:#34D399">' + T("Nessun elettrodomestico acceso") + '</span>';
       var ap = $("#en-apps"), ah = apps.map(function (x, i) {
         var run = x.w !== null && x.w >= 5;
-        return '<button class="app' + (run ? " run" : "") + (x.na ? " na" : "") + '" type="button" data-app="' + i + '" style="--c:' + x.c + '"><span class="a-ico"><i class="mdi ' + x.ic + '"></i></span><span class="a-name">' + esc(x.n) + '</span><span class="a-w">' + (x.na || x.w === null ? "—" : (x.w >= 1000 ? fmtW(x.w).n + " kW" : Math.round(x.w) + " W")) + '</span><span class="a-e">' + (x.e !== null ? T("{n} kWh oggi", { n: fmtKwh(x.e) }) : (x.na ? T("Non disponibile") : "&nbsp;")) + "</span></button>";
+        var monthHtml = x.month !== null && x.month !== undefined ? '<span class="a-m">' + T("{n} kWh questo mese", { n: fmtKwh(x.month) }) + '</span>' : '';
+        var maintHtml = "";
+        if (x.counter !== null && x.counter !== undefined && x.counterLimit) {
+          var isWarn = x.counter >= x.counterLimit;
+          maintHtml = '<span class="a-maint-badge' + (isWarn ? " warn" : "") + '" data-counter-app="' + i + '" title="' + T("Tocca per azzerare il contatore") + '"><i class="mdi ' + (isWarn ? "mdi-alert" : "mdi-spray-bottle") + '"></i>' + (isWarn ? T("Sanificazione consigliata") : T("Sanificazione: {c}/{l}", { c: x.counter, l: x.counterLimit })) + '</span>';
+        }
+        return '<button class="app' + (run ? " run" : "") + (x.na ? " na" : "") + '" type="button" data-app="' + i + '" style="--c:' + x.c + '">' +
+          '<span class="a-ico"><i class="mdi ' + x.ic + '"></i></span>' +
+          '<span class="a-name">' + esc(x.n) + '</span>' +
+          '<span class="a-w">' + (x.na || x.w === null ? "—" : (x.w >= 1000 ? fmtW(x.w).n + " kW" : Math.round(x.w) + " W")) + '</span>' +
+          '<span class="a-e">' + (x.e !== null ? T("{n} kWh oggi", { n: fmtKwh(x.e) }) : (x.na ? T("Non disponibile") : "&nbsp;")) + '</span>' +
+          monthHtml + maintHtml +
+        "</button>";
       }).join("");
-      if (ap.dataset.sig !== ah) { ap.dataset.sig = ah; ap.innerHTML = ah; hydrate(ap); $$(".app", ap).forEach(function (b) { b.addEventListener("click", function () { if (LIVE) moreInfo(ENT.energy.appliances[+b.dataset.app].p); }); }); }
+      if (ap.dataset.sig !== ah) {
+        ap.dataset.sig = ah; ap.innerHTML = ah; hydrate(ap);
+        $$(".app", ap).forEach(function (b) {
+          b.addEventListener("click", function (e) {
+            var badge = e.target.closest(".a-maint-badge");
+            if (badge) {
+              e.stopPropagation();
+              var idx = +b.dataset.app, appObj = apps[idx];
+              if (appObj && appObj.counterEntity && LIVE) {
+                call("counter", "reset", { entity_id: appObj.counterEntity });
+                toast(T("Sanificazione") + ": " + T("ripristinato"), "mdi-check-circle", "var(--ok)");
+              } else if (!LIVE && appObj && appObj.counter !== null) {
+                appObj.counter = 0; renderEnergy();
+                toast(T("Sanificazione") + ": " + T("ripristinato"), "mdi-check-circle", "var(--ok)");
+              }
+              return;
+            }
+            if (LIVE && ENT.energy.appliances[+b.dataset.app]) moreInfo(ENT.energy.appliances[+b.dataset.app].p);
+          });
+        });
+      }
+      syncInfra();
     }
     /* ---- tariffa: finestra per impostare il costo del kWh ---- */
     function fmtP(v) { return Number(v).toLocaleString(LOC, { minimumFractionDigits: 3, maximumFractionDigits: 3 }); }
@@ -1727,9 +2311,11 @@
     if (EMB) HOST.setAttribute("data-embedded", "1");
     hydrate(ROOT);
 
-    buildScenes(); buildRooms(); buildSecurity(); buildDrawer(); buildClima(); buildEnergy(); refreshAll();
+    buildScenes(); buildRooms(); buildSecurity(); buildDrawer(); buildClima(); buildEnergy(); buildVacuum(); buildGarden(); buildWeatherStation(); refreshAll();
     var th = store("theme"); setTheme(th === "light" ? "light" : "dark");
-    setBtn(S.btn === "compact" ? "compact" : "img");
+    setBtn(S.btn === "icon" ? "icon" : S.btn === "compact" ? "compact" : "img");
+    setClimaStyle(store("clima_style") || CFG.climate_style || "split");
+    setRobotModel(store("robot_model") || "roborock");
     tickDate(); tickClock(); applyWorld();
     render(); setAlarm("disarmed", true); render();
     start();

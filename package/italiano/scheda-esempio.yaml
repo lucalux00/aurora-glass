@@ -10,6 +10,8 @@ type: custom:aurora-glass-card      # (la vecchia custom:aurora-v3-card funziona
 language: it                        # it, en, auto (segue la lingua di ogni utente)
 assets: /local/aurora-v3/btn/       # cartella delle immagini dei pulsanti
 currency: "€"                       # simbolo per i costi dell'energia
+button_style: img                   # stile pulsanti luci: "img" (artwork), "compact" o "icon" (solo icone MDI)
+climate_style: split                # "split" (condizionatore) o "thermostat" (cronotermostato digitale)
 
 # --- STANZE: quante vuoi, con il nome che vuoi. L'ordine e' quello della plancia.
 rooms:
@@ -24,6 +26,7 @@ rooms:
       - entity: light.lampada_divano
         name: Lampada divano        # nome sul pulsante (se manca usa quello dell'entita')
         image: salotto              # disegno solo per questo pulsante
+        icon_only: false            # true per forzare l'icona MDI invece della foto su questo pulsante
     motion:                         # sensori di movimento (vale il primo che risponde)
       - binary_sensor.soggiorno_movimento
     openings:                       # porte, finestre, serrature
@@ -39,8 +42,7 @@ rooms:
     lights: [light.camera]
     temperature: sensor.camera_temperatura
 
-# --- SCENE RAPIDE: cosa accendono (tutto il resto si spegne). Una scena senza
-#     luci non compare. Al posto delle luci puoi usare una scena o uno script.
+# --- SCENE RAPIDE: puoi aggiungere qualsiasi scena personalizzata oltre a quelle base!
 scenes:
   - id: morning                     # Buongiorno
     lights: [light.cucina, light.soggiorno]
@@ -52,6 +54,22 @@ scenes:
     alarm: armed_night              # null = non toccare l'allarme
   - id: away                        # Esco di casa
     alarm: armed_away
+  # Esempio di scena personalizzata aggiuntiva con scorrimento orizzontale fluido:
+  - id: relax
+    name: Relax Serale
+    sub: Atmosfera soffusa
+    icon: mdi-weather-sunset
+    lights: [light.soggiorno]
+
+# --- GIARDINO & IRRIGAZIONE: zone, switch elettrovalvole, sensori umidita' e animazione onde d'acqua
+garden:
+  zones:
+    - name: Prato
+      switch: switch.irrigazione_prato
+      moisture: sensor.umidita_terreno_prato
+    - name: Siepe
+      switch: switch.irrigazione_siepe
+      moisture: sensor.umidita_terreno_siepe
 
 # --- FINESTRE ILLUMINATE nei mondi Casetta, Citta', Montagna e Natale: quale luce le accende.
 #     Se manca, la prima luce di ogni stanza.
@@ -62,32 +80,84 @@ windows:
 
 entities:
   alarm: alarm_control_panel.allarme      # centrale allarme
-  weather: weather.forecast_home          # temperatura esterna
+  weather: weather.forecast_home          # meteo dinamico e previsioni oggi/domani (es. 3B Meteo)
+  weather_ai: sensor.riepilogo_meteo_ai   # facoltativo: frase descrittiva o sommario AI
   climate: climate.salotto                # climatizzatore o termostato
 
-  # --- TELECAMERE (vista Sicurezza)
+  # --- STAZIONE METEO (es. Ecowitt, Netatmo): rilevamento vento, pioggia, UV, fulmini
+  weather_station:
+    wind: sensor.ecowitt_wind_speed
+    rain: sensor.ecowitt_rain_rate
+    uv: sensor.ecowitt_uv_index
+    pressure: sensor.ecowitt_relative_pressure
+    lightning_distance: sensor.ecowitt_lightning_distance
+    lightning_count: sensor.ecowitt_lightning_strike_count
+
+  # --- ROBOT ASPIRAPOLVERE (es. Roborock Saros 10R / Dreame / Roomba)
+  vacuum: vacuum.roborock_saros_10r
+
+  # --- TELECAMERE (vista Sicurezza) con comandi rapidi per faretto e sirena
   cameras:
-    - { n: Ingresso, img: camera.ingresso, live: camera.ingresso, poll: 20 }      # anteprima + diretta
-    - { n: Giardino, kind: motion, img: image.giardino_ultimo_movimento, cam: camera.giardino, poll: 60 }  # solo ultima immagine
+    - n: Ingresso
+      img: camera.ingresso
+      live: camera.ingresso
+      light: light.faretto_telecamera_ingresso    # interruttore o luce faretto
+      siren: switch.sirena_telecamera_ingresso    # sirena telecamera
+      poll: 20
+    - n: Giardino
+      kind: motion
+      img: image.giardino_ultimo_movimento
+      cam: camera.giardino
+      poll: 60
+
+  # --- SERVER HOME ASSISTANT & UPS (NUT)
+  server:
+    cpu: sensor.processor_use
+    ram: sensor.memory_use_percent
+    temp: sensor.cpu_temperature
+    disk: sensor.disk_use_percent
+  ups:
+    battery: sensor.ups_battery_charge
+    load: sensor.ups_load
+    runtime: sensor.ups_battery_runtime
+    status: sensor.ups_status
+    voltage: sensor.ups_input_voltage
 
   # --- ENERGIA (vista Energia)
   energy:
-    power: sensor.potenza_casa            # W istantanei           (obbligatorio per la vista)
-    energyTotal: sensor.energia_totale    # kWh totali che crescono sempre: storico 14 giorni e,
-                                          # se mancano i sensori qui sotto, kWh di oggi/ieri/mese/anno
-    today: sensor.aurora_energia_oggi     # facoltativi: contatori veri (vedi aurora-energia.yaml)
+    power: sensor.potenza_casa            # W istantanei (obbligatorio per la vista)
+    energyTotal: sensor.energia_totale    # kWh totali che crescono sempre
+    today: sensor.aurora_energia_oggi     # facoltativi: contatori veri
     yesterday: sensor.aurora_energia_ieri
     month: sensor.aurora_energia_mese
     lastMonth: sensor.aurora_energia_mese_scorso
     year: sensor.aurora_energia_anno
-    voltage: sensor.tensione_casa         # V                      (facoltativo)
-    price: input_number.prezzo_energia    # costo del kWh: si imposta dalla scheda (viene creato da solo)
+    voltage: sensor.tensione_casa         # V (facoltativo)
+    price: input_number.prezzo_energia    # costo del kWh
     priceDefault: 0.30                    # prezzo di esempio finche' non imposti il tuo
     limitDefault: 3000                    # W: fondo scala del quadrante
-    liveRefresh: 3                        # secondi: chiede il valore fresco (0 = no). Utile con Shelly
-    appliances:                           # elettrodomestici: potenza W + kWh di oggi
-      - { n: Lavatrice, p: sensor.lavatrice_potenza, e: sensor.lavatrice_energia_oggi, ic: mdi-washing-machine, c: "#38BDF8" }
-      - { n: Frigorifero, p: sensor.frigo_potenza, ic: mdi-fridge, c: "#34D399" }
+    liveRefresh: 3                        # secondi
+    # Elettrodomestici con potenza istantanea W, kWh oggi, kWh mese e counter sanificazione:
+    appliances:
+      - n: Lavatrice
+        p: sensor.lavatrice_potenza
+        e: sensor.lavatrice_energia_oggi
+        month: sensor.lavatrice_energia_mese
+        counter: counter.cicli_lavatrice          # contatore cicli
+        counter_limit: 30                         # avvisa quando sanificare
+        ic: mdi-washing-machine
+        c: "#38BDF8"
+      - n: Lavastoviglie
+        p: sensor.lavastoviglie_potenza
+        e: sensor.lavastoviglie_energia_oggi
+        counter: counter.cicli_lavastoviglie
+        counter_limit: 25
+        ic: mdi-dishwasher
+        c: "#F59E0B"
+      - n: Frigorifero
+        p: sensor.frigo_potenza
+        ic: mdi-fridge
+        c: "#34D399"
 
 # Hai gia' la configurazione della versione precedente (entities: lights: salotto: ...)?
 # Continua a funzionare: senza "rooms:" la scheda usa le 11 stanze di esempio.

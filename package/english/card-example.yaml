@@ -10,16 +10,15 @@ type: custom:aurora-glass-card      # (the old custom:aurora-v3-card still works
 language: en                        # en, it, auto (follows each user's language)
 assets: /local/aurora-v3/btn/       # folder with the button pictures
 currency: "$"                       # symbol for energy costs
+button_style: img                   # button style: "img" (artwork), "compact" or "icon" (native MDI icons only)
+climate_style: split                # "split" (AC unit) or "thermostat" (wall digital thermostat)
 
 # --- ROOMS: as many as you like, named as you like. The order is the dashboard order.
 rooms:
   - name: Living room               # room name
-    image: salotto                  # button picture: salotto (living room), cucina (kitchen),
-                                    # camera (bedroom), cameretta (kids' room), bagno_doccia
-                                    # (shower room), bagno_piccolo (small bathroom), ingresso
-                                    # (entrance), corridoio (hallway), balcone (balcony/outdoor),
-                                    # lavanderia (laundry), sgabuzzino (storage/office/garage).
-                                    # Left out: picked from the room name.
+    image: salotto                  # button picture: salotto, cucina, camera, cameretta,
+                                    # bagno_doccia, bagno_piccolo, ingresso, corridoio, balcone,
+                                    # lavanderia, sgabuzzino (picked from name if omitted)
     icon: mdi:sofa                  # optional
     color: "#8B5CF6"                # optional
     lights:                         # lights (or switches): one button each
@@ -27,6 +26,7 @@ rooms:
       - entity: light.sofa_lamp
         name: Sofa lamp             # button label (otherwise the entity name)
         image: salotto              # picture for this button only
+        icon_only: false            # true to force MDI icon instead of picture on this button
     motion:                         # motion sensors (the first one that responds wins)
       - binary_sensor.living_room_motion
     openings:                       # doors, windows, locks
@@ -42,8 +42,7 @@ rooms:
     lights: [light.bedroom]
     temperature: sensor.bedroom_temperature
 
-# --- QUICK SCENES: what they turn on (everything else turns off). A scene with no
-#     lights is hidden. Instead of lights you can use a scene or a script.
+# --- QUICK SCENES: add as many custom scenes as you like!
 scenes:
   - id: morning                     # Good morning
     lights: [light.kitchen, light.living_room]
@@ -55,6 +54,22 @@ scenes:
     alarm: armed_night              # null = leave the alarm alone
   - id: away                        # Leaving home
     alarm: armed_away
+  # Custom scene example with smooth horizontal scrolling:
+  - id: evening_relax
+    name: Relax
+    sub: Ambient mood
+    icon: mdi-weather-sunset
+    lights: [light.living_room]
+
+# --- GARDEN & IRRIGATION: multi-zone watering with soil moisture and water flow animation
+garden:
+  zones:
+    - name: Lawn
+      switch: switch.lawn_irrigation
+      moisture: sensor.lawn_soil_moisture
+    - name: Hedge
+      switch: switch.hedge_irrigation
+      moisture: sensor.hedge_soil_moisture
 
 # --- LIT WINDOWS in the Little house, City, Mountains and Christmas worlds: which light
 #     turns each one on. Left out: the first light of each room.
@@ -65,29 +80,81 @@ windows:
 
 entities:
   alarm: alarm_control_panel.home         # alarm panel
-  weather: weather.forecast_home          # outside temperature
+  weather: weather.forecast_home          # dynamic weather with today/tomorrow forecasts
+  weather_ai: sensor.weather_ai_summary   # optional: AI summary text
   climate: climate.living_room            # air conditioner or thermostat
 
-  # --- CAMERAS (Security view)
+  # --- WEATHER STATION (e.g. Ecowitt, Netatmo): wind, rain, UV, lightning detection
+  weather_station:
+    wind: sensor.ecowitt_wind_speed
+    rain: sensor.ecowitt_rain_rate
+    uv: sensor.ecowitt_uv_index
+    pressure: sensor.ecowitt_pressure
+    lightning_distance: sensor.ecowitt_lightning_distance
+    lightning_count: sensor.ecowitt_lightning_strike_count
+
+  # --- ROBOT VACUUM (e.g. Roborock Saros 10R / Dreame / Roomba)
+  vacuum: vacuum.roborock_saros_10r
+
+  # --- CAMERAS (Security view) with spotlight and siren switches
   cameras:
-    - { n: Front door, img: camera.front_door, live: camera.front_door, poll: 20 }   # preview + live
-    - { n: Garden, kind: motion, img: image.garden_last_motion, cam: camera.garden, poll: 60 }   # last picture only
+    - n: Front door
+      img: camera.front_door
+      live: camera.front_door
+      light: light.front_camera_spotlight   # camera light/spotlight
+      siren: switch.front_camera_siren      # camera siren
+      poll: 20
+    - n: Garden
+      kind: motion
+      img: image.garden_last_motion
+      cam: camera.garden
+      poll: 60
+
+  # --- SERVER & UPS (NUT)
+  server:
+    cpu: sensor.processor_use
+    ram: sensor.memory_use_percent
+    temp: sensor.cpu_temperature
+    disk: sensor.disk_use_percent
+  ups:
+    battery: sensor.ups_battery_charge
+    load: sensor.ups_load
+    runtime: sensor.ups_battery_runtime
+    status: sensor.ups_status
+    voltage: sensor.ups_input_voltage
 
   # --- ENERGY (Energy view)
   energy:
-    power: sensor.house_power             # live W                 (needed for the view)
-    energyTotal: sensor.house_energy      # total kWh, always increasing: 14-day history and,
-                                          # if the sensors below are missing, today/yesterday/month/year kWh
-    today: sensor.aurora_energy_today     # optional: real meters (see aurora-energy.yaml)
+    power: sensor.house_power             # live W (needed for the view)
+    energyTotal: sensor.house_energy      # total kWh, always increasing
+    today: sensor.aurora_energy_today     # optional: real meters
     yesterday: sensor.aurora_energy_yesterday
     month: sensor.aurora_energy_month
     lastMonth: sensor.aurora_energy_last_month
     year: sensor.aurora_energy_year
-    voltage: sensor.house_voltage         # V                      (optional)
-    price: input_number.energy_price      # price per kWh: set it from the card (created automatically)
+    voltage: sensor.house_voltage         # V (optional)
+    price: input_number.energy_price      # price per kWh
     priceDefault: 0.30                    # example price until you set yours
     limitDefault: 3000                    # W: full scale of the gauge
-    liveRefresh: 3                        # seconds: ask for a fresh value (0 = no). Handy with Shelly
-    appliances:                           # appliances: power W + today's kWh
-      - { n: Washing machine, p: sensor.washer_power, e: sensor.washer_energy_today, ic: mdi-washing-machine, c: "#38BDF8" }
-      - { n: Fridge, p: sensor.fridge_power, ic: mdi-fridge, c: "#34D399" }
+    liveRefresh: 3                        # seconds
+    # Appliances with W power, today kWh, monthly kWh and maintenance/sanitization cycle counter:
+    appliances:
+      - n: Washing machine
+        p: sensor.washer_power
+        e: sensor.washer_energy_today
+        month: sensor.washer_energy_month
+        counter: counter.washer_cycles    # cycle counter
+        counter_limit: 30                 # alert threshold for sanitizing
+        ic: mdi-washing-machine
+        c: "#38BDF8"
+      - n: Dishwasher
+        p: sensor.dishwasher_power
+        e: sensor.dishwasher_energy_today
+        counter: counter.dishwasher_cycles
+        counter_limit: 25
+        ic: mdi-dishwasher
+        c: "#F59E0B"
+      - n: Fridge
+        p: sensor.fridge_power
+        ic: mdi-fridge
+        c: "#34D399"

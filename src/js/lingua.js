@@ -174,7 +174,14 @@
     "Non salvato: {e}": "Not saved: {e}", "Non riesco a leggere la configurazione: {e}": "Can't read the configuration: {e}", "Stanze e dispositivi salvati": "Rooms and devices saved",
     "{n}: sembra un elettrodomestico o una presa, non una luce. Se è così toglilo con la ×: comparirà tra gli elettrodomestici se aggiungi il suo sensore di potenza in Energia.": "{n}: this looks like an appliance or a plug, not a light. If so, remove it with the ×: it'll show up as an appliance once you add its power sensor under Energy.",
     "freddo": "cooling", "caldo": "heating", "deumidifica": "dry", "ventola": "fan only", "automatico": "auto",
-    "Guida e installazione": "How to install it", "Guida completa e installazione": "Full guide and install"
+    "Guida e installazione": "How to install it", "Guida completa e installazione": "Full guide and install",
+    /* robot, giardino, meteo, server e nuove funzioni */
+    "Robot Aspirapolvere": "Robot vacuum", "In pulizia": "Cleaning", "In carica": "Charging", "In pausa": "Paused", "Alla base": "Docked", "Ritorno alla base": "Returning to dock", "Pulisci": "Clean", "Base": "Dock", "Robot": "Robot",
+    "Giardino & Irrigazione": "Garden & Irrigation", "Zone smart": "Smart zones", "Umidità suolo": "Soil moisture", "Inattivo": "Idle", "Irrigazione attiva": "Watering active",
+    "Stazione Meteo": "Weather Station", "Vento": "Wind", "Pioggia oggi": "Rain today", "Indice UV": "UV Index", "Pressione": "Pressure", "Fulmini": "Lightning", "{n} colpi": "{n} strikes", "Ultimo fulmine a {d} km": "Last strike at {d} km", "Nessun fulmine recente": "No recent strikes",
+    "Infrastruttura & Gruppo di Continuità": "Infrastructure & UPS", "Server": "Server", "UPS": "UPS", "Alimentazione da rete": "Grid power", "Alimentazione a batteria": "Battery power", "Autonomia": "Runtime", "Carico": "Load",
+    "Sanificazione": "Sanitisation", "Sanificazione consigliata": "Sanitisation recommended", "{n} kWh questo mese": "{n} kWh this month", "Sanificazione: {c}/{l}": "Sanitisation: {c}/{l}", "Cicli completati: {n}": "Completed cycles: {n}",
+    "Luce": "Light", "Sirena": "Siren", "Icone MDI": "MDI Icons", "Cronotermostato": "Thermostat", "Termostato": "Thermostat"
   };
   var DICT = { en: EN };
 

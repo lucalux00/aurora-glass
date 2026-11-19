@@ -23,6 +23,10 @@
     alarm: { ic: "mdi-shield-home", ok: function (id) { return /^alarm_control_panel\./.test(id); } },
     weather: { ic: "mdi-weather-partly-cloudy", ok: function (id) { return /^weather\./.test(id); } },
     cameras: { ic: "mdi-cctv", ok: function (id) { return /^camera\./.test(id); } },
+    vacuum: { ic: "mdi-robot-vacuum", ok: function (id) { return /^vacuum\./.test(id); } },
+    switch_any: { ic: "mdi-toggle-switch", ok: function (id) { return /^(switch|valve)\./.test(id); } },
+    moisture: { ic: "mdi-water-percent", ok: function (id, s) { return /^sensor\./.test(id); } },
+    sensor_any: { ic: "mdi-gauge", ok: function (id) { return /^(sensor|binary_sensor)\./.test(id); } },
     scene: { ic: "mdi-palette", ok: function (id) { return /^(light|switch|scene|script)\./.test(id); } }
   };
   /* un interruttore che sembra un elettrodomestico o una presa: tra le luci va segnalato */
@@ -34,7 +38,8 @@
     var box = $("#homebox"), body = $("#hb-body"), tabsBox = $("#hb-tabs"), pickBox = $("#hb-pick");
     var D = null, orig = "", tab = "rooms", openRoom = -1, P = null, confirmT = 0;
     var TABS = [["rooms", T("Stanze"), "mdi-floor-plan"], ["climate", T("Clima"), "mdi-air-conditioner"], ["energy", T("Energia"), "mdi-lightning-bolt"],
-      ["security", T("Sicurezza"), "mdi-shield-home"], ["scenes", T("Scene"), "mdi-palette"]];
+      ["security", T("Sicurezza"), "mdi-shield-home"], ["robot", T("Robot"), "mdi-robot-vacuum"], ["garden", T("Giardino"), "mdi-sprinkler-variant"],
+      ["infra", T("Server & UPS"), "mdi-server-network"], ["scenes", T("Scene"), "mdi-palette"]];
     var ROOM_FIELDS = [["lights", T("Luci"), T("anche i relè e le prese che accendono una lampada")], ["motion", T("Sensori di movimento"), ""],
       ["openings", T("Porte e finestre"), T("anche le serrature")], ["temperature", T("Temperatura"), ""]];
 
@@ -77,8 +82,18 @@
         rooms: (r.rooms || []).map(function (x) {
           return { area_id: x.area_id || null, name: x.name || "", image: x.image || "salotto", lights: list(x.lights), motion: list(x.motion), openings: list(x.openings), temperature: list(x.temperature) };
         }),
-        devices: { alarm: d.alarm || null, weather: d.weather || null, climate: list(d.climate), power: d.power || null, energy: d.energy || null,
-          appliances: list(d.appliances), cameras: list(d.cameras), currency: d.currency || null },
+        devices: {
+          alarm: d.alarm || null, weather: d.weather || null, climate: list(d.climate), power: d.power || null, energy: d.energy || null,
+          appliances: list(d.appliances), cameras: list(d.cameras), currency: d.currency || null,
+          vacuum: d.vacuum || null, vacuum_model: d.vacuum_model || "Roborock",
+          garden_z1_sw: d.garden_z1_sw || null, garden_z1_moist: d.garden_z1_moist || null,
+          garden_z2_sw: d.garden_z2_sw || null, garden_z2_moist: d.garden_z2_moist || null,
+          weather_ai: d.weather_ai || null,
+          ws_wind: d.ws_wind || null, ws_rain: d.ws_rain || null, ws_uv: d.ws_uv || null, ws_press: d.ws_press || null,
+          ws_lightning_dist: d.ws_lightning_dist || null, ws_lightning_count: d.ws_lightning_count || null,
+          server_cpu: d.server_cpu || null, server_ram: d.server_ram || null, server_temp: d.server_temp || null, server_disk: d.server_disk || null,
+          ups_battery: d.ups_battery || null, ups_load: d.ups_load || null, ups_runtime: d.ups_runtime || null, ups_status: d.ups_status || null, ups_voltage: d.ups_voltage || null
+        },
         scenes: { morning: list(s.morning), cinema: list(s.cinema), dinner: list(s.dinner), night_alarm: s.night_alarm !== false, away_alarm: s.away_alarm !== false }
       };
     }
@@ -173,7 +188,49 @@
         multi("d.appliances", "power", T("Elettrodomestici"), T("il sensore di potenza di ognuno: presa smart o relè"));
     }
     function renderSecurity() {
-      return one("d.alarm", "alarm", T("Centrale allarme"), "") + one("d.weather", "weather", T("Meteo"), T("temperatura esterna in alto")) + multi("d.cameras", "cameras", T("Telecamere"), "");
+      return one("d.alarm", "alarm", T("Centrale allarme"), "") +
+        one("d.weather", "weather", T("Meteo"), T("temperatura esterna in alto")) +
+        one("d.weather_ai", "sensor_any", T("Sommario Meteo AI"), T("sensore con la frase descrittiva o AI del meteo")) +
+        multi("d.cameras", "cameras", T("Telecamere"), "") +
+        '<div class="hf-group"><h4><i class="mdi mdi-weather-station"></i>' + esc(T("Stazione Meteo (es. Ecowitt)")) + '</h4></div>' +
+        one("d.ws_wind", "sensor_any", T("Sensore Vento"), T("velocità vento km/h")) +
+        one("d.ws_rain", "sensor_any", T("Sensore Pioggia"), T("pioggia mm o mm/h")) +
+        one("d.ws_uv", "sensor_any", T("Indice UV"), T("indice raggi ultravioletti")) +
+        one("d.ws_press", "sensor_any", T("Pressione atmosferica"), T("pressione in hPa")) +
+        one("d.ws_lightning_dist", "sensor_any", T("Distanza fulmini"), T("km dal temporale")) +
+        one("d.ws_lightning_count", "sensor_any", T("Scariche fulmini"), T("numero colpi rilevati"));
+    }
+    function renderRobot() {
+      var models = [["Roborock", "mdi-robot-vacuum"], ["Dreame", "mdi-robot-vacuum-variant"], ["Roomba", "mdi-robot-vacuum"], ["Ecovacs", "mdi-robot-vacuum"], ["Tagliaerba", "mdi-robot-mower"]];
+      var curModel = D.devices.vacuum_model || "Roborock";
+      var mHtml = '<div class="hf-group"><h4><i class="mdi mdi-robot-vacuum"></i>' + esc(T("Tipo / Modello di Robot")) + '</h4><div class="hf-chips">' +
+        models.map(function (m) {
+          var sel = m[0] === curModel;
+          return '<button class="hf-chip' + (sel ? " on" : "") + '" type="button" data-a="vac-m" data-m="' + m[0] + '"><i class="mdi ' + m[1] + '"></i>' + m[0] + '</button>';
+        }).join("") + '</div></div>';
+
+      return one("d.vacuum", "vacuum", T("Robot Aspirapolvere"), T("es. vacuum.roborock_saros_10r")) + mHtml;
+    }
+    function renderGarden() {
+      return '<p class="note-sm">' + esc(T("Configura le zone del giardino con le relative elettrovalvole e sensori di umidità del terreno.")) + "</p>" +
+        one("d.garden_z1_sw", "switch_any", T("Zona 1: Elettrovalvola"), T("interruttore irrigazione prato")) +
+        one("d.garden_z1_moist", "moisture", T("Zona 1: Umidità terreno"), T("sensore percentuale umidità")) +
+        one("d.garden_z2_sw", "switch_any", T("Zona 2: Elettrovalvola"), T("interruttore irrigazione siepe")) +
+        one("d.garden_z2_moist", "moisture", T("Zona 2: Umidità terreno"), T("sensore percentuale umidità"));
+    }
+    function renderInfra() {
+      return '<p class="note-sm">' + esc(T("Monitoraggio hardware del server Home Assistant (Mini PC) e del gruppo di continuità (UPS tramite NUT).")) + "</p>" +
+        '<div class="hf-group"><h4><i class="mdi mdi-server"></i>' + esc(T("Server Home Assistant (Mini PC)")) + '</h4></div>' +
+        one("d.server_cpu", "sensor_any", T("Utilizzo CPU"), T("percentuale %")) +
+        one("d.server_ram", "sensor_any", T("Memoria RAM"), T("percentuale %")) +
+        one("d.server_temp", "sensor_any", T("Temperatura CPU"), T("gradi °C")) +
+        one("d.server_disk", "sensor_any", T("Utilizzo Disco"), T("percentuale %")) +
+        '<div class="hf-group"><h4><i class="mdi mdi-battery-charging"></i>' + esc(T("Gruppo di Continuità (UPS NUT)")) + '</h4></div>' +
+        one("d.ups_battery", "sensor_any", T("Livello Batteria UPS"), T("percentuale %")) +
+        one("d.ups_load", "sensor_any", T("Carico UPS"), T("percentuale % o W")) +
+        one("d.ups_runtime", "sensor_any", T("Autonomia Residua"), T("minuti rimanenti")) +
+        one("d.ups_status", "sensor_any", T("Stato Linea UPS"), T("Online / Su batteria")) +
+        one("d.ups_voltage", "sensor_any", T("Tensione"), T("Volt V"));
     }
     function renderScenes() {
       var h = '<p class="note-sm">' + esc(T("Cosa accende ogni scena: tutte le altre luci della plancia si spengono. Puoi scegliere anche una scena o uno script di Home Assistant. Una scena vuota non compare.")) + "</p>";
@@ -192,7 +249,7 @@
         b.addEventListener("click", function () { tab = t[0]; render(); body.scrollTop = 0; });
         tabsBox.appendChild(b);
       });
-      body.innerHTML = { rooms: renderRooms, climate: renderClimate, energy: renderEnergy, security: renderSecurity, scenes: renderScenes }[tab]();
+      body.innerHTML = { rooms: renderRooms, climate: renderClimate, energy: renderEnergy, security: renderSecurity, robot: renderRobot, garden: renderGarden, infra: renderInfra, scenes: renderScenes }[tab]();
       api.hydrate(body); api.hydrate(tabsBox);
       if (keepScroll) body.scrollTop = y;
       $("#hb-save").disabled = !dirty();
@@ -203,6 +260,7 @@
     body.addEventListener("click", function (e) {
       var b = e.target.closest("[data-a]"); if (!b || b.disabled) return;
       var a = b.dataset.a, f = b.dataset.f, i = +b.dataset.i, ids;
+      if (a === "vac-m") { D.devices.vacuum_model = b.dataset.m; render(true); return; }
       if (a === "room") { openRoom = openRoom === i ? -1 : i; render(true); if (openRoom === i) later0(function () { var r = $('.hr[data-i="' + i + '"]', body); if (r) r.scrollIntoView({ block: "nearest", behavior: "smooth" }); }); return; }
       e.stopPropagation();
       if (a === "rup" || a === "rdown") { move(D.rooms, i, a === "rup" ? -1 : 1); if (openRoom === i) openRoom = i + (a === "rup" ? -1 : 1); }

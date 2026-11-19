@@ -202,9 +202,12 @@ main { display: flex; flex-direction: column; gap: 22px; padding: 18px 0 150px; 
 .chip i.bolt { animation: zap 2.6s ease-in-out infinite; }
 @keyframes zap { 0%, 100% { transform: scale(1); } 8% { transform: scale(1.3) rotate(-8deg); } 16% { transform: scale(1); } }
 
-/* ---------- scene rapide (immagini) ---------- */
-.scenes { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
-.scene { --s1: #fff; --s2: #fff; position: relative; overflow: hidden; display: flex; align-items: center; gap: 14px; min-height: 92px; padding: 12px 14px 12px 12px; border-radius: 24px; background: var(--surface); border: 1px solid var(--border); color: var(--text); text-align: left; cursor: pointer; box-shadow: inset 0 1px 0 var(--hi); transition: transform .45s var(--spring), border-color .25s, box-shadow .4s, background .4s; -webkit-tap-highlight-color: transparent; }
+/* ---------- scene rapide (immagini o icone) ---------- */
+.scenes { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 12px; padding: 4px 2px 10px; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+.scenes::-webkit-scrollbar { height: 6px; }
+.scenes::-webkit-scrollbar-track { background: transparent; }
+.scenes::-webkit-scrollbar-thumb { background: var(--surface-2); border-radius: 99px; }
+.scene { --s1: #fff; --s2: #fff; position: relative; overflow: hidden; display: flex; align-items: center; gap: 14px; min-height: 92px; min-width: clamp(210px, 20vw, 260px); flex: 0 0 auto; scroll-snap-align: start; padding: 12px 16px 12px 12px; border-radius: 24px; background: var(--surface); border: 1px solid var(--border); color: var(--text); text-align: left; cursor: pointer; box-shadow: inset 0 1px 0 var(--hi); transition: transform .45s var(--spring), border-color .25s, box-shadow .4s, background .4s; -webkit-tap-highlight-color: transparent; }
 .scene::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(105deg, transparent 38%, rgba(255,255,255,.2) 50%, transparent 62%); transform: translateX(-130%); transition: transform .9s var(--ease); }
 .scene:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--s1) 60%, transparent); box-shadow: 0 20px 44px -20px var(--s1), inset 0 1px 0 var(--hi); }
 .scene:hover::after { transform: translateX(130%); }
@@ -321,6 +324,39 @@ main { display: flex; flex-direction: column; gap: 22px; padding: 18px 0 150px; 
 .live { position: absolute; top: 12px; left: 12px; display: flex; align-items: center; gap: 7px; padding: 4px 10px; border-radius: 99px; background: rgba(0,0,0,.4); color: #fff; font-size: .66rem; font-weight: 800; letter-spacing: .08em; }
 .live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #FF4D6A; animation: ping2 1.4s ease-in-out infinite; }
 .stamp { position: absolute; right: 12px; bottom: 10px; color: rgba(255,255,255,.8); font-size: .7rem; font-weight: 700; font-variant-numeric: tabular-nums; text-shadow: 0 1px 4px rgba(0,0,0,.6); }
+
+/* ---------- telecamere: faretto e sirena ---------- */
+.cam-actions { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.cam-act-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; border-radius: 14px; font-size: .78rem; font-weight: 700; border: 1px solid var(--border); background: var(--surface-2); color: var(--dim); cursor: pointer; transition: all .25s var(--spring); }
+.cam-act-btn:hover { color: var(--text); border-color: var(--acc-text); transform: translateY(-1px); }
+.cam-act-btn.active { background: color-mix(in srgb, var(--warn) 22%, var(--surface-2)); border-color: var(--warn); color: var(--warn); }
+.cam-act-btn.siren-btn.active { background: color-mix(in srgb, var(--danger) 25%, var(--surface-2)); border-color: var(--danger); color: #fff; animation: shake .7s ease-in-out infinite; }
+
+/* ---------- modalità icone MDI (senza foto) ---------- */
+:root[data-btn="icon"] .scene .s-img, :root[data-btn="icon"] .orb .o-img, :root[data-btn="icon"] .o-shade,
+.orb.icon-only .o-img, .orb.icon-only .o-shade { display: none !important; }
+:root[data-btn="icon"] .scene .s-ico, :root[data-btn="icon"] .orb .o-ico,
+.orb.icon-only .o-ico { display: grid !important; }
+:root[data-btn="icon"] .orb, .orb.icon-only {
+  display: flex !important; flex-direction: column !important; justify-content: space-between !important;
+  padding: 16px !important; aspect-ratio: 1 / 1 !important;
+  background: radial-gradient(120% 120% at 50% 20%, color-mix(in srgb, var(--room) 14%, var(--surface)), var(--surface)) !important;
+}
+:root[data-btn="icon"] .orb .o-ico, .orb.icon-only .o-ico {
+  width: 52px; height: 52px; border-radius: 18px; font-size: 2rem;
+  background: var(--surface-2); color: var(--dim);
+  transition: all .4s var(--spring);
+}
+:root[data-btn="icon"] .orb[aria-pressed="true"] .o-ico, .orb.icon-only[aria-pressed="true"] .o-ico {
+  background: linear-gradient(135deg, var(--room), color-mix(in srgb, var(--room) 60%, #000));
+  color: #fff;
+  box-shadow: 0 0 24px -2px var(--room), 0 10px 20px -6px var(--room);
+  transform: scale(1.06);
+}
+:root[data-btn="icon"] .orb .o-txt, .orb.icon-only .o-txt { position: static !important; }
+:root[data-btn="icon"] .orb .o-name, .orb.icon-only .o-name { text-shadow: none !important; }
+:root[data-btn="icon"] .orb .o-state, .orb.icon-only .o-state { color: var(--dim) !important; }
+:root[data-btn="icon"] .orb[aria-pressed="true"] .o-state, .orb.icon-only[aria-pressed="true"] .o-state { color: color-mix(in srgb, var(--room) 70%, var(--text)) !important; }
 
 /* ---------- modalità compatta (solo icone) ---------- */
 :root[data-btn="compact"] .scene .s-img, :root[data-btn="compact"] .orb .o-img, :root[data-btn="compact"] .o-shade, :root[data-btn="compact"] .sens .s-ph, :root[data-btn="compact"] .stile .st-img { display: none; }
@@ -554,6 +590,101 @@ footer.note { text-align: center; color: var(--faint); font-size: .78rem; paddin
 .app.run .a-ico { color: #fff; background: linear-gradient(135deg, var(--c), color-mix(in srgb, var(--c) 55%, #000)); animation: halo2 2.2s ease-out infinite; }
 @keyframes halo2 { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c) 60%, transparent); } 70%, 100% { box-shadow: 0 0 0 12px transparent; } }
 .app.na { opacity: .5; }
+.app .a-m { font-size: .72rem; color: var(--dim); font-weight: 600; margin-top: 1px; }
+.app .a-maint-badge { margin-top: 6px; padding: 4px 8px; border-radius: 99px; font-size: .68rem; font-weight: 800; display: inline-flex; align-items: center; gap: 4px; background: var(--surface-2); color: var(--dim); border: 1px solid var(--border); transition: all .3s; }
+.app .a-maint-badge.warn { background: color-mix(in srgb, var(--warn) 20%, transparent); border-color: var(--warn); color: var(--warn); }
+.app.run .a-ico i { animation: spin 4s linear infinite; }
+
+/* ---------- meteo dinamico e AI forecast ---------- */
+.hero-weather-box { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.w-forecast-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.w-fc-chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 99px; background: rgba(0,0,0,.32); border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(8px); font-size: .8rem; font-weight: 700; color: #fff; }
+.w-fc-chip .w-tag { font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; opacity: .7; }
+.w-fc-chip i { font-size: 1.15rem; color: var(--acc-text); }
+.w-fc-chip .w-pop { color: #67E8F9; font-size: .74rem; font-weight: 800; display: inline-flex; align-items: center; gap: 2px; }
+.w-ai-summary { display: flex; align-items: flex-start; gap: 8px; padding: 8px 14px; border-radius: 16px; background: color-mix(in srgb, var(--b1) 18%, rgba(0,0,0,.4)); border: 1px solid color-mix(in srgb, var(--b1) 40%, transparent); backdrop-filter: blur(10px); font-size: .82rem; font-weight: 600; line-height: 1.35; color: var(--text); }
+.w-ai-summary i { font-size: 1.1rem; color: #FACC15; flex: none; margin-top: 1px; }
+
+/* ---------- stazione meteo (Ecowitt / fulmini / sensori) ---------- */
+.ws-modal { position: absolute; top: calc(100% + 8px); left: 14px; right: 14px; z-index: 48; max-width: 520px; padding: 18px; border-radius: 26px; background: color-mix(in srgb, var(--surface-solid) 96%, transparent); border: 1px solid var(--border); box-shadow: var(--shadow); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); animation: rise .35s var(--ease) both; }
+.ws-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.ws-head h3 { margin: 0; font-family: var(--font-display); font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.ws-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.ws-card { display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: 16px; background: var(--surface-2); border: 1px solid var(--border); }
+.ws-card .ws-lbl { display: flex; align-items: center; gap: 6px; font-size: .72rem; font-weight: 700; color: var(--dim); }
+.ws-card .ws-val { font-family: var(--font-display); font-size: 1.25rem; font-weight: 800; color: var(--text); }
+.ws-card.lightning-alert { background: color-mix(in srgb, #E11D48 18%, var(--surface-2)); border-color: #E11D48; }
+.ws-card.lightning-alert .ws-val { color: #FDA4AF; }
+
+/* ---------- robot aspirapolvere (Roborock Saros) ---------- */
+.vacuum-card { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: clamp(14px, 2.5vw, 24px); padding: 18px 22px; overflow: hidden; position: relative; }
+.vac-icon-wrap { position: relative; width: 62px; height: 62px; flex: none; }
+.vac-ico { width: 100%; height: 100%; border-radius: 20px; display: grid; place-items: center; font-size: 2.2rem; color: #fff; background: linear-gradient(135deg, #6366F1, #3B82F6); box-shadow: 0 10px 24px -8px #6366F1; }
+.vacuum-card.cleaning .vac-ico { animation: spin 8s linear infinite; }
+.vacuum-card.cleaning .vac-pulse { position: absolute; inset: -4px; border-radius: 24px; border: 2px solid #6366F1; animation: st-ping 1.6s ease-out infinite; }
+.vac-info { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.vac-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.vac-top h3 { margin: 0; font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; }
+.vac-badge { font-size: .74rem; font-weight: 800; padding: 3px 10px; border-radius: 99px; background: var(--surface-2); color: var(--dim); }
+.vacuum-card.cleaning .vac-badge { background: color-mix(in srgb, var(--ok) 20%, transparent); color: var(--ok); }
+.vac-stats { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+.vchip { display: inline-flex; align-items: center; gap: 5px; font-size: .78rem; font-weight: 700; color: var(--dim); }
+.vchip b { color: var(--text); }
+.vac-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.vbtn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font-weight: 700; font-size: .84rem; cursor: pointer; transition: all .25s var(--spring); }
+.vbtn:hover { transform: translateY(-2px); border-color: var(--acc-text); }
+.vbtn.play { background: linear-gradient(135deg, var(--a1), var(--a2)); color: #fff; border: 0; box-shadow: 0 8px 18px -6px var(--a1); }
+
+/* ---------- giardino & irrigazione ---------- */
+.garden-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.garden-card { position: relative; overflow: hidden; padding: 18px; border-radius: 22px; display: flex; flex-direction: column; gap: 12px; }
+.g-header { display: flex; align-items: center; gap: 12px; }
+.g-ico { width: 44px; height: 44px; border-radius: 15px; display: grid; place-items: center; font-size: 1.5rem; color: #fff; background: linear-gradient(135deg, #10B981, #06B6D4); box-shadow: 0 8px 18px -8px #10B981; flex: none; }
+.g-title { flex: 1; min-width: 0; }
+.g-title h4 { margin: 0; font-family: var(--font-display); font-size: .98rem; font-weight: 700; }
+.g-state { font-size: .76rem; font-weight: 600; color: var(--dim); }
+.g-toggle-btn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface-2); color: var(--dim); display: grid; place-items: center; font-size: 1.25rem; cursor: pointer; transition: all .3s var(--spring); }
+.g-toggle-btn:hover { transform: scale(1.08); border-color: var(--acc-text); }
+.garden-card[data-active="true"] .g-toggle-btn { background: #06B6D4; color: #fff; border-color: transparent; box-shadow: 0 0 16px #06B6D4; }
+.g-water-flow { position: relative; height: 18px; border-radius: 99px; overflow: hidden; background: rgba(6,182,212,.15); }
+.flow-wave { position: absolute; inset: 0; background: repeating-linear-gradient(90deg, #06B6D4 0 20px, #22D3EE 20px 40px); opacity: .7; animation: flowWave 2s linear infinite; }
+@keyframes flowWave { 0% { transform: translateX(0); } 100% { transform: translateX(-40px); } }
+.g-footer { display: flex; flex-direction: column; gap: 4px; }
+.g-moisture { display: flex; align-items: center; gap: 8px; font-size: .78rem; }
+.gm-lbl { color: var(--dim); display: flex; align-items: center; gap: 4px; }
+.gm-val { color: var(--text); font-variant-numeric: tabular-nums; }
+.gm-bar { flex: 1; height: 6px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+.gm-bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #F59E0B, #10B981, #06B6D4); }
+
+/* ---------- server e gruppo di continuità (UPS NUT) ---------- */
+.infra-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 10px; }
+.infra-card { padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+.inf-head { display: flex; align-items: center; gap: 12px; }
+.inf-ico { width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; font-size: 1.4rem; color: #fff; background: linear-gradient(135deg, #3B82F6, #1D4ED8); box-shadow: 0 8px 18px -8px #3B82F6; flex: none; }
+.inf-ico.ups-ico { background: linear-gradient(135deg, #10B981, #059669); box-shadow: 0 8px 18px -8px #10B981; }
+.inf-head h4 { margin: 0; font-family: var(--font-display); font-size: .98rem; font-weight: 700; }
+.inf-head small { color: var(--dim); font-size: .76rem; }
+.ups-batt-badge { margin-left: auto; font-family: var(--font-display); font-size: 1.1rem; font-weight: 800; color: var(--ok); }
+.inf-gauges { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.inf-g-item { display: flex; flex-direction: column; gap: 4px; }
+.ig-label { font-size: .7rem; font-weight: 700; color: var(--faint); }
+.ig-val { font-size: .92rem; font-weight: 800; }
+.ig-bar { height: 5px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+.ig-bar i { display: block; height: 100%; border-radius: 99px; background: var(--acc-text); transition: width .6s ease; }
+.inf-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.ups-stat { display: flex; flex-direction: column; gap: 2px; }
+.us-lbl { font-size: .7rem; font-weight: 700; color: var(--faint); }
+.us-val { font-size: .95rem; font-weight: 800; color: var(--text); }
+.ups-bar-wrap { height: 6px; border-radius: 99px; background: var(--surface-2); overflow: hidden; margin-top: 4px; }
+.ups-bar { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #10B981, #34D399); transition: width .6s ease; }
+
+/* ---------- clima: cronotermostato ---------- */
+.clima[data-style="thermostat"] .cl-art { display: grid; place-items: center; background: radial-gradient(circle at 50% 40%, rgba(255,255,255,.08), rgba(0,0,0,.6)); }
+.thermo-dial { position: relative; width: 180px; height: 180px; border-radius: 50%; border: 4px solid var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle, color-mix(in srgb, var(--cl) 22%, #12172D), #0A0D1A); box-shadow: 0 0 32px -6px var(--cl), inset 0 2px 8px rgba(255,255,255,.2); transition: all .5s var(--spring); }
+.thermo-flame { font-size: 2.2rem; color: #FB923C; filter: drop-shadow(0 0 8px #FB923C); }
+.thermo-temp { font-family: var(--font-display); font-size: 1.85rem; font-weight: 800; margin-top: 2px; }
+.thermo-label { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--dim); }
+
 
 /* ---------- clima ---------- */
 .clima { --cl: #64748B; display: grid; grid-template-columns: auto 1fr; gap: clamp(16px, 3vw, 30px); padding: clamp(18px, 2.4vw, 26px); overflow: hidden; transition: border-color .5s; }
@@ -818,9 +949,44 @@ footer.note { text-align: center; color: var(--faint); font-size: .78rem; paddin
           <h1 class="greet" id="greet">Buonasera, Alex</h1>
           <div class="clock" id="clock" aria-live="off">21<span class="colon">:</span>00</div>
           <div class="hero-chips">
-            <span class="chip" id="chip-temp"><i class="mdi mdi-weather-partly-cloudy" id="temp-ico"></i>Esterno <b id="temp-val">21,4 °C</b></span>
+            <span class="chip" id="chip-temp" role="button" tabindex="0" title="Apri dettagli stazione meteo" style="cursor:pointer"><i class="mdi mdi-weather-partly-cloudy" id="temp-ico"></i>Esterno <b id="temp-val">21,4 °C</b></span>
             <span class="chip" id="chip-power" role="button" tabindex="0" title="Apri i consumi" style="cursor:pointer"><i class="mdi mdi-flash bolt"></i>Consumo <b id="power-val">612 W</b><span class="pdelta" id="power-delta"></span><span class="livedot" title="Aggiornamento in tempo reale"></span></span>
             <span class="chip"><i class="mdi mdi-motion-sensor"></i><span id="hero-motion">Casa tranquilla</span></span>
+          </div>
+          <!-- Previsioni dinamiche e frase AI -->
+          <div class="hero-weather-box" id="hero-weather-box" hidden>
+            <div class="w-forecast-row" id="w-forecast-row">
+              <div class="w-fc-chip" id="w-fc-today">
+                <span class="w-tag">Oggi</span>
+                <i class="mdi mdi-weather-partly-cloudy" id="w-fc-today-ico"></i>
+                <span class="w-temp"><b id="w-fc-today-max">--</b> / <small id="w-fc-today-min">--</small></span>
+                <span class="w-pop" id="w-fc-today-pop" hidden><i class="mdi mdi-water-percent"></i><span id="w-fc-today-pop-val">--%</span></span>
+              </div>
+              <div class="w-fc-chip" id="w-fc-tomorrow">
+                <span class="w-tag">Domani</span>
+                <i class="mdi mdi-weather-partly-cloudy" id="w-fc-tomorrow-ico"></i>
+                <span class="w-temp"><b id="w-fc-tomorrow-max">--</b> / <small id="w-fc-tomorrow-min">--</small></span>
+                <span class="w-pop" id="w-fc-tomorrow-pop" hidden><i class="mdi mdi-water-percent"></i><span id="w-fc-tomorrow-pop-val">--%</span></span>
+              </div>
+            </div>
+            <div class="w-ai-summary" id="w-ai-summary" hidden>
+              <i class="mdi mdi-sparkles"></i>
+              <span id="w-ai-text">Previsione meteo del giorno…</span>
+            </div>
+          </div>
+          <!-- Modal Stazione Meteo (Ecowitt / fulmini / vento / pioggia) -->
+          <div class="ws-modal" id="ws-modal" hidden role="dialog" aria-modal="true" aria-labelledby="ws-title">
+            <div class="ws-head">
+              <h3 id="ws-title"><i class="mdi mdi-weather-station"></i>Stazione Meteo</h3>
+              <button class="icon-btn" id="ws-close" type="button" aria-label="Chiudi"><i class="mdi mdi-close"></i></button>
+            </div>
+            <div class="ws-grid" id="ws-grid">
+              <div class="ws-card"><span class="ws-lbl"><i class="mdi mdi-weather-windy"></i>Vento</span><span class="ws-val" id="ws-wind">-- km/h</span></div>
+              <div class="ws-card"><span class="ws-lbl"><i class="mdi mdi-weather-pouring"></i>Pioggia oggi</span><span class="ws-val" id="ws-rain">-- mm</span></div>
+              <div class="ws-card"><span class="ws-lbl"><i class="mdi mdi-white-balance-sunny"></i>Indice UV</span><span class="ws-val" id="ws-uv">--</span></div>
+              <div class="ws-card"><span class="ws-lbl"><i class="mdi mdi-gauge"></i>Pressione</span><span class="ws-val" id="ws-press">-- hPa</span></div>
+              <div class="ws-card" id="ws-card-light"><span class="ws-lbl"><i class="mdi mdi-lightning-bolt"></i>Fulmini</span><span class="ws-val" id="ws-light">0 colpi</span></div>
+            </div>
           </div>
         </div>
       </article>
@@ -835,11 +1001,45 @@ footer.note { text-align: center; color: var(--faint); font-size: .78rem; paddin
         <div class="rooms" id="rooms"></div>
       </div>
 
+      <!-- Robot Aspirapolvere (Roborock Saros) -->
+      <div style="--i:2.5" id="vacuum-wrap" hidden>
+        <h2 class="sec-title">Robot Aspirapolvere <small id="vac-model">Roborock</small></h2>
+        <article class="card vacuum-card" id="vacuum-card">
+          <div class="vac-icon-wrap" id="vac-icon-wrap">
+            <span class="vac-ico"><i class="mdi mdi-robot-vacuum"></i></span>
+            <span class="vac-pulse"></span>
+          </div>
+          <div class="vac-info">
+            <div class="vac-top">
+              <h3 id="vac-name">Roborock Saros</h3>
+              <span class="vac-badge" id="vac-status">In carica</span>
+            </div>
+            <div class="vac-stats">
+              <span class="vchip" id="vac-batt-chip"><i class="mdi mdi-battery-charging-100" id="vac-batt-ico"></i><b id="vac-batt-val">100%</b></span>
+              <span class="vchip" id="vac-time-chip" hidden><i class="mdi mdi-timer-outline"></i><span id="vac-time-val">--</span></span>
+            </div>
+          </div>
+          <div class="vac-actions" role="group" aria-label="Comandi robot">
+            <button class="vbtn play" id="vac-act-play" type="button" title="Avvia o riprendi pulizia"><i class="mdi mdi-play"></i><span>Pulisci</span></button>
+            <button class="vbtn" id="vac-act-pause" type="button" title="Metti in pausa"><i class="mdi mdi-pause"></i><span>Pausa</span></button>
+            <button class="vbtn" id="vac-act-dock" type="button" title="Torna alla base di ricarica"><i class="mdi mdi-home-import-outline"></i><span>Base</span></button>
+          </div>
+        </article>
+      </div>
+
       <div style="--i:3" id="clima-wrap">
         <h2 class="sec-title">Clima <small id="cl-sub">Aria salone</small><button class="sec-edit home-edit" type="button" data-home="climate"><i class="mdi mdi-pencil"></i>Modifica</button></h2>
         <div class="cl-pick" id="cl-pick" role="tablist" aria-label="Climatizzatori" hidden></div>
         <article class="card clima" id="clima" data-mode="off">
-          <div class="cl-art" id="cl-art" data-img="clima_off" data-label="Immagine del climatizzatore"><img alt="" draggable="false"><span class="edit-badge"><i class="mdi mdi-pencil"></i></span></div>
+          <div class="cl-art" id="cl-art" data-img="clima_off" data-label="Immagine del climatizzatore">
+            <img alt="" draggable="false">
+            <div class="thermo-dial" id="thermo-dial" hidden>
+              <i class="mdi mdi-fire thermo-flame" id="thermo-flame"></i>
+              <span class="thermo-temp" id="thermo-temp">21,0°</span>
+              <span class="thermo-label" id="thermo-lbl">Termostato</span>
+            </div>
+            <span class="edit-badge"><i class="mdi mdi-pencil"></i></span>
+          </div>
           <div class="cl-main">
             <div class="cl-top">
               <div>
@@ -863,6 +1063,12 @@ footer.note { text-align: center; color: var(--faint); font-size: .78rem; paddin
             </div>
           </div>
         </article>
+      </div>
+
+      <!-- Giardino & Irrigazione a Zone -->
+      <div style="--i:3.5" id="garden-wrap" hidden>
+        <h2 class="sec-title">Giardino & Irrigazione <small id="garden-sub">Zone smart</small></h2>
+        <div class="garden-grid" id="garden-zones"></div>
       </div>
     </section>
 
@@ -958,6 +1164,54 @@ footer.note { text-align: center; color: var(--faint); font-size: .78rem; paddin
         <div class="share" id="en-share"></div>
         <div class="apps" id="en-apps"></div>
       </div>
+      <!-- Infrastruttura & Gruppo di Continuità (Server HA OS / UPS NUT) -->
+      <div style="--i:3.5" id="infra-wrap" hidden>
+        <h2 class="sec-title">Infrastruttura & Gruppo di Continuità <small id="infra-sub">Server · UPS</small></h2>
+        <div class="infra-grid">
+          <article class="card infra-card" id="infra-server">
+            <div class="inf-head">
+              <span class="inf-ico"><i class="mdi mdi-server"></i></span>
+              <div>
+                <h4 id="srv-name">Home Assistant OS</h4>
+                <small id="srv-uptime">Uptime: --</small>
+              </div>
+            </div>
+            <div class="inf-gauges">
+              <div class="inf-g-item">
+                <span class="ig-label">CPU</span>
+                <b class="ig-val" id="srv-cpu">-- %</b>
+                <div class="ig-bar"><i id="srv-cpu-bar" style="width:0%"></i></div>
+              </div>
+              <div class="inf-g-item">
+                <span class="ig-label">RAM</span>
+                <b class="ig-val" id="srv-ram">-- %</b>
+                <div class="ig-bar"><i id="srv-ram-bar" style="width:0%"></i></div>
+              </div>
+              <div class="inf-g-item">
+                <span class="ig-label">Temp</span>
+                <b class="ig-val" id="srv-temp">-- °C</b>
+                <div class="ig-bar"><i id="srv-temp-bar" style="width:0%"></i></div>
+              </div>
+            </div>
+          </article>
+          <article class="card infra-card" id="infra-ups">
+            <div class="inf-head">
+              <span class="inf-ico ups-ico"><i class="mdi mdi-battery-charging" id="ups-status-ico"></i></span>
+              <div>
+                <h4 id="ups-name">UPS NUT</h4>
+                <small id="ups-status-txt">Alimentazione da rete</small>
+              </div>
+              <span class="ups-batt-badge" id="ups-batt-val">100%</span>
+            </div>
+            <div class="inf-stats">
+              <div class="ups-stat"><span class="us-lbl">Autonomia</span><b class="us-val" id="ups-runtime">-- min</b></div>
+              <div class="ups-stat"><span class="us-lbl">Carico W</span><b class="us-val" id="ups-load">-- W</b></div>
+              <div class="ups-stat"><span class="us-lbl">Tensione</span><b class="us-val" id="ups-volt">-- V</b></div>
+            </div>
+            <div class="ups-bar-wrap"><div class="ups-bar" id="ups-bar" style="width:100%"></div></div>
+          </article>
+        </div>
+      </div>
     </section>
 
     <footer class="note">Aurora Glass v3 · anteprima: non riflette dati reali di un impianto. <a href="/progetti/aurora-glass-v3?utm_source=demo&amp;utm_medium=referral&amp;utm_campaign=aurora-glass&amp;utm_content=footer" data-demo>Guida completa e installazione</a></footer>
@@ -995,8 +1249,14 @@ footer.note { text-align: center; color: var(--faint); font-size: .78rem; paddin
       <div class="row"><span class="grow">Cambia mondo ogni 30 secondi<small>Una playlist di paesaggi</small></span><button class="toggle" id="cycle-toggle" type="button" aria-pressed="false" aria-label="Cambia mondo automaticamente"></button></div>
     </section>
     <section class="dr-sec"><h3><i class="mdi mdi-gesture-tap-button"></i>Pulsanti</h3>
-      <div class="segm" id="btn-style"><button type="button" data-v="img" aria-pressed="true">Immagini e GIF</button><button type="button" data-v="compact" aria-pressed="false">Compatti</button></div>
+      <div class="segm" id="btn-style"><button type="button" data-v="img" aria-pressed="true">Immagini e GIF</button><button type="button" data-v="icon" aria-pressed="false">Icone MDI</button><button type="button" data-v="compact" aria-pressed="false">Compatti</button></div>
       <button class="btn wide" id="edit-start" type="button" style="margin-top:10px"><i class="mdi mdi-image-edit"></i>Modifica le immagini dei pulsanti</button>
+    </section>
+    <section class="dr-sec"><h3><i class="mdi mdi-thermostat"></i>Stile Clima & Riscaldamento</h3>
+      <div class="segm" id="clima-style"><button type="button" data-v="split" aria-pressed="true">Split AC</button><button type="button" data-v="thermostat" aria-pressed="false">Cronotermostato</button></div>
+    </section>
+    <section class="dr-sec"><h3><i class="mdi mdi-robot-vacuum"></i>Modello Robot</h3>
+      <div class="segm" id="robot-style"><button type="button" data-v="roborock" aria-pressed="true">Roborock</button><button type="button" data-v="dreame" aria-pressed="false">Dreame</button><button type="button" data-v="roomba" aria-pressed="false">Roomba</button><button type="button" data-v="mower" aria-pressed="false">Tagliaerba</button></div>
     </section>
     <section class="dr-sec home-edit"><h3><i class="mdi mdi-home-edit-outline"></i>Casa <small>stanze, luci, sensori, clima ed energia</small></h3>
       <button class="btn wide" type="button" data-home="rooms"><i class="mdi mdi-home-edit-outline"></i>Stanze e dispositivi</button>

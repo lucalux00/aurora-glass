@@ -27,7 +27,37 @@
   S["sensor.living_temp"] = st("sensor.living_temp", "21.4", { unit_of_measurement: "°C", device_class: "temperature" });
   S["sensor.bedroom_temp"] = st("sensor.bedroom_temp", "17.2", { unit_of_measurement: "°C", device_class: "temperature" });
   S["alarm_control_panel.home"] = st("alarm_control_panel.home", "disarmed", { friendly_name: "Home alarm", supported_features: 7 });
-  S["weather.home"] = st("weather.home", "rainy", { temperature: 11.8, temperature_unit: "°C" });
+  S["weather.home"] = st("weather.home", "rainy", { temperature: 11.8, temperature_unit: "°C", forecast: [
+    { datetime: "2026-11-18T12:00:00Z", condition: "rainy", temperature: 13, templow: 8, precipitation: 4.2 },
+    { datetime: "2026-11-19T12:00:00Z", condition: "partlycloudy", temperature: 16, templow: 7, precipitation: 0 }
+  ] });
+  S["sensor.weather_ai"] = st("sensor.weather_ai", "Piogge sparse nel pomeriggio con schiarite in serata. Vento debole.");
+  S["sensor.ws_wind"] = st("sensor.ws_wind", "18.5", { unit_of_measurement: "km/h" });
+  S["sensor.ws_rain"] = st("sensor.ws_rain", "4.2", { unit_of_measurement: "mm" });
+  S["sensor.ws_uv"] = st("sensor.ws_uv", "3.1", { unit_of_measurement: "UV" });
+  S["sensor.ws_pressure"] = st("sensor.ws_pressure", "1014.2", { unit_of_measurement: "hPa" });
+  S["sensor.ws_lightning_dist"] = st("sensor.ws_lightning_dist", "12", { unit_of_measurement: "km" });
+  S["sensor.ws_lightning_count"] = st("sensor.ws_lightning_count", "4", { unit_of_measurement: "scariche" });
+  S["vacuum.roborock"] = st("vacuum.roborock", "docked", { friendly_name: "Roborock Saros 10R", battery_level: 95 });
+  S["switch.irr_zone1"] = st("switch.irr_zone1", "off", { friendly_name: "Irrigazione Prato" });
+  S["sensor.moist_zone1"] = st("sensor.moist_zone1", "48", { unit_of_measurement: "%" });
+  S["switch.irr_zone2"] = st("switch.irr_zone2", "off", { friendly_name: "Irrigazione Siepe" });
+  S["sensor.moist_zone2"] = st("sensor.moist_zone2", "26", { unit_of_measurement: "%" });
+  S["sensor.srv_cpu"] = st("sensor.srv_cpu", "18", { unit_of_measurement: "%" });
+  S["sensor.srv_ram"] = st("sensor.srv_ram", "42", { unit_of_measurement: "%" });
+  S["sensor.srv_temp"] = st("sensor.srv_temp", "38.5", { unit_of_measurement: "°C" });
+  S["sensor.srv_disk"] = st("sensor.srv_disk", "35", { unit_of_measurement: "%" });
+  S["sensor.ups_battery"] = st("sensor.ups_battery", "100", { unit_of_measurement: "%" });
+  S["sensor.ups_load"] = st("sensor.ups_load", "24", { unit_of_measurement: "%" });
+  S["sensor.ups_runtime"] = st("sensor.ups_runtime", "45", { unit_of_measurement: "min" });
+  S["sensor.ups_status"] = st("sensor.ups_status", "OL CHRG");
+  S["sensor.ups_voltage"] = st("sensor.ups_voltage", "230", { unit_of_measurement: "V" });
+  S["counter.lavatrice_cicli"] = st("counter.lavatrice_cicli", "28");
+  S["counter.lavastoviglie_cicli"] = st("counter.lavastoviglie_cicli", "12");
+  S["sensor.washing_month"] = st("sensor.washing_month", "24.5", { unit_of_measurement: "kWh" });
+  S["camera.ingresso"] = st("camera.ingresso", "idle", { friendly_name: "Telecamera Ingresso", entity_picture: "/assets/btn/cam_demo.jpg" });
+  S["light.faretto_cam"] = st("light.faretto_cam", "off", { friendly_name: "Faretto Telecamera" });
+  S["switch.sirena_cam"] = st("switch.sirena_cam", "off", { friendly_name: "Sirena Telecamera" });
   S["sensor.house_power"] = st("sensor.house_power", "642", { unit_of_measurement: "W" });
   S["climate.living"] = st("climate.living", "cool", { friendly_name: "Living AC", hvac_modes: ["off", "cool", "heat", "dry", "fan_only"], current_temperature: 24, temperature: 22, min_temp: 16, max_temp: 30, fan_modes: ["auto", "low", "high"], fan_mode: "auto", hvac_action: "cooling" });
   S["scene.movie"] = st("scene.movie", "unknown", { friendly_name: "Movie night" });
@@ -44,6 +74,8 @@
           var at = Object.assign({}, o.attributes);
           if (LASTB[id] !== undefined) { if (o.state === "on" && at.brightness) LASTB[id] = at.brightness; at.brightness = ns === "on" ? LASTB[id] : null; }
           S[id] = st(id, ns, at);
+        } else if (/^(switch|input_boolean)\./.test(id)) {
+          S[id] = st(id, ns, o.attributes);
         }
       });
       push();
@@ -82,18 +114,35 @@
       { area_id: null, name: "Office <b>&</b> study", image: "sgabuzzino", lights: ["light.office"], motion: [], openings: [], temperature: [] },
       { area_id: null, name: "Bathroom", image: "bagno_piccolo", lights: ["light.bathroom"], motion: [], openings: [], temperature: [] }
     ],
-    devices: { alarm: "alarm_control_panel.home", weather: "weather.home", climate: ["climate.living", "climate.bedroom_ir"], power: "sensor.house_power", energy: "sensor.house_energy",
-      appliances: ["sensor.washing_machine_power", "sensor.dishwasher_power"], cameras: [], currency: q.get("cur") || "€" },
+    devices: { alarm: "alarm_control_panel.home", weather: "weather.home", weather_ai: "sensor.weather_ai",
+      weather_station: { wind: "sensor.ws_wind", rain: "sensor.ws_rain", uv: "sensor.ws_uv", pressure: "sensor.ws_pressure", lightning_distance: "sensor.ws_lightning_dist", lightning_count: "sensor.ws_lightning_count" },
+      vacuum: "vacuum.roborock",
+      garden: { zones: [{ name: "Prato", switch: "switch.irr_zone1", moisture: "sensor.moist_zone1" }, { name: "Siepe", switch: "switch.irr_zone2", moisture: "sensor.moist_zone2" }] },
+      server: { cpu: "sensor.srv_cpu", ram: "sensor.srv_ram", temp: "sensor.srv_temp", disk: "sensor.srv_disk" },
+      ups: { battery: "sensor.ups_battery", load: "sensor.ups_load", runtime: "sensor.ups_runtime", status: "sensor.ups_status", voltage: "sensor.ups_voltage" },
+      climate: ["climate.living", "climate.bedroom_ir"], power: "sensor.house_power", energy: "sensor.house_energy",
+      appliances: [
+        { p: "sensor.washing_machine_power", month: "sensor.washing_month", counter: "counter.lavatrice_cicli", counter_limit: 30 },
+        { p: "sensor.dishwasher_power", counter: "counter.lavastoviglie_cicli", counter_limit: 25 }
+      ],
+      cameras: [{ img: "camera.ingresso", live: "camera.ingresso", light: "light.faretto_cam", siren: "switch.sirena_cam" }],
+      currency: q.get("cur") || "€" },
     scenes: { morning: ["light.kitchen", "light.bathroom"], cinema: ["scene.movie"], dinner: ["light.kitchen", "light.kitchen_island", "light.living_room_lamp"], night_alarm: true, away_alarm: true }
   };
   /* come build_card_config in helpers.py */
   function cardFrom(o) {
-    var d = o.devices, ent = { alarm: d.alarm, weather: d.weather, energy: { power: d.power, energyTotal: d.energy, appliances: d.appliances.map(function (p) { return { p: p }; }) } };
-    if (d.climate.length) { ent.climate = d.climate[0]; ent.climates = d.climate; }
+    var d = o.devices, ent = {
+      alarm: d.alarm, weather: d.weather, weather_ai: d.weather_ai, weather_station: d.weather_station,
+      vacuum: d.vacuum, server: d.server, ups: d.ups,
+      cameras: d.cameras,
+      energy: { power: d.power, energyTotal: d.energy, appliances: d.appliances.map(function (p) { return typeof p === "string" ? { p: p } : p; }) }
+    };
+    if (d.climate && d.climate.length) { ent.climate = d.climate[0]; ent.climates = d.climate; }
     var sc = [];
     ["morning", "cinema", "dinner"].forEach(function (id) { var v = o.scenes[id] || [], ha = v.filter(function (x) { return /^(scene|script)\./.test(x); }); if (ha.length) sc.push({ id: id, entity: ha[0] }); else if (v.length) sc.push({ id: id, lights: v }); });
     sc.push({ id: "night", alarm: o.scenes.night_alarm && d.alarm ? "armed_night" : null }, { id: "away", alarm: o.scenes.away_alarm && d.alarm ? "armed_away" : null });
-    var c = { language: lang, rooms: o.rooms.map(function (r) { return { name: r.name, area: r.area_id, image: r.image, lights: r.lights, motion: r.motion, openings: r.openings, temperature: r.temperature }; }), scenes: sc, entities: ent, currency: d.currency };
+    sc.push({ id: "relax", name: "Relax", sub: "Luce soffusa", icon: "mdi-weather-sunset", lights: ["light.living_room_lamp"] });
+    var c = { language: lang, assets: "../../dist/btn/", button_style: q.get("btn") || "img", climate_style: q.get("clstyle") || "split", garden: d.garden, rooms: o.rooms.map(function (r) { return { name: r.name, area: r.area_id, image: r.image, lights: r.lights, motion: r.motion, openings: r.openings, temperature: r.temperature }; }), scenes: sc, entities: ent, currency: d.currency };
     if (q.get("edit") !== "0") c.entry_id = "test_entry";
     return c;
   }
