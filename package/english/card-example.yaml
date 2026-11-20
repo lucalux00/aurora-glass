@@ -79,14 +79,21 @@ windows:
   camera: light.bedroom             # bedroom window
 
 entities:
-  alarm: alarm_control_panel.home         # alarm panel
+  alarm: alarm_control_panel.home         # alarm panel (buttons follow its modes: Home, Night, Away)
+  alarms:                                 # optional: camera modes (Arlo, Blink…) or another panel
+    - alarm_control_panel.arlo_base
   weather: weather.forecast_home          # dynamic weather with today/tomorrow forecasts
-  weather_ai: sensor.weather_ai_summary   # optional: AI summary text
+  weather_ai: input_text.weather_ai       # optional: weather sentence (sensor, input_text or text)
   climate: climate.living_room            # air conditioner or thermostat
 
   # --- WEATHER STATION (e.g. Ecowitt, Netatmo): wind, rain, UV, lightning detection
-  weather_station:
+  weather_station:                        # opens when you tap the temperature at the top
+    temp_out: sensor.ecowitt_outdoor_temperature   # replaces the weather service temperature
+    hum_out: sensor.ecowitt_outdoor_humidity
+    temp_in: sensor.ecowitt_indoor_temperature
+    hum_in: sensor.ecowitt_indoor_humidity
     wind: sensor.ecowitt_wind_speed
+    gust: sensor.ecowitt_wind_gust
     rain: sensor.ecowitt_rain_rate
     uv: sensor.ecowitt_uv_index
     pressure: sensor.ecowitt_pressure
@@ -96,7 +103,11 @@ entities:
   # --- ROBOT VACUUM (e.g. Roborock Saros 10R / Dreame / Roomba)
   vacuum: vacuum.roborock_saros_10r
 
-  # --- CAMERAS (Security view) with spotlight and siren switches
+  # --- BATTERIES: the section finds battery sensors by itself; batteries: false hides it
+  # batteries: false
+
+  # --- CAMERAS (Security view): spotlight, siren and battery are found among the entities of the
+  #     same device; write them here only to pick others (false = none)
   cameras:
     - n: Front door
       img: camera.front_door

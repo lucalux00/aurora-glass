@@ -315,7 +315,8 @@ main { display: flex; flex-direction: column; gap: 22px; padding: 18px 0 150px; 
 .stile.active .st-state { color: var(--ok); }
 .stile.open { border-color: color-mix(in srgb, var(--warn) 65%, transparent); box-shadow: 0 14px 30px -16px var(--warn); }
 .stile.open .st-state { color: var(--warn); }
-.cams { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.cams { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.cam { min-width: 0; }
 .cam { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
 .cam h4 { margin: 2px 4px 0; font-family: var(--font-display); font-size: .92rem; font-weight: 700; }
 .feed { position: relative; overflow: hidden; border-radius: 20px; aspect-ratio: 16 / 8.5; background: repeating-linear-gradient(0deg, rgba(255,255,255,.04) 0 1px, transparent 1px 4px), radial-gradient(120% 90% at 30% 20%, color-mix(in srgb, var(--b1) 60%, #10142e), transparent 70%), linear-gradient(135deg, #141a3a, color-mix(in srgb, var(--b3) 40%, #0b0f24)); }
@@ -327,7 +328,7 @@ main { display: flex; flex-direction: column; gap: 22px; padding: 18px 0 150px; 
 
 /* ---------- telecamere: faretto e sirena ---------- */
 .cam-actions { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
-.cam-act-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; border-radius: 14px; font-size: .78rem; font-weight: 700; border: 1px solid var(--border); background: var(--surface-2); color: var(--dim); cursor: pointer; transition: all .25s var(--spring); }
+.cam-act-btn { flex: 1; min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; border-radius: 14px; font-size: .78rem; font-weight: 700; border: 1px solid var(--border); background: var(--surface-2); color: var(--dim); cursor: pointer; transition: all .25s var(--spring); }
 .cam-act-btn:hover { color: var(--text); border-color: var(--acc-text); transform: translateY(-1px); }
 .cam-act-btn.active { background: color-mix(in srgb, var(--warn) 22%, var(--surface-2)); border-color: var(--warn); color: var(--warn); }
 .cam-act-btn.siren-btn.active { background: color-mix(in srgb, var(--danger) 25%, var(--surface-2)); border-color: var(--danger); color: #fff; animation: shake .7s ease-in-out infinite; }
@@ -605,35 +606,51 @@ footer.note { text-align: center; color: var(--faint); font-size: .78rem; paddin
 .w-ai-summary { display: flex; align-items: flex-start; gap: 8px; padding: 8px 14px; border-radius: 16px; background: color-mix(in srgb, var(--b1) 18%, rgba(0,0,0,.4)); border: 1px solid color-mix(in srgb, var(--b1) 40%, transparent); backdrop-filter: blur(10px); font-size: .82rem; font-weight: 600; line-height: 1.35; color: var(--text); }
 .w-ai-summary i { font-size: 1.1rem; color: #FACC15; flex: none; margin-top: 1px; }
 
-/* ---------- stazione meteo (Ecowitt / fulmini / sensori) ---------- */
-.ws-modal { position: absolute; top: calc(100% + 8px); left: 14px; right: 14px; z-index: 48; max-width: 520px; padding: 18px; border-radius: 26px; background: color-mix(in srgb, var(--surface-solid) 96%, transparent); border: 1px solid var(--border); box-shadow: var(--shadow); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); animation: rise .35s var(--ease) both; }
-.ws-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
-.ws-head h3 { margin: 0; font-family: var(--font-display); font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-.ws-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
-.ws-card { display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: 16px; background: var(--surface-2); border: 1px solid var(--border); }
-.ws-card .ws-lbl { display: flex; align-items: center; gap: 6px; font-size: .72rem; font-weight: 700; color: var(--dim); }
-.ws-card .ws-val { font-family: var(--font-display); font-size: 1.25rem; font-weight: 800; color: var(--text); }
-.ws-card.lightning-alert { background: color-mix(in srgb, #E11D48 18%, var(--surface-2)); border-color: #E11D48; }
-.ws-card.lightning-alert .ws-val { color: #FDA4AF; }
+.w-fc-chip { cursor: pointer; }
+.w-fc-chip small { font-size: .74rem; opacity: .8; }
 
-/* ---------- robot aspirapolvere (Roborock Saros) ---------- */
-.vacuum-card { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: clamp(14px, 2.5vw, 24px); padding: 18px 22px; overflow: hidden; position: relative; }
-.vac-icon-wrap { position: relative; width: 62px; height: 62px; flex: none; }
+/* ---------- stazione meteo (Ecowitt / Netatmo / fulmini) ---------- */
+.ws-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(138px, 1fr)); gap: 10px; }
+.ws-card { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: 16px; background: var(--surface-2); border: 1px solid var(--border); text-align: left; color: inherit; font: inherit; cursor: pointer; transition: border-color .25s, transform .3s var(--spring); }
+.ws-card:hover { border-color: var(--acc-text); transform: translateY(-2px); }
+.ws-card.na { opacity: .55; }
+.ws-card .ws-lbl { display: flex; align-items: center; gap: 6px; font-size: .74rem; font-weight: 700; color: var(--dim); }
+.ws-card .ws-lbl i { font-size: 1rem; color: var(--acc-text); }
+.ws-card .ws-val { font-family: var(--font-display); font-size: 1.3rem; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+.ws-card .ws-val small { font-size: .78rem; font-weight: 700; color: var(--dim); margin-left: 2px; }
+.ws-card .ws-val small.ws-x { display: block; margin: 2px 0 0; font-family: inherit; }
+.ws-card.lightning-alert { background: color-mix(in srgb, var(--danger) 16%, var(--surface-2)); border-color: var(--danger); }
+.ws-card.lightning-alert .ws-val { color: var(--danger); }
+.ws-sec { grid-column: 1 / -1; margin: 6px 2px -2px; font-size: .74rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); }
+#chip-temp[data-ws="1"]::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--acc-text); margin-left: 2px; }
+
+/* ---------- robot aspirapolvere e tagliaerba ---------- */
+.vacuum-card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "ico info act"; align-items: center; gap: 14px clamp(14px, 2.5vw, 24px); padding: 18px 22px; overflow: hidden; position: relative; }
+.vac-icon-wrap { grid-area: ico; position: relative; width: 62px; height: 62px; flex: none; }
 .vac-ico { width: 100%; height: 100%; border-radius: 20px; display: grid; place-items: center; font-size: 2.2rem; color: #fff; background: linear-gradient(135deg, #6366F1, #3B82F6); box-shadow: 0 10px 24px -8px #6366F1; }
-.vacuum-card.cleaning .vac-ico { animation: spin 8s linear infinite; }
-.vacuum-card.cleaning .vac-pulse { position: absolute; inset: -4px; border-radius: 24px; border: 2px solid #6366F1; animation: st-ping 1.6s ease-out infinite; }
-.vac-info { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-.vac-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.vac-top h3 { margin: 0; font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; }
-.vac-badge { font-size: .74rem; font-weight: 800; padding: 3px 10px; border-radius: 99px; background: var(--surface-2); color: var(--dim); }
-.vacuum-card.cleaning .vac-badge { background: color-mix(in srgb, var(--ok) 20%, transparent); color: var(--ok); }
+.vac-pulse { display: none; }
+#vacuum-wrap.is-cleaning .vac-ico i { animation: vac-wobble 2.4s ease-in-out infinite; display: inline-grid; }
+#vacuum-wrap.is-cleaning .vac-pulse { display: block; position: absolute; inset: -4px; border-radius: 24px; border: 2px solid #6366F1; animation: st-ping 1.6s ease-out infinite; pointer-events: none; }
+@keyframes vac-wobble { 0%, 100% { transform: translateX(-3px) rotate(-6deg); } 50% { transform: translateX(3px) rotate(6deg); } }
+.vac-info { grid-area: info; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.vac-top { display: flex; align-items: center; gap: 6px 10px; flex-wrap: wrap; min-width: 0; }
+.vac-top h3 { margin: 0; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; }
+.vac-badge { font-size: .76rem; font-weight: 800; padding: 3px 10px; border-radius: 99px; background: var(--surface-2); color: var(--dim); white-space: nowrap; }
+#vacuum-wrap.is-cleaning .vac-badge { background: color-mix(in srgb, var(--ok) 20%, transparent); color: var(--ok); }
 .vac-stats { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
-.vchip { display: inline-flex; align-items: center; gap: 5px; font-size: .78rem; font-weight: 700; color: var(--dim); }
+.vchip { display: inline-flex; align-items: center; gap: 5px; font-size: .8rem; font-weight: 700; color: var(--dim); }
 .vchip b { color: var(--text); }
-.vac-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.vbtn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font-weight: 700; font-size: .84rem; cursor: pointer; transition: all .25s var(--spring); }
+.vchip.low, .vchip.low b { color: var(--danger); }
+.vac-actions { grid-area: act; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.vbtn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 16px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font-weight: 700; font-size: .84rem; cursor: pointer; transition: all .25s var(--spring); white-space: nowrap; }
 .vbtn:hover { transform: translateY(-2px); border-color: var(--acc-text); }
 .vbtn.play { background: linear-gradient(135deg, var(--a1), var(--a2)); color: #fff; border: 0; box-shadow: 0 8px 18px -6px var(--a1); }
+/* schermi stretti: i comandi vanno sotto, su tutta la larghezza (prima il nome finiva sopra i pulsanti) */
+@media (max-width: 860px) {
+  .vacuum-card { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "ico info" "act act"; padding: 16px; }
+  .vac-actions { justify-content: stretch; }
+  .vac-actions .vbtn { flex: 1 1 0; min-width: 0; padding: 10px 8px; }
+}
 
 /* ---------- giardino & irrigazione ---------- */
 .garden-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
@@ -654,7 +671,74 @@ footer.note { text-align: center; color: var(--faint); font-size: .78rem; paddin
 .gm-lbl { color: var(--dim); display: flex; align-items: center; gap: 4px; }
 .gm-val { color: var(--text); font-variant-numeric: tabular-nums; }
 .gm-bar { flex: 1; height: 6px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
-.gm-bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #F59E0B, #10B981, #06B6D4); }
+.gm-bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #F59E0B, #10B981, #06B6D4); transition: width .6s var(--ease); }
+.g-water-flow { opacity: .35; transition: opacity .4s; }
+.garden-card[data-active="true"] .g-water-flow { opacity: 1; }
+.garden-card:not([data-active="true"]) .flow-wave { animation-play-state: paused; }
+.g-timer { display: flex; flex-direction: column; gap: 6px; }
+.g-timer-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: .78rem; color: var(--dim); }
+.g-timer-top b { color: var(--text); font-variant-numeric: tabular-nums; }
+.g-left { font-variant-numeric: tabular-nums; }
+.g-range, .lc-range { -webkit-appearance: none; appearance: none; width: 100%; height: 28px; background: transparent; cursor: pointer; margin: 0; }
+.g-range::-webkit-slider-runnable-track, .lc-range::-webkit-slider-runnable-track { height: 8px; border-radius: 99px; background: linear-gradient(90deg, #10B981 var(--p, 30%), var(--surface-2) var(--p, 30%)); border: 1px solid var(--border); }
+.g-range::-moz-range-track, .lc-range::-moz-range-track { height: 8px; border-radius: 99px; background: linear-gradient(90deg, #10B981 var(--p, 30%), var(--surface-2) var(--p, 30%)); border: 1px solid var(--border); }
+.g-range::-webkit-slider-thumb, .lc-range::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; margin-top: -8px; border-radius: 50%; background: #fff; border: 0; box-shadow: 0 2px 8px rgba(0,0,0,.4); }
+.g-range::-moz-range-thumb, .lc-range::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 0; box-shadow: 0 2px 8px rgba(0,0,0,.4); }
+.g-range:disabled { opacity: .5; cursor: default; }
+.lc-range::-webkit-slider-runnable-track { background: linear-gradient(90deg, var(--a1) var(--p, 60%), var(--surface-2) var(--p, 60%)); }
+.lc-range::-moz-range-track { background: linear-gradient(90deg, var(--a1) var(--p, 60%), var(--surface-2) var(--p, 60%)); }
+
+/* ---------- batterie dei dispositivi ---------- */
+.bat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); gap: 10px; }
+.bat { --bc: var(--ok); display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-radius: 18px; border: 1px solid var(--border); background: var(--surface); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); color: var(--text); font: inherit; text-align: left; cursor: pointer; min-width: 0; transition: transform .3s var(--spring), border-color .25s; }
+.bat:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--bc) 60%, var(--border)); }
+.bat[data-lvl="mid"] { --bc: var(--warn); }
+.bat[data-lvl="low"] { --bc: var(--danger); border-color: color-mix(in srgb, var(--danger) 55%, var(--border)); }
+.bat[data-lvl="na"] { --bc: #64748B; opacity: .7; }
+.bat > i { font-size: 1.4rem; color: var(--bc); flex: none; }
+.bat-t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.bat-t b { font-size: .84rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bat-t small { font-size: .74rem; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bat-v { font-family: var(--font-display); font-weight: 800; font-size: .95rem; color: var(--bc); font-variant-numeric: tabular-nums; }
+.bat-more { margin-top: 10px; width: 100%; }
+
+/* ---------- colori ed effetti delle luci RGB ---------- */
+.orb .o-col { position: absolute; right: 12px; top: 44px; z-index: 4; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-size: 1.05rem; color: #fff; background: rgba(8,10,30,.55); border: 1px solid rgba(255,255,255,.28); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); box-shadow: inset 0 0 0 3px var(--lc, transparent); cursor: pointer; transition: transform .3s var(--spring); }
+.orb .o-col:hover { transform: scale(1.1); }
+.orb .o-col:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.lc-sec { display: flex; flex-direction: column; gap: 10px; }
+.lc-sec h5 { margin: 0; font-size: .78rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--dim); display: flex; justify-content: space-between; }
+.lc-sec h5 b { color: var(--text); letter-spacing: 0; }
+.lc-sw { display: grid; grid-template-columns: repeat(auto-fill, minmax(42px, 1fr)); gap: 10px; }
+.lc-sw button { aspect-ratio: 1; border-radius: 50%; border: 2px solid rgba(255,255,255,.25); background: var(--c); cursor: pointer; box-shadow: 0 6px 16px -6px var(--c); transition: transform .3s var(--spring); }
+.lc-sw button:hover { transform: scale(1.1); }
+.lc-sw button[aria-pressed="true"] { border-color: #fff; box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 60%, transparent), 0 6px 16px -6px var(--c); }
+.lc-white { grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); }
+.lc-white button { aspect-ratio: auto; border-radius: 14px; padding: 10px 6px; font: inherit; font-size: .76rem; font-weight: 800; color: #1E293B; }
+.lc-pick { display: inline-flex; align-items: center; gap: 10px; font-size: .82rem; font-weight: 700; color: var(--dim); cursor: pointer; }
+.lc-pick input { width: 42px; height: 32px; border: 0; padding: 0; background: none; cursor: pointer; }
+.lc-fx { display: flex; flex-wrap: wrap; gap: 8px; max-height: 190px; overflow: auto; }
+.lc-fx button { border: 1px solid var(--border); background: var(--surface-2); color: var(--text); border-radius: 99px; padding: 8px 14px; font: inherit; font-size: .8rem; font-weight: 700; cursor: pointer; }
+.lc-fx button[aria-pressed="true"] { color: #fff; border-color: transparent; background: linear-gradient(135deg, var(--a1), var(--a2)); }
+
+/* ---------- altre centrali e modalità delle telecamere ---------- */
+.ax-list { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+.ax-row { --al: var(--ok); display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 12px; border-radius: 18px; background: var(--surface-2); border: 1px solid var(--border); }
+.ax-row[data-s="armed"] { --al: var(--warn); }
+.ax-row[data-s="alarm"] { --al: var(--danger); border-color: var(--danger); }
+.ax-row[data-s="na"] { --al: #64748B; }
+.ax-ico { width: 38px; height: 38px; border-radius: 13px; display: grid; place-items: center; font-size: 1.25rem; color: #fff; background: var(--al); flex: none; }
+.ax-t { flex: 1 1 140px; min-width: 0; display: flex; flex-direction: column; }
+.ax-t b { font-size: .88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ax-t small { font-size: .76rem; color: var(--dim); }
+.ax-modes { display: flex; gap: 6px; flex-wrap: wrap; }
+.ax-modes button { border: 1px solid var(--border); background: var(--surface); color: var(--dim); border-radius: 12px; padding: 8px 12px; font: inherit; font-size: .78rem; font-weight: 800; cursor: pointer; white-space: nowrap; }
+.ax-modes button[aria-pressed="true"] { color: #fff; border-color: transparent; background: linear-gradient(135deg, var(--al), color-mix(in srgb, var(--al) 55%, #000)); }
+
+/* ---------- telecamere: batteria e foto ---------- */
+.cam-bat { display: inline-flex; align-items: center; gap: 3px; font-size: .76rem; font-weight: 800; color: var(--dim); white-space: nowrap; }
+.cam-bat.low { color: var(--danger); }
+.cam-bat i { font-size: 1rem; }
 
 /* ---------- server e gruppo di continuità (UPS NUT) ---------- */
 .infra-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 10px; }
@@ -714,8 +798,8 @@ footer.note { text-align: center; color: var(--faint); font-size: .78rem; paddin
 .cl-sel label { display: flex; flex-direction: column; gap: 6px; font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
 .cl-sel select { width: 100%; padding: 11px 12px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font: inherit; font-size: .84rem; font-weight: 700; letter-spacing: 0; text-transform: none; cursor: pointer; }
 .cl-sel select option { background: var(--surface-solid); color: var(--text); }
-.cam-head { display: flex; align-items: center; gap: 8px; margin: 2px 2px 0; }
-.cam-head h4 { margin: 0; flex: 1; font-family: var(--font-display); font-size: .92rem; font-weight: 700; }
+.cam-head { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; margin: 2px 2px 0; }
+.cam-head h4 { margin: 0; flex: 1 1 auto; min-width: 0; font-family: var(--font-display); font-size: .92rem; font-weight: 700; }
 .cl-hint { margin: 10px 0 0; padding: 9px 13px; border-radius: 14px; max-width: 48ch; font-size: .8rem; font-weight: 700; line-height: 1.35; color: var(--warn); background: color-mix(in srgb, var(--warn) 15%, transparent); border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent); }
 /* più climatizzatori: una riga per scegliere quale comandare */
 .cl-pick { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 12px; scrollbar-width: none; }
@@ -734,7 +818,7 @@ footer.note { text-align: center; color: var(--faint); font-size: .78rem; paddin
 .sec-edit:hover { color: var(--text); border-color: var(--acc-text); }
 .sec-edit i { color: var(--acc-text); }
 .cam-off { font-size: .64rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #fff; background: #E11D48; padding: 3px 8px; border-radius: 99px; }
-.cam-meta { font-size: .68rem; color: var(--faint); font-weight: 700; }
+.cam-meta { font-size: .68rem; color: var(--faint); font-weight: 700; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cbtn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); border-radius: 12px; padding: 7px 10px; font-weight: 800; font-size: .74rem; cursor: pointer; transition: transform .3s var(--spring), background .25s; }
 .cbtn:hover { transform: translateY(-2px); }
 .cbtn.go { color: #fff; border-color: transparent; background: linear-gradient(135deg, #F43F5E, #F97316); }
@@ -772,7 +856,9 @@ footer.note { text-align: center; color: var(--faint); font-size: .78rem; paddin
   .rooms { grid-template-columns: 1fr; }
   .room.w3 { grid-column: span 1; }
   .w3 .room-body, .rooms.auto .room-body { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .grid2, .cams { grid-template-columns: 1fr; }
+  .grid2 { grid-template-columns: 1fr; }
+  .cams { grid-template-columns: minmax(0, 1fr); }
+  .cam-meta { order: 10; flex-basis: 100%; }
   .hero { min-height: 410px; }
   .hero-art { height: auto; width: 100%; -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 42%); mask-image: linear-gradient(180deg, transparent 0%, #000 42%); }
   .hero-body { padding-bottom: 190px; }
@@ -970,22 +1056,8 @@ footer.note { text-align: center; color: var(--faint); font-size: .78rem; paddin
               </div>
             </div>
             <div class="w-ai-summary" id="w-ai-summary" hidden>
-              <i class="mdi mdi-sparkles"></i>
+              <i class="mdi mdi-creation"></i>
               <span id="w-ai-text">Previsione meteo del giorno…</span>
-            </div>
-          </div>
-          <!-- Modal Stazione Meteo (Ecowitt / fulmini / vento / pioggia) -->
-          <div class="ws-modal" id="ws-modal" hidden role="dialog" aria-modal="true" aria-labelledby="ws-title">
-            <div class="ws-head">
-              <h3 id="ws-title"><i class="mdi mdi-weather-station"></i>Stazione Meteo</h3>
-              <button class="icon-btn" id="ws-close" type="button" aria-label="Chiudi"><i class="mdi mdi-close"></i></button>
-            </div>
-            <div class="ws-grid" id="ws-grid">
-              <div class="ws-card"><span class="ws-lbl"><i class="mdi mdi-weather-windy"></i>Vento</span><span class="ws-val" id="ws-wind">-- km/h</span></div>
-              <div class="ws-card"><span class="ws-lbl"><i class="mdi mdi-weather-pouring"></i>Pioggia oggi</span><span class="ws-val" id="ws-rain">-- mm</span></div>
-              <div class="ws-card"><span class="ws-lbl"><i class="mdi mdi-white-balance-sunny"></i>Indice UV</span><span class="ws-val" id="ws-uv">--</span></div>
-              <div class="ws-card"><span class="ws-lbl"><i class="mdi mdi-gauge"></i>Pressione</span><span class="ws-val" id="ws-press">-- hPa</span></div>
-              <div class="ws-card" id="ws-card-light"><span class="ws-lbl"><i class="mdi mdi-lightning-bolt"></i>Fulmini</span><span class="ws-val" id="ws-light">0 colpi</span></div>
             </div>
           </div>
         </div>
@@ -1071,6 +1143,13 @@ footer.note { text-align: center; color: var(--faint); font-size: .78rem; paddin
         <h2 class="sec-title">Giardino & Irrigazione <small id="garden-sub">Zone smart</small></h2>
         <div class="garden-grid" id="garden-zones"></div>
       </div>
+
+      <!-- Batterie dei dispositivi (trovate da sole: sensori con classe «battery») -->
+      <div style="--i:4" id="bat-wrap" hidden>
+        <h2 class="sec-title">Batterie <small id="bat-sub">dalla più scarica</small></h2>
+        <div class="bat-grid" id="bat-grid"></div>
+        <button class="btn ghost bat-more" id="bat-more" type="button" hidden><i class="mdi mdi-chevron-down"></i><span>Mostra tutte</span></button>
+      </div>
     </section>
 
     <!-- ===================== VISTA SICUREZZA ===================== -->
@@ -1106,6 +1185,12 @@ footer.note { text-align: center; color: var(--faint); font-size: .78rem; paddin
           <div class="tiles" id="open-tiles"></div>
         </article>
       </div>
+
+      <!-- altre centrali: modalità delle telecamere (Arlo, Blink, Ring…) o una seconda centrale -->
+      <article class="card panel alarms-x" id="alarms-x" style="--i:2.5" hidden>
+        <h3><i class="mdi mdi-cctv" style="color:var(--acc-text)"></i>Modalità telecamere e altre centrali<button class="sec-edit home-edit" type="button" data-home="security"><i class="mdi mdi-pencil"></i>Modifica</button></h3>
+        <div class="ax-list" id="ax-list"></div>
+      </article>
 
       <div class="cams" id="cams" style="--i:3">
         <article class="card cam"><h4>Ingresso</h4><div class="feed"><span class="live">LIVE</span><span class="stamp" data-stamp>--:--:--</span></div></article>
@@ -1285,6 +1370,24 @@ footer.note { text-align: center; color: var(--faint); font-size: .78rem; paddin
     <div class="mhead"><h2><span id="code-title">Inserisci il codice</span><small id="code-sub"></small></h2></div>
     <input class="code-in" id="code-in" type="password" inputmode="numeric" autocomplete="off" aria-label="Codice allarme">
     <div class="mfoot"><button class="btn ghost" id="code-cancel" type="button">Annulla</button><button class="btn" id="code-ok" type="button">Conferma</button></div>
+  </div>
+</div>
+<!-- Stazione meteo (Ecowitt, Netatmo…): temperatura e umidità fuori e dentro, vento, pioggia, UV, pressione, fulmini -->
+<div class="modal" id="wsbox" role="dialog" aria-modal="true" aria-labelledby="ws-title" aria-hidden="true">
+  <div class="mcard" style="width:min(560px,100%)">
+    <div class="mhead"><h2><span id="ws-title">Stazione Meteo</span><small id="ws-sub">tocca un valore per lo storico</small></h2><button class="icon-btn" id="ws-close" type="button" aria-label="Chiudi"><i class="mdi mdi-close"></i></button></div>
+    <div class="ws-grid" id="ws-grid"></div>
+  </div>
+</div>
+<!-- Colori ed effetti di una luce RGB -->
+<div class="modal" id="colorbox" role="dialog" aria-modal="true" aria-labelledby="lc-title" aria-hidden="true">
+  <div class="mcard" style="width:min(460px,100%)">
+    <div class="mhead"><h2><span id="lc-title">Colori ed effetti</span><small id="lc-sub"></small></h2><button class="icon-btn" id="lc-close" type="button" aria-label="Chiudi"><i class="mdi mdi-close"></i></button></div>
+    <div class="lc-sec" id="lc-colors-sec"><h5>Colore</h5><div class="lc-sw" id="lc-colors"></div><label class="lc-pick"><input type="color" id="lc-custom" value="#ff8a3d"><span>Scegli un altro colore</span></label></div>
+    <div class="lc-sec" id="lc-temps-sec"><h5>Bianco</h5><div class="lc-sw lc-white" id="lc-temps"></div></div>
+    <div class="lc-sec" id="lc-bri-sec"><h5>Luminosità <b id="lc-bri-val">--</b></h5><input class="lc-range" type="range" id="lc-bri" min="1" max="100" step="1" value="60" aria-label="Luminosità"></div>
+    <div class="lc-sec" id="lc-fx-sec"><h5>Effetti</h5><div class="lc-fx" id="lc-fx"></div></div>
+    <div class="mfoot"><button class="btn ghost" id="lc-more" type="button"><i class="mdi mdi-tune-variant"></i>Altre impostazioni</button><button class="btn" id="lc-done" type="button"><i class="mdi mdi-check"></i>Fatto</button></div>
   </div>
 </div>
 <div class="modal" id="pricebox" role="dialog" aria-modal="true" aria-labelledby="pr-title" aria-hidden="true">

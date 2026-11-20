@@ -24,7 +24,12 @@
     weather: { ic: "mdi-weather-partly-cloudy", ok: function (id) { return /^weather\./.test(id); } },
     cameras: { ic: "mdi-cctv", ok: function (id) { return /^camera\./.test(id); } },
     vacuum: { ic: "mdi-robot-vacuum", ok: function (id) { return /^(vacuum|lawn_mower)\./.test(id); } },
-    switch_any: { ic: "mdi-toggle-switch", ok: function (id) { return /^(switch|valve)\./.test(id); } },
+    switch_any: { ic: "mdi-toggle-switch", ok: function (id) { return /^(switch|valve|input_boolean)\./.test(id); } },
+    humidity: { ic: "mdi-water-percent", ok: function (id, s) { return /^sensor\./.test(id) && dc(s) === "humidity"; } },
+    /* frase del meteo: un sensore (anche template), un input_text o un'entità text */
+    ai_text: { ic: "mdi-creation", ok: function (id) { return /^(sensor|input_text|text)\./.test(id); },
+      /* in cima input_text, text e i sensori che contengono una frase (non un numero) */
+      rank: function (id, s) { if (/^(input_text|text)\./.test(id)) return 2; var v = s ? String(s.state) : ""; return isNaN(parseFloat(v)) && v.length > 20 ? 2 : 0; } },
     moisture: { ic: "mdi-water-percent", ok: function (id, s) { return /^sensor\./.test(id); } },
     sensor_any: { ic: "mdi-gauge", ok: function (id) { return /^(sensor|binary_sensor)\./.test(id); } },
     scene: { ic: "mdi-palette", ok: function (id) { return /^(light|switch|scene|script)\./.test(id); } }
@@ -38,7 +43,7 @@
     var box = $("#homebox"), body = $("#hb-body"), tabsBox = $("#hb-tabs"), pickBox = $("#hb-pick");
     var D = null, orig = "", tab = "rooms", openRoom = -1, P = null, confirmT = 0;
     var TABS = [["rooms", T("Stanze"), "mdi-floor-plan"], ["climate", T("Clima"), "mdi-air-conditioner"], ["energy", T("Energia"), "mdi-lightning-bolt"],
-      ["security", T("Sicurezza"), "mdi-shield-home"], ["robot", T("Robot"), "mdi-robot-vacuum"], ["garden", T("Giardino"), "mdi-sprinkler-variant"],
+      ["security", T("Sicurezza"), "mdi-shield-home"], ["weather", T("Meteo"), "mdi-weather-partly-cloudy"], ["robot", T("Robot"), "mdi-robot-vacuum"], ["garden", T("Giardino"), "mdi-sprinkler-variant"],
       ["infra", T("Server & UPS"), "mdi-server-network"], ["scenes", T("Scene"), "mdi-palette"]];
     var ROOM_FIELDS = [["lights", T("Luci"), T("anche i relè e le prese che accendono una lampada")], ["motion", T("Sensori di movimento"), ""],
       ["openings", T("Porte e finestre"), T("anche le serrature")], ["temperature", T("Temperatura"), ""]];
@@ -84,7 +89,7 @@
         }),
         devices: {
           alarm: d.alarm || null, weather: d.weather || null, climate: list(d.climate), power: d.power || null, energy: d.energy || null,
-          appliances: list(d.appliances), cameras: list(d.cameras), currency: d.currency || null,
+          appliances: list(d.appliances), cameras: list(d.cameras), currency: d.currency || null, alarms: list(d.alarms),
           vacuums: list(d.vacuums).length ? list(d.vacuums) : list(d.vacuum), vacuum_model: d.vacuum_model || "Roborock",
           garden_z1_sw: d.garden_z1_sw || null, garden_z1_moist: d.garden_z1_moist || null,
           garden_z2_sw: d.garden_z2_sw || null, garden_z2_moist: d.garden_z2_moist || null,
@@ -93,6 +98,7 @@
           weather_ai: d.weather_ai || null,
           ws_wind: d.ws_wind || null, ws_rain: d.ws_rain || null, ws_uv: d.ws_uv || null, ws_press: d.ws_press || null,
           ws_lightning_dist: d.ws_lightning_dist || null, ws_lightning_count: d.ws_lightning_count || null,
+          ws_temp_out: d.ws_temp_out || null, ws_hum_out: d.ws_hum_out || null, ws_temp_in: d.ws_temp_in || null, ws_hum_in: d.ws_hum_in || null, ws_gust: d.ws_gust || null,
           server_cpu: d.server_cpu || null, server_ram: d.server_ram || null, server_temp: d.server_temp || null, server_disk: d.server_disk || null,
           ups_battery: d.ups_battery || null, ups_load: d.ups_load || null, ups_runtime: d.ups_runtime || null, ups_status: d.ups_status || null, ups_voltage: d.ups_voltage || null
         },
@@ -190,12 +196,21 @@
         multi("d.appliances", "power", T("Elettrodomestici"), T("il sensore di potenza di ognuno: presa smart o relè"));
     }
     function renderSecurity() {
-      return one("d.alarm", "alarm", T("Centrale allarme"), "") +
-        one("d.weather", "weather", T("Meteo"), T("temperatura esterna in alto")) +
-        one("d.weather_ai", "sensor_any", T("Sommario Meteo AI"), T("sensore con la frase descrittiva o AI del meteo")) +
+      return one("d.alarm", "alarm", T("Centrale allarme"), T("i tasti seguono le modalità che la centrale sa fare: In casa, Notte, Fuori casa")) +
+        multi("d.alarms", "alarm", T("Modalità telecamere e altre centrali"), T("es. Arlo, Blink: Fuori casa, In casa, Standby")) +
         multi("d.cameras", "cameras", T("Telecamere"), "") +
-        '<div class="hf-group"><h4><i class="mdi mdi-weather-station"></i>' + esc(T("Stazione Meteo (es. Ecowitt)")) + '</h4></div>' +
+        '<p class="note-sm">' + esc(T("Faretto, sirena e batteria di ogni telecamera vengono trovati da soli tra le entità dello stesso dispositivo. Il tasto Foto salva l'immagine in Media › aurora_glass.")) + "</p>";
+    }
+    function renderWeather() {
+      return one("d.weather", "weather", T("Meteo"), T("previsioni di oggi e domani e temperatura esterna in alto")) +
+        one("d.weather_ai", "ai_text", T("Frase del meteo (AI)"), T("sensore, input_text o text con la frase da mostrare")) +
+        '<div class="hf-group"><h4><i class="mdi mdi-weather-station"></i>' + esc(T("Stazione Meteo (es. Ecowitt, Netatmo)")) + " <small>" + esc(T("si apre toccando la temperatura in alto")) + '</small></h4></div>' +
+        one("d.ws_temp_out", "temperature", T("Temperatura esterna"), T("se c'è, sostituisce quella del servizio meteo")) +
+        one("d.ws_hum_out", "humidity", T("Umidità esterna"), "") +
+        one("d.ws_temp_in", "temperature", T("Temperatura interna"), T("es. la console della stazione")) +
+        one("d.ws_hum_in", "humidity", T("Umidità interna"), "") +
         one("d.ws_wind", "sensor_any", T("Sensore Vento"), T("velocità vento km/h")) +
+        one("d.ws_gust", "sensor_any", T("Raffica"), T("raffica massima km/h")) +
         one("d.ws_rain", "sensor_any", T("Sensore Pioggia"), T("pioggia mm o mm/h")) +
         one("d.ws_uv", "sensor_any", T("Indice UV"), T("indice raggi ultravioletti")) +
         one("d.ws_press", "sensor_any", T("Pressione atmosferica"), T("pressione in hPa")) +
@@ -215,7 +230,8 @@
         multi("d.vacuums", "vacuum", T("Robot di casa"), T("es. vacuum.roborock_saros_10r")) + mHtml;
     }
     function renderGarden() {
-      var h = '<p class="note-sm">' + esc(T("Ogni zona è un'elettrovalvola (interruttore o valvola di Home Assistant) con, se vuoi, il sensore di umidità del terreno. Le zone senza elettrovalvola né sensore non compaiono. Il nome della zona è quello dell'elettrovalvola.")) + "</p>";
+      var h = '<p class="note-sm">' + esc(T("Ogni zona è un'elettrovalvola (interruttore o valvola di Home Assistant) con, se vuoi, il sensore di umidità del terreno. Le zone senza elettrovalvola né sensore non compaiono. Il nome della zona è quello dell'elettrovalvola.")) + "</p>" +
+        '<p class="note-sm">' + esc(T("Nella plancia ogni zona ha un cursore con la durata: Home Assistant chiude l'elettrovalvola da solo allo scadere, anche con la plancia chiusa.")) + "</p>";
       for (var i = 1; i <= 4; i++) {
         h += one("d.garden_z" + i + "_sw", "switch_any", T("Zona {n}: elettrovalvola", { n: i }), i === 1 ? T("es. irrigazione prato") : "") +
           one("d.garden_z" + i + "_moist", "moisture", T("Zona {n}: umidità terreno", { n: i }), T("sensore in %"));
@@ -253,7 +269,7 @@
         b.addEventListener("click", function () { tab = t[0]; render(); body.scrollTop = 0; });
         tabsBox.appendChild(b);
       });
-      body.innerHTML = { rooms: renderRooms, climate: renderClimate, energy: renderEnergy, security: renderSecurity, robot: renderRobot, garden: renderGarden, infra: renderInfra, scenes: renderScenes }[tab]();
+      body.innerHTML = { rooms: renderRooms, climate: renderClimate, energy: renderEnergy, security: renderSecurity, weather: renderWeather, robot: renderRobot, garden: renderGarden, infra: renderInfra, scenes: renderScenes }[tab]();
       api.hydrate(body); api.hydrate(tabsBox);
       if (keepScroll) body.scrollTop = y;
       $("#hb-save").disabled = !dirty();
@@ -320,7 +336,7 @@
         if (q && (n + " " + id + " " + an).toLowerCase().indexOf(q) < 0) return;
         rows.push({ id: id, n: n, an: an, near: !!(P.area && a === P.area), s: s, chosen: chosen });
       });
-      rows.sort(function (x, y) { return (y.near - x.near) || x.n.localeCompare(y.n); });
+      rows.sort(function (x, y) { return (K.rank ? K.rank(y.id, y.s) - K.rank(x.id, x.s) : 0) || (y.near - x.near) || x.n.localeCompare(y.n); });
       var more = rows.length > 250; rows = rows.slice(0, 250);
       var cur = P.multiple ? null : getF(P.f);
       $("#hk-list").innerHTML = rows.map(function (r) {

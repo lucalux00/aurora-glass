@@ -409,7 +409,11 @@ def build_card_config(conf: dict[str, Any], entry_id: str | None = None) -> dict
         entities["energy"] = energy
     cams = devices.get("cameras") or []
     if cams:
+        # faretto, sirena e batteria li trova la plancia tra le entità dello stesso dispositivo
         entities["cameras"] = [{"cam": c, "img": c, "live": c, "poll": 10} for c in cams]
+    alarms = [a for a in as_list(devices.get("alarms")) if a != devices.get("alarm")]
+    if alarms:
+        entities["alarms"] = alarms
 
     # robot (aspirapolvere e tagliaerba): il primo si apre per primo, se ce n'è più d'uno compare la scelta
     robots = as_list(devices.get("vacuums")) or as_list(devices.get("vacuum"))
@@ -419,7 +423,8 @@ def build_card_config(conf: dict[str, Any], entry_id: str | None = None) -> dict
     if devices.get("weather_ai"):
         entities["weather_ai"] = devices["weather_ai"]
     for group, mapping in (
-        ("weather_station", {"wind": "ws_wind", "rain": "ws_rain", "uv": "ws_uv", "pressure": "ws_press",
+        ("weather_station", {"temp_out": "ws_temp_out", "hum_out": "ws_hum_out", "temp_in": "ws_temp_in", "hum_in": "ws_hum_in",
+                             "wind": "ws_wind", "gust": "ws_gust", "rain": "ws_rain", "uv": "ws_uv", "pressure": "ws_press",
                              "lightning_distance": "ws_lightning_dist", "lightning_count": "ws_lightning_count"}),
         ("server", {"cpu": "server_cpu", "ram": "server_ram", "temp": "server_temp", "disk": "server_disk"}),
         ("ups", {"battery": "ups_battery", "load": "ups_load", "runtime": "ups_runtime", "status": "ups_status",

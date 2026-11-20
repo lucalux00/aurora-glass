@@ -105,8 +105,11 @@
     ];
     var ALARM = {
       disarmed:    { t: T("Disattivato"),         d: T("Casa libera. Scegli una modalità per armare l'allarme."),             s: "off",   short: T("Allarme off"),        art: "allarme_off" },
+      armed_home:  { t: T("Armato · In casa"),    d: T("Porte e finestre sorvegliate mentre sei in casa."),                   s: "armed", short: T("Allarme in casa"),    art: "allarme_notte" },
       armed_night: { t: T("Armato · Notte"),      d: T("Porte e finestre sorvegliate. Il movimento interno viene ignorato."), s: "armed", short: T("Allarme notte"),      art: "allarme_notte" },
       armed_away:  { t: T("Armato · Fuori casa"), d: T("Tutta la casa è sorvegliata, compreso il movimento interno."),        s: "armed", short: T("Allarme fuori casa"), art: "allarme_fuori" },
+      armed_vacation: { t: T("Armato · Vacanza"), d: T("Tutta la casa è sorvegliata finché sei via."),                         s: "armed", short: T("Allarme vacanza"),    art: "allarme_fuori" },
+      armed_custom_bypass: { t: T("Armato · Personalizzato"), d: T("Armato con le zone escluse che hai scelto."),              s: "armed", short: T("Allarme personalizzato"), art: "allarme_notte" },
       arming:      { t: T("Si sta armando…"),     d: T("L'allarme si inserirà tra pochi secondi."),                            s: "armed", short: T("Allarme in inserimento"), art: "allarme_fuori" },
       triggered:   { t: T("ALLARME ATTIVO"),      d: T("L'allarme è scattato. Controlla le telecamere."),                      s: "alarm", short: T("ALLARME ATTIVO"),     art: "allarme_scattato" }
     };
@@ -154,7 +157,9 @@
     function mdi(x) { return x ? String(x).replace(/^mdi:/, "mdi-") : null; }
     function arrIds(x) { return Array.isArray(x) ? x.filter(Boolean) : (x ? [x] : []); }
     function hsv0(id) { var h = ctx.hass; return h && h.states && h.states[id] ? h.states[id] : null; }
-    function niceName(id) { var s = hsv0(id); if (s && s.attributes && s.attributes.friendly_name) return s.attributes.friendly_name; return id ? id.split(".").pop().replace(/_/g, " ").replace(/^./, function (c) { return c.toUpperCase(); }) : ""; }
+    /* «Abraham Abraham»: Home Assistant unisce nome del dispositivo e nome dell'entità anche quando sono uguali */
+    function tidyName(n) { var w = String(n || "").trim().split(/\s+/), k = w.length / 2; return k >= 1 && k === Math.floor(k) && w.slice(0, k).join(" ").toLowerCase() === w.slice(k).join(" ").toLowerCase() ? w.slice(0, k).join(" ") : w.join(" "); }
+    function niceName(id) { var s = hsv0(id) || (HASS && HASS.states ? HASS.states[id] : null); if (s && s.attributes && s.attributes.friendly_name) return tidyName(s.attributes.friendly_name); return id ? id.split(".").pop().replace(/_/g, " ").replace(/^./, function (c) { return c.toUpperCase(); }) : ""; }
     /* tipo di apertura: door (porta), window (finestra), gate (cancello), lock (serratura) */
     function openKind(x) {
       if (x.type) return x.type;
@@ -274,6 +279,10 @@
       ENT.garden = e.garden || CFG.garden || null;
       ENT.weather_station = e.weather_station || CFG.weather_station || null;
       ENT.weather_ai = e.weather_ai || CFG.weather_ai || CFG.ai_forecast || null;
+      /* 3.8.2 · altre centrali (modalità delle telecamere Arlo, Blink…): alarms: [alarm_control_panel.arlo_base] */
+      ENT.alarms = arrIds(e.alarms || CFG.alarms || null).filter(function (id) { return id !== ENT.alarm; });
+      /* 3.8.2 · batterie dei dispositivi: trovate da sole; batteries: false le nasconde */
+      ENT.batteries = e.batteries !== undefined ? e.batteries : (CFG.batteries !== undefined ? CFG.batteries : true);
       ENT.climate_style = e.climate_style || CFG.climate_style || "ac";
       ENT.server = e.server || CFG.server || null;
       ENT.ups = e.ups || CFG.ups || null;
@@ -381,6 +390,7 @@
           var isIcon = L[4] || (CFG.button_style === "icon") || (S.btn === "icon");
           orbs += '<button class="orb' + (isIcon ? " icon-only" : "") + '" type="button" data-light="' + k + '" data-img="' + L[1] + '"' + (L[3] ? ' data-ov="' + L[3] + '"' : "") + ' data-label="' + esc(T("Luce {n}", { n: L[0].toLowerCase() })) + '" data-on="0" aria-pressed="false">' +
             '<img class="o-img" alt="" draggable="false"><span class="o-shade"></span><span class="o-lvl" aria-hidden="true"></span><span class="sw"></span><span class="o-ico"><i class="mdi ' + L[2] + '"></i></span>' +
+            '<span class="o-col" role="button" tabindex="0" hidden title="' + esc(T("Colori ed effetti")) + '" aria-label="' + esc(T("Colori ed effetti di {n}", { n: L[0] })) + '"><i class="mdi mdi-palette"></i></span>' +
             '<span class="o-txt"><span class="o-name">' + esc(L[0]) + '</span><span class="o-state">' + T("Spenta") + '</span></span>' + PEN + "</button>";
         });
         var chips = r.s.filter(hasMotion).map(sensChip).join("") + (r.t || []).filter(hasTemp).map(tempChip).join("") + r.o.map(openChip).join("");
@@ -412,12 +422,108 @@
           render();
         });
         o.addEventListener("animationend", function (e) { if (e.animationName === "pop") o.classList.remove("pop"); });
+        var oc = $(".o-col", o);
+        if (oc) {
+          oc.addEventListener("click", function (e) { e.stopPropagation(); e.preventDefault(); openColor(o.dataset.light); });
+          oc.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); e.preventDefault(); openColor(o.dataset.light); } });
+        }
         if (LIVE) longPress(o, function () { moreInfo(ENT.lights[o.dataset.light]); });
       });
       $$("[data-op]").forEach(function (c) { c.addEventListener("click", function () { onOpenTap(c.dataset.op); }); c.style.cursor = "pointer"; });
       $$(".sens[data-sensor]").forEach(function (c) { if (LIVE) { c.addEventListener("click", function () { moreInfo(roomMot(c.dataset.sensor).id); }); c.style.cursor = "pointer"; } });
       $$(".tsens").forEach(function (c) { if (LIVE) { c.addEventListener("click", function () { moreInfo(roomTemp(c.dataset.temp).id); }); c.style.cursor = "pointer"; } });
     }
+    /* ------------------------------------------------------------------ colori ed effetti delle luci RGB */
+    var LC = { k: null, demo: {} };
+    var PALETTE = ["#FF3B30", "#FF7A1A", "#FFC300", "#B8E04A", "#34C759", "#2DD4BF", "#22D3EE", "#3B82F6", "#6366F1", "#A855F7", "#EC4899", "#FB7185"];
+    var WHITES = [[2700, T("Calda"), "#FFD39B"], [4000, T("Naturale"), "#FFF1DC"], [6000, T("Fredda"), "#DCEBFF"]];
+    var DEMO_RGB = { salotto: 1, camera: 1, cameretta: 1 };
+    var FX_OFF = /^(off|none|nessuno|no effect|solid)$/i;
+    /* il valore che la luce usa per «nessun effetto» (Off, None…), se ce l'ha */
+    function fxOffValue(s) { var l = s && Array.isArray(s.attributes.effect_list) ? s.attributes.effect_list : []; for (var i = 0; i < l.length; i++) if (FX_OFF.test(l[i] || "")) return l[i]; return null; }
+    function lightCaps(k) {
+      if (!LIVE) return DEMO_RGB[k] ? { color: true, temp: true, bri: true, fx: ["Arcobaleno", "Respiro", "Candela", "Festa"] } : null;
+      var id = ENT.lights[k], s = sv(id);
+      if (!s || !/^light\./.test(id) || isUnavail(s)) return null;
+      var m = s.attributes.supported_color_modes || [], fx = Array.isArray(s.attributes.effect_list) ? s.attributes.effect_list.filter(function (x) { return x !== null && x !== "" && !FX_OFF.test(x); }) : [];
+      var color = m.some(function (x) { return ["hs", "rgb", "rgbw", "rgbww", "xy"].indexOf(x) > -1; }), temp = m.indexOf("color_temp") > -1;
+      if (!color && !fx.length) return null;
+      return { color: color, temp: temp, bri: m.some(function (x) { return x !== "onoff"; }), fx: fx };
+    }
+    function hexRgb(h) { var n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+    function rgbHex(c) { return "#" + c.map(function (v) { return pad2h(Math.max(0, Math.min(255, Math.round(v)))); }).join(""); }
+    function pad2h(v) { var h = v.toString(16); return h.length < 2 ? "0" + h : h; }
+    function lightRgb(k) {
+      if (!LIVE) return LC.demo[k] || null;
+      var s = sv(ENT.lights[k]);
+      return s && s.state === "on" && Array.isArray(s.attributes.rgb_color) ? rgbHex(s.attributes.rgb_color) : null;
+    }
+    function lcSend(data, demoMsg) {
+      var k = LC.k; if (!k) return;
+      if (!LIVE) { state.lights[k] = true; if (data.rgb) LC.demo[k] = data.rgb; render(); refreshColorBox(); toast(demoMsg, "mdi-palette", data.rgb || "var(--ok)"); return; }
+      var d = { entity_id: ENT.lights[k] };
+      if (data.rgb) d.rgb_color = hexRgb(data.rgb);
+      if (data.kelvin) d.color_temp_kelvin = data.kelvin;
+      if (data.bri) d.brightness_pct = data.bri;
+      if (data.effect) d.effect = data.effect;
+      call("light", "turn_on", d);
+      state.lights[k] = true; render();
+    }
+    function refreshColorBox() {
+      var k = LC.k, box = $("#colorbox"); if (!k || !box.classList.contains("open")) return;
+      var cap = lightCaps(k);
+      if (!cap) { closeColor(); return; }
+      var s = LIVE ? sv(ENT.lights[k]) : null, a = s ? s.attributes : {}, on = !!state.lights[k], cur = lightRgb(k);
+      $("#lc-title").textContent = LIGHTS[k][0];
+      var pct = LIVE ? lightPct(k) : (on ? 80 : null);
+      $("#lc-sub").textContent = !on ? T("Spenta: scegli un colore per accenderla") : pct === null ? T("Accesa") : T("Accesa · {p}%", { p: pct });
+      $("#lc-colors-sec").hidden = !cap.color;
+      $$("#lc-colors button").forEach(function (b) { b.setAttribute("aria-pressed", cur && b.dataset.c.toLowerCase() === cur.toLowerCase() ? "true" : "false"); });
+      $("#lc-temps-sec").hidden = !cap.temp;
+      var kel = a.color_mode === "color_temp" ? a.color_temp_kelvin : null;
+      $$("#lc-temps button").forEach(function (b) { b.setAttribute("aria-pressed", kel && Math.abs(kel - +b.dataset.k) < 400 ? "true" : "false"); });
+      $("#lc-bri-sec").hidden = !cap.bri;
+      var br = $("#lc-bri"); if (document.activeElement !== br && pct !== null) { br.value = pct; setRange(br); }
+      $("#lc-bri-val").textContent = pct === null ? "—" : pct + "%";
+      $("#lc-fx-sec").hidden = !cap.fx.length;
+      var fxNow = LIVE ? a.effect : LC.demoFx, off = LIVE ? fxOffValue(s) : null;
+      var fxHtml = (off ? '<button type="button" data-fx="' + esc(off) + '" aria-pressed="' + (!fxNow || FX_OFF.test(fxNow) ? "true" : "false") + '">' + esc(T("Nessuno")) + "</button>" : "") +
+        cap.fx.slice(0, 80).map(function (f) { return '<button type="button" data-fx="' + esc(f) + '" aria-pressed="' + (f === fxNow ? "true" : "false") + '">' + esc(f) + "</button>"; }).join("");
+      var fxBox = $("#lc-fx"); if (fxBox.dataset.sig !== fxHtml) { fxBox.dataset.sig = fxHtml; fxBox.innerHTML = fxHtml; }
+      $("#lc-more").hidden = !LIVE;
+    }
+    function openColor(k) {
+      LC.k = k; var box = $("#colorbox");
+      box.classList.add("open"); box.setAttribute("aria-hidden", "false");
+      refreshColorBox();
+      later(function () { $("#lc-done").focus({ preventScroll: true }); }, 250);
+    }
+    function closeColor() { var box = $("#colorbox"); box.classList.remove("open"); box.setAttribute("aria-hidden", "true"); LC.k = null; }
+    function buildColorBox() {
+      var box = $("#colorbox"); if (!box) return;
+      $("#lc-colors").innerHTML = PALETTE.map(function (c) { return '<button type="button" data-c="' + c + '" style="--c:' + c + '" aria-label="' + c + '"></button>'; }).join("");
+      $("#lc-temps").innerHTML = WHITES.map(function (w) { return '<button type="button" data-k="' + w[0] + '" style="--c:' + w[2] + '">' + esc(w[1]) + "</button>"; }).join("");
+      $("#lc-colors").addEventListener("click", function (e) { var b = e.target.closest("[data-c]"); if (b) lcSend({ rgb: b.dataset.c }, T("Colore impostato")); });
+      $("#lc-custom").addEventListener("change", function (e) { lcSend({ rgb: e.target.value }, T("Colore impostato")); });
+      $("#lc-temps").addEventListener("click", function (e) {
+        var b = e.target.closest("[data-k]"); if (!b) return;
+        var s = LIVE ? sv(ENT.lights[LC.k]) : null, k = +b.dataset.k;
+        if (s) { var lo = s.attributes.min_color_temp_kelvin, hi = s.attributes.max_color_temp_kelvin; if (lo) k = Math.max(lo, k); if (hi) k = Math.min(hi, k); }
+        if (!LIVE) LC.demo[LC.k] = b.style.getPropertyValue("--c");
+        lcSend({ kelvin: k }, T("Bianco {n}", { n: b.textContent.toLowerCase() }));
+      });
+      var br = $("#lc-bri");
+      br.addEventListener("input", function () { setRange(br); $("#lc-bri-val").textContent = br.value + "%"; });
+      br.addEventListener("change", function () { lcSend({ bri: +br.value }, T("Luminosità {p}%", { p: br.value })); });
+      $("#lc-fx").addEventListener("click", function (e) { var b = e.target.closest("[data-fx]"); if (!b) return; if (!LIVE) LC.demoFx = b.dataset.fx; lcSend({ effect: b.dataset.fx }, T("Effetto: {n}", { n: b.dataset.fx })); });
+      $("#lc-more").addEventListener("click", function () { var k = LC.k; closeColor(); if (k) moreInfo(ENT.lights[k]); });
+      $("#lc-done").addEventListener("click", closeColor);
+      $("#lc-close").addEventListener("click", closeColor);
+      box.addEventListener("click", function (e) { if (e.target === box) closeColor(); });
+      box.addEventListener("keydown", function (e) { if (e.key === "Escape") closeColor(); });
+      setRange(br);
+    }
+
     function buildSecurity() {
       var mt = $("#motion-tiles");
       MOTION.filter(function (m) { return hasMotion(m[0]); }).forEach(function (m) {
@@ -452,6 +558,8 @@
         $(".o-state", o).textContent = na ? T("Non disponibile") : !on ? T("Spenta") : pct === null ? T("Accesa") : T("Accesa · {p}%", { p: pct });
         o.classList.toggle("lvl", pct !== null);
         if (pct !== null) o.style.setProperty("--lvl", pct + "%");
+        var oc = $(".o-col", o), cap = na ? null : lightCaps(o.dataset.light), rgb = on ? lightRgb(o.dataset.light) : null;
+        if (oc) { oc.hidden = !cap; if (rgb) oc.style.setProperty("--lc", rgb); else oc.style.removeProperty("--lc"); }
         refreshImg(o);
       });
       $$(".room").forEach(function (r) {
@@ -466,6 +574,7 @@
       $("#status-text").textContent = lt + (!LIVE || sv(ENT.alarm) ? " · " + a.short : "");
       $$(".scene").forEach(function (b) { var act = b.dataset.scene === state.scene; b.classList.toggle("active", act); b.dataset.on = act ? "1" : "0"; refreshImg(b); });
       paintStatus();
+      refreshColorBox();
     }
 
     /* ------------------------------------------------------------------ scene */
@@ -522,7 +631,8 @@
       HOST.dataset.alarm = a.s;
       $("#alarm").dataset.state = a.s;
       $("#alarm-title").textContent = a.t; $("#alarm-desc").textContent = a.d;
-      $$("#seg button").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.mode === key || (key === "arming" && b.dataset.mode === "armed_away") ? "true" : "false"); });
+      var pressed = segKey(key);
+      $$("#seg button").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.mode === pressed ? "true" : "false"); });
       $("#alert").hidden = key !== "triggered";
       $("#shield").dataset.img = a.art; refreshImg($("#shield"));
       movePill();
@@ -535,30 +645,112 @@
       later(function () { $("#code-in").focus(); }, 200);
     }
     function closeCode() { $("#codebox").classList.remove("open"); $("#codebox").setAttribute("aria-hidden", "true"); codeCb = null; }
-    function armAlarm(mode, fromScene) {
-      var s = sv(ENT.alarm);
+    /* modalità che una centrale sa fare (supported_features: 1 in casa, 2 fuori casa, 4 notte, 32 vacanza) */
+    var MODE_LBL = { disarmed: T("Disattiva"), armed_home: T("In casa"), armed_night: T("Notte"), armed_away: T("Fuori casa"), armed_vacation: T("Vacanza") };
+    function alarmModes(s) {
+      var feat = s && s.attributes ? s.attributes.supported_features || 0 : 0, m = ["disarmed"];
+      if (!feat) return m.concat(["armed_night", "armed_away"]);
+      if (feat & 1) m.push("armed_home");
+      if (feat & 4) m.push("armed_night");
+      if (feat & 2) m.push("armed_away");
+      if (m.length === 1) m.push("armed_away");
+      return m;
+    }
+    /* il tasto da evidenziare per uno stato (una centrale senza «notte» arma «in casa» e viceversa) */
+    function segKey(key) {
+      var has = function (m) { return !!$('#seg button[data-mode="' + m + '"]'); };
+      if (has(key)) return key;
+      var alt = { arming: ["armed_away"], armed_vacation: ["armed_away"], armed_custom_bypass: ["armed_home", "armed_night"], armed_home: ["armed_night"], armed_night: ["armed_home"] }[key] || [];
+      for (var i = 0; i < alt.length; i++) if (has(alt[i])) return alt[i];
+      return key;
+    }
+    var segSig = "";
+    function buildSeg() {
+      if (!LIVE) return;
+      var s = sv(ENT.alarm); if (!s) return;
+      var modes = alarmModes(s), sig = modes.join(",");
+      if (sig === segSig) return;
+      segSig = sig;
+      $$("#seg button").forEach(function (b) { b.remove(); });
+      modes.forEach(function (m) {
+        var b = el("button", "", esc(MODE_LBL[m]), { type: "button", "data-mode": m, "aria-pressed": "false" });
+        b.addEventListener("click", function () { armAlarm(m); });
+        $("#seg").appendChild(b);
+      });
+      setAlarm(state.alarm, true);
+    }
+    /* servizio per una modalità: la «notte» su una centrale senza notte diventa «in casa» (e viceversa) */
+    function armService(s, mode) {
+      var feat = s.attributes.supported_features || 0;
+      if (mode === "disarmed") return ["alarm_disarm", "disarmed"];
+      if (mode === "armed_away") return ["alarm_arm_away", "armed_away"];
+      if (mode === "armed_vacation") return ["alarm_arm_vacation", "armed_vacation"];
+      if (mode === "armed_home") return (feat & 1) || !(feat & 4) ? ["alarm_arm_home", "armed_home"] : ["alarm_arm_night", "armed_night"];
+      return (feat & 4) ? ["alarm_arm_night", "armed_night"] : ["alarm_arm_home", "armed_home"];
+    }
+    function armAlarm(mode, fromScene, entity) {
+      var id = entity || ENT.alarm, s = sv(id);
       if (!s) { toast(T("Centrale allarme non trovata"), "mdi-alert-circle", "var(--warn)"); return; }
-      var feat = s.attributes.supported_features || 0, svc, needCode;
-      if (mode === "disarmed") { svc = "alarm_disarm"; needCode = !!s.attributes.code_format; }
-      else if (mode === "armed_away") { svc = "alarm_arm_away"; needCode = !!s.attributes.code_format && s.attributes.code_arm_required !== false; }
-      else { svc = (feat & 4) ? "alarm_arm_night" : "alarm_arm_home"; needCode = !!s.attributes.code_format && s.attributes.code_arm_required !== false; }
+      var sm = armService(s, mode), svc = sm[0], target = sm[1];
+      var needCode = mode === "disarmed" ? !!s.attributes.code_format : !!s.attributes.code_format && s.attributes.code_arm_required !== false;
+      var label = (ALARM[target] || ALARM.disarmed).t;
       var run = function (code) {
-        var d = { entity_id: ENT.alarm }; if (code) d.code = code; call("alarm_control_panel", svc, d);
+        var d = { entity_id: id }; if (code) d.code = code; call("alarm_control_panel", svc, d);
         if (!fromScene) later(function () {
-          var a2 = sv(ENT.alarm), k2 = a2 ? mapAlarm(a2.state) : null;
-          if (k2 === mode || (mode !== "disarmed" && (k2 === "arming" || k2 === "triggered"))) toast(ALARM[k2].t, k2 === "disarmed" ? "mdi-shield-off" : "mdi-shield-check", k2 === "disarmed" ? "var(--ok)" : "var(--warn)");
+          var a2 = sv(id), k2 = a2 ? mapAlarm(a2.state) : null;
+          if (k2 && (k2 === target || (target !== "disarmed" && (k2 === "arming" || k2 === "triggered")))) toast((a2.attributes.friendly_name && entity ? a2.attributes.friendly_name + ": " : "") + ALARM[k2].t, k2 === "disarmed" ? "mdi-shield-off" : "mdi-shield-check", k2 === "disarmed" ? "var(--ok)" : "var(--warn)");
           else toast(T("Allarme: la centrale non ha eseguito il comando (codice errato o non disponibile)"), "mdi-alert-circle", "var(--warn)");
+          if (entity) renderAlarmsX();
         }, 3500);
       };
-      if (needCode) askCode((s.attributes.friendly_name || T("Allarme")) + " · " + ALARM[mode].t, run); else run();
-      if (!fromScene) toast(needCode ? T("Serve il codice per: {m}", { m: ALARM[mode].t }) : T("Invio: {m}…", { m: ALARM[mode].t }), "mdi-shield-sync", "var(--warn)");
+      if (needCode) askCode((s.attributes.friendly_name || T("Allarme")) + " · " + label, run); else run();
+      if (!fromScene) toast(needCode ? T("Serve il codice per: {m}", { m: label }) : T("Invio: {m}…", { m: label }), "mdi-shield-sync", "var(--warn)");
     }
     function mapAlarm(st) {
       if (st === "triggered") return "triggered";
-      if (st === "arming" || st === "pending") return "arming";
-      if (st === "armed_away" || st === "armed_vacation") return "armed_away";
-      if (st && st.indexOf("armed") === 0) return "armed_night";
+      if (st === "arming" || st === "pending" || st === "disarming") return "arming";
+      if (ALARM[st]) return st;
+      if (st && st.indexOf("armed") === 0) return "armed_home";
       return "disarmed";
+    }
+
+    /* ---- altre centrali: modalità delle telecamere (Arlo: Fuori casa, In casa, Standby) o una seconda centrale ---- */
+    var axSig = "";
+    function renderAlarmsX() {
+      var box = $("#alarms-x"), list = $("#ax-list");
+      if (!box || !list) return;
+      var ids = LIVE ? ENT.alarms.filter(function (id) { return sv(id); }) : ["demo.arlo"];
+      box.hidden = !ids.length;
+      if (!ids.length) return;
+      var html = ids.map(function (id) {
+        var s = LIVE ? sv(id) : { state: S.demoArlo || "armed_away", attributes: { friendly_name: "Arlo · " + T("Telecamere giardino"), supported_features: 3 } };
+        var na = isUnavail(s), key = na ? null : mapAlarm(s.state), A = key ? ALARM[key] : null;
+        var standby = /arlo|blink/i.test(id + " " + (s.attributes.friendly_name || ""));
+        var stTxt = na ? T("Non disponibile") : key === "disarmed" && standby ? T("Standby") : A.t;
+        var modes = alarmModes(s).map(function (m) {
+          var lbl = m === "disarmed" && standby ? T("Standby") : MODE_LBL[m];
+          var on = key && (key === m || (key === "arming" && m === "armed_away"));
+          return '<button type="button" data-ax="' + esc(id) + '" data-mode="' + m + '" aria-pressed="' + (on ? "true" : "false") + '"' + (na ? " disabled" : "") + ">" + esc(lbl) + "</button>";
+        }).join("");
+        return '<div class="ax-row" data-s="' + (na ? "na" : A.s) + '"><span class="ax-ico"><i class="mdi ' + (na ? "mdi-shield-off-outline" : key === "disarmed" ? "mdi-shield-off" : key === "triggered" ? "mdi-alarm-light" : "mdi-shield-check") + '"></i></span>' +
+          '<span class="ax-t" role="button" tabindex="0" data-axi="' + esc(id) + '"><b>' + esc(s.attributes.friendly_name || niceName(id)) + "</b><small>" + esc(stTxt) + "</small></span>" +
+          '<span class="ax-modes" role="group" aria-label="' + esc(T("Modalità")) + '">' + modes + "</span></div>";
+      }).join("");
+      if (html === axSig) return;
+      axSig = html; list.innerHTML = html; hydrate(list);
+    }
+    function buildAlarmsX() {
+      var list = $("#ax-list"); if (!list) return;
+      list.addEventListener("click", function (e) {
+        var b = e.target.closest("[data-ax]");
+        if (b && !b.disabled) {
+          if (LIVE) armAlarm(b.dataset.mode, false, b.dataset.ax);
+          else { S.demoArlo = b.dataset.mode; renderAlarmsX(); toast("Arlo: " + (b.dataset.mode === "disarmed" ? T("Standby") : ALARM[b.dataset.mode].t), "mdi-cctv", "var(--ok)"); }
+          return;
+        }
+        var t = e.target.closest("[data-axi]"); if (t && LIVE) moreInfo(t.dataset.axi);
+      });
+      renderAlarmsX();
     }
 
     /* ------------------------------------------------------------------ sensori */
@@ -738,6 +930,7 @@
       }, 3000);
       render();
     });
+    /* i tasti dell'anteprima; dentro Home Assistant buildSeg() li rifà in base alla centrale */
     $$("#seg button").forEach(function (b) { b.addEventListener("click", function () { if (LIVE) armAlarm(b.dataset.mode); else setAlarm(b.dataset.mode); }); });
     $("#sim-alarm").addEventListener("click", function () { show("sic"); setAlarm("triggered", true); render(); toast(T("Allarme attivo!"), "mdi-alarm-light", "var(--danger)"); });
     $("#alert-off").addEventListener("click", function () { if (LIVE) armAlarm("disarmed"); else setAlarm("disarmed"); });
@@ -968,15 +1161,18 @@
     /* ------------------------------------------------------------------ Home Assistant: sincronizzazione */
     var tracked = {};
     function trackedIds() {
-      var ids = [ENT.alarm, ENT.weather, ENT.power, ENT.weather_ai].concat(ENT.climates, ENT.vacuums);
+      var ids = [ENT.alarm, ENT.weather, ENT.power, ENT.weather_ai].concat(ENT.climates, ENT.vacuums, ENT.alarms, batIds());
+      ENT.vacuums.forEach(function (v) { var b = deviceBattery(v); if (b) ids.push(b); });
       Object.keys(ENT.lights).forEach(function (k) { ids.push(ENT.lights[k]); });
       Object.keys(ENT.motion).forEach(function (k) { (ENT.motion[k] || []).forEach(function (i) { ids.push(i); }); });
       Object.keys(ENT.opens).forEach(function (k) { ids.push(ENT.opens[k]); });
       Object.keys(ENT.temps).forEach(function (k) { arrIds(ENT.temps[k]).forEach(function (i) { ids.push(i); }); });
       (ENT.cameras || []).forEach(function (c) {
         if (c.cam) ids.push(c.cam);
-        if (c.light) ids.push(c.light);
-        if (c.siren) ids.push(c.siren);
+        var x = camExtras(c);
+        if (x.light) ids.push(x.light);
+        if (x.siren) ids.push(x.siren);
+        if (x.battery) ids.push(x.battery);
       });
       Object.keys(ENT.energy).forEach(function (k) { var v = ENT.energy[k]; if (typeof v === 'string' && v.indexOf('.') > 0) ids.push(v); });
       ENT.energy.appliances.forEach(function (x) {
@@ -991,11 +1187,7 @@
           if (z.moisture) ids.push(z.moisture);
         });
       }
-      if (ENT.weather_station) {
-        ["rain_rate", "rain_today", "wind_speed", "wind_direction", "wind_gust", "uv_index", "solar_radiation", "pressure", "lightning_count", "lightning_distance", "lightning_time"].forEach(function (k) {
-          if (ENT.weather_station[k]) ids.push(ENT.weather_station[k]);
-        });
-      }
+      if (ENT.weather_station) Object.keys(ENT.weather_station).forEach(function (k) { if (typeof ENT.weather_station[k] === "string") ids.push(ENT.weather_station[k]); });
       if (ENT.server) {
         ["cpu", "ram", "temp", "disk", "uptime"].forEach(function (k) { if (ENT.server[k]) ids.push(ENT.server[k]); });
       }
@@ -1014,7 +1206,7 @@
       if (state.scene) { var sc = SCENES.filter(function (x) { return x.id === state.scene; })[0]; if (sc && Object.keys(ENT.lights).some(function (k) { return !isUnavail(sv(ENT.lights[k])) && (sc.lights.indexOf(k) > -1) !== state.lights[k]; })) state.scene = null; }
       // allarme
       var a = sv(ENT.alarm);
-      if (a) { var key = mapAlarm(a.state); if (key !== state.alarm || first) setAlarm(key, true); var eb = $(".alarm-txt .eyebrow"); if (eb && a.attributes.friendly_name) eb.textContent = a.attributes.friendly_name; }
+      if (a) { buildSeg(); var key = mapAlarm(a.state); if (key !== state.alarm || first) setAlarm(key, true); var eb = $(".alarm-txt .eyebrow"); if (eb && a.attributes.friendly_name) eb.textContent = a.attributes.friendly_name; }
       // movimento
       var act = null, newest = null, mTot = 0, mNa = 0;
       MOTION.forEach(function (m) {
@@ -1040,8 +1232,10 @@
         setOpenUI(id, open, na);
       });
       // chip meteo e consumi
-      var w = sv(ENT.weather), ct = $("#chip-temp");
-      if (w && w.attributes.temperature !== undefined) { ct.hidden = false; $("#temp-val").textContent = fmt(w.attributes.temperature) + " " + (w.attributes.temperature_unit || "°C"); setIco($("#temp-ico"), condIcon(w.state)); } else ct.hidden = true;
+      /* temperatura esterna: quella della stazione meteo se c'è (misurata a casa), altrimenti quella del servizio meteo */
+      var w = sv(ENT.weather), ct = $("#chip-temp"), wsT = wsEnt("temp_out") ? sv(wsEnt("temp_out")) : null;
+      if (wsT && !isUnavail(wsT) && !isNaN(parseFloat(wsT.state))) { ct.hidden = false; $("#temp-val").textContent = fmt(parseFloat(wsT.state)) + " " + (wsT.attributes.unit_of_measurement || "°C"); setIco($("#temp-ico"), w ? condIcon(w.state) : "mdi-thermometer"); }
+      else if (w && w.attributes.temperature !== undefined) { ct.hidden = false; $("#temp-val").textContent = fmt(w.attributes.temperature) + " " + (w.attributes.temperature_unit || "°C"); setIco($("#temp-ico"), condIcon(w.state)); } else ct.hidden = true;
       var p = sv(ENT.energy.power) || sv(ENT.power), cp = $("#chip-power");
       if (p && !isUnavail(p) && !isNaN(parseFloat(p.state))) { cp.hidden = false; var v = parseFloat(p.state), u = p.attributes.unit_of_measurement || "W"; if (u === "kW") v *= 1000; chipPower(v); } else cp.hidden = true;
       var nm = HASS && HASS.user && HASS.user.name ? HASS.user.name.split(" ")[0] : "";
@@ -1051,11 +1245,122 @@
       syncGarden();
       syncWeatherForecasts();
       syncInfra();
+      renderAlarmsX();
+      syncBatteries();
       var enBtn = $('.dock [data-view="en"]'); if (enBtn) enBtn.hidden = !(sv(ENT.energy.power) || sv(ENT.power));
       renderEnergy(); if (!$("#view-en").hidden) enLoad(false);
       camsStatus();
       render();
     }
+    /* ---- entità dello stesso dispositivo (registro di Home Assistant): batteria del robot, faretto e sirena delle telecamere ---- */
+    var DEV = { ref: null, by: {} };
+    function devIndex() {
+      var h = HASS; if (!h || !h.entities) return null;
+      if (DEV.ref !== h.entities) {
+        DEV.ref = h.entities; DEV.by = {};
+        Object.keys(h.entities).forEach(function (id) { var e = h.entities[id]; if (e && e.device_id) (DEV.by[e.device_id] = DEV.by[e.device_id] || []).push(id); });
+      }
+      return DEV.by;
+    }
+    function regOf(id) { return HASS && HASS.entities ? HASS.entities[id] || null : null; }
+    function siblings(id) { var idx = devIndex(), e = regOf(id); return idx && e && e.device_id ? (idx[e.device_id] || []).filter(function (x) { return x !== id; }) : []; }
+    function isBattery(id) { var s = sv(id); return !!s && /^sensor\./.test(id) && s.attributes.device_class === "battery"; }
+    function deviceBattery(id) { var sib = siblings(id); for (var i = 0; i < sib.length; i++) if (isBattery(sib[i])) return sib[i]; return null; }
+    var CAM_LIGHT = /flood|spot|farett|faro|light|luce|lamp|illumin/i, CAM_SIREN = /siren|sirena|allarme|alarm/i;
+    /* faretto, sirena e batteria di una telecamera: quelli scritti nella config, altrimenti cercati tra le entità dello stesso dispositivo */
+    function camExtras(c) {
+      devIndex();
+      if (c._x && c._xref === DEV.ref) return c._x;
+      var base = c.cam || c.live || c.img, sib = base && /^camera\./.test(base) ? siblings(base) : [];
+      var x = { light: c.light || null, siren: c.siren || null, battery: c.battery || null }, anyLight = null;
+      sib.forEach(function (id) {
+        var dom = id.split(".")[0], e = regOf(id), nm = id + " " + niceName(id);
+        if (!x.battery && isBattery(id)) x.battery = id;
+        if (e && (e.hidden || e.entity_category)) return;   /* LED di stato, infrarossi e impostazioni stanno tra le entità di configurazione */
+        if (dom === "light") { if (!x.light && CAM_LIGHT.test(nm) && !/infra|night|notte|status|stato|indicator/i.test(nm)) x.light = id; else if (!anyLight) anyLight = id; }
+        else if (dom === "switch" && !x.light && /flood|spot|farett|faro/i.test(nm)) x.light = id;
+        if (!x.siren && (dom === "siren" || (dom === "switch" && CAM_SIREN.test(nm)))) x.siren = id;
+      });
+      if (!x.light && anyLight && !/infra|night|notte|status|stato|indicator/i.test(anyLight + " " + niceName(anyLight))) x.light = anyLight;
+      if (c.light === false) x.light = null;
+      if (c.siren === false) x.siren = null;
+      if (c.battery === false) x.battery = null;
+      c._x = x; c._xref = DEV.ref;
+      return x;
+    }
+    function batIcon(v, charging) {
+      if (charging) return "mdi-battery-charging";
+      if (v === null) return "mdi-battery-unknown";
+      if (v <= 10) return "mdi-battery-alert-variant-outline";
+      var r = Math.min(9, Math.max(1, Math.round(v / 10)));
+      return r >= 10 || v >= 95 ? "mdi-battery" : "mdi-battery-" + r * 10;
+    }
+
+    /* ------------------------------------------------------------------ batterie dei dispositivi */
+    var BAT = { at: 0, ref: null, ids: [], all: false };
+    function batIds() {
+      if (!LIVE || ENT.batteries === false || !HASS) return [];
+      var now = Date.now();
+      if (BAT.ref === HASS.entities && now - BAT.at < 60000) return BAT.ids;
+      BAT.ref = HASS.entities; BAT.at = now;
+      BAT.ids = Object.keys(HASS.states).filter(function (id) {
+        var s = HASS.states[id], e = regOf(id);
+        if (!s || s.attributes.device_class !== "battery" || (e && e.hidden)) return false;
+        if (e && (e.platform === "mobile_app" || e.platform === "browser_mod")) return false;
+        if (/^binary_sensor\./.test(id)) return true;
+        if (!/^sensor\./.test(id)) return false;
+        var u = s.attributes.unit_of_measurement;
+        return !u || u === "%";
+      });
+      return BAT.ids;
+    }
+    function batName(id) {
+      var e = regOf(id), d = e && e.device_id && HASS.devices ? HASS.devices[e.device_id] : null;
+      var n = d && (d.name_by_user || d.name);
+      return n || niceName(id).replace(/\s*[-·:]?\s*(livello (della )?batteria|batteria|battery( level)?|batt\.?)\s*$/i, "") || niceName(id);
+    }
+    function batArea(id) {
+      var e = regOf(id), d = e && e.device_id && HASS.devices ? HASS.devices[e.device_id] : null, a = (e && e.area_id) || (d && d.area_id);
+      return a && HASS.areas && HASS.areas[a] ? HASS.areas[a].name : "";
+    }
+    function batItems() {
+      if (!LIVE) return [[T("Sensore porta ingresso"), T("Ingresso"), 8], [T("Telecamera giardino"), T("Esterno"), 17], [T("Sensore movimento"), T("Corridoio"), 36], [T("Serratura"), T("Ingresso"), 64], [T("Termometro camera"), T("Camera"), 88], [T("Telecomando"), T("Salotto"), 100]]
+        .map(function (x, i) { return { id: "demo" + i, n: x[0], a: x[1], v: x[2], low: x[2] <= 20, bin: false }; });
+      return batIds().map(function (id) {
+        var s = sv(id), na = isUnavail(s), bin = /^binary_sensor\./.test(id), v = na || bin ? null : parseFloat(s.state);
+        if (v !== null && isNaN(v)) v = null;
+        return { id: id, n: batName(id), a: batArea(id), v: v, bin: bin, na: na, low: bin ? s.state === "on" : v !== null && v <= 20, charging: s && /charg/i.test(String(s.attributes.icon || "")) };
+      }).sort(function (x, y) {
+        var kx = x.na ? 1000 : x.bin ? (x.low ? -1 : 500) : x.v, ky = y.na ? 1000 : y.bin ? (y.low ? -1 : 500) : y.v;
+        return (kx - ky) || x.n.localeCompare(y.n);
+      });
+    }
+    var batSig = "";
+    function syncBatteries() {
+      var wrap = $("#bat-wrap"), grid = $("#bat-grid"), more = $("#bat-more");
+      if (!wrap || !grid) return;
+      var items = batItems();
+      wrap.hidden = !items.length;
+      if (!items.length) return;
+      var shown = BAT.all ? items : items.slice(0, 8), low = items.filter(function (x) { return x.low; }).length;
+      var html = shown.map(function (x) {
+        var lvl = x.na ? "na" : x.low ? "low" : x.v !== null && x.v <= 40 ? "mid" : "ok";
+        var val = x.na ? T("n.d.") : x.bin ? (x.low ? T("Scarica") : T("OK")) : x.v === null ? "—" : Math.round(x.v) + "%";
+        var ico = x.bin ? (x.low ? "mdi-battery-alert" : "mdi-battery") : batIcon(x.v, x.charging);
+        return '<button type="button" class="bat" data-lvl="' + lvl + '" data-bat="' + esc(x.id) + '"><i class="mdi ' + ico + '"></i><span class="bat-t"><b>' + esc(x.n) + "</b>" + (x.a ? "<small>" + esc(x.a) + "</small>" : "") + '</span><span class="bat-v">' + esc(val) + "</span></button>";
+      }).join("");
+      if (html !== batSig) { batSig = html; grid.innerHTML = html; hydrate(grid); }
+      $("#bat-sub").textContent = low ? T(low === 1 ? "{n} da cambiare" : "{n} da cambiare o ricaricare", { n: low }) : T("{n} dispositivi, dalla più scarica", { n: items.length });
+      if (more) { more.hidden = items.length <= 8; $("span", more).textContent = BAT.all ? T("Mostra meno") : T("Mostra tutte ({n})", { n: items.length }); setIco($("i", more), BAT.all ? "mdi-chevron-up" : "mdi-chevron-down"); }
+    }
+    function buildBatteries() {
+      var grid = $("#bat-grid"), more = $("#bat-more");
+      if (!grid) return;
+      grid.addEventListener("click", function (e) { var b = e.target.closest("[data-bat]"); if (b && LIVE) moreInfo(b.dataset.bat); });
+      if (more) more.addEventListener("click", function () { BAT.all = !BAT.all; batSig = ""; syncBatteries(); });
+      syncBatteries();
+    }
+
     /* ---- telecamere: anteprima (snapshot) aggiornata + diretta a tocco ---- */
     var camTiles = [];
     function camRefresh(t) {
@@ -1081,14 +1386,41 @@
       if (t.off) t.off.hidden = !off;
       var msg = t.na.querySelector("span");
       if (msg) msg.innerHTML = off ? T("Telecamera offline") + "<br>" + T("HA non la raggiunge in questo momento") : T("Anteprima non disponibile") + "<br>" + T("tocca per aprire la telecamera");
-      if (t.c.light && t.card) {
-        var ls = sv(t.c.light), lb = $('[data-cam-act="light"]', t.card);
-        if (lb) lb.classList.toggle("active", !!ls && ls.state === "on");
+      var x = t.x || {};
+      if (x.light && t.card) {
+        var ls = sv(x.light), lb = $('[data-cam-act="light"]', t.card);
+        if (lb) { lb.classList.toggle("active", !!ls && ls.state === "on"); lb.disabled = isUnavail(ls); }
       }
-      if (t.c.siren && t.card) {
-        var ss = sv(t.c.siren), sb = $('[data-cam-act="siren"]', t.card);
-        if (sb) sb.classList.toggle("active", !!ss && ss.state === "on");
+      if (x.siren && t.card) {
+        var ss = sv(x.siren), sb = $('[data-cam-act="siren"]', t.card);
+        if (sb) { sb.classList.toggle("active", !!ss && ss.state === "on"); sb.disabled = isUnavail(ss); }
       }
+      var bc = t.card && $(".cam-bat", t.card);
+      if (bc) {
+        var bs = x.battery ? sv(x.battery) : null, bv = bs && !isUnavail(bs) ? parseFloat(bs.state) : NaN;
+        bc.hidden = !x.battery;
+        if (x.battery) { $("b", bc).textContent = isNaN(bv) ? "—" : Math.round(bv) + "%"; setIco($("i", bc), batIcon(isNaN(bv) ? null : bv)); bc.classList.toggle("low", !isNaN(bv) && bv <= 20); bc.title = T("Batteria {p}", { p: isNaN(bv) ? "—" : Math.round(bv) + "%" }); }
+      }
+    }
+    /* foto: Home Assistant la salva nella cartella Media (aurora_glass); senza l'integrazione si scarica l'anteprima */
+    function camSnapshot(t) {
+      var id = t.c.cam || t.c.live || t.c.img;
+      function download() {
+        var src = t.im.getAttribute("src");
+        if (!src) { toast(T("Nessuna immagine da salvare"), "mdi-alert-circle", "var(--warn)"); return; }
+        var a = document.createElement("a"); a.href = src; a.download = String(id || "telecamera").replace(/^.*\./, "") + "_" + dayKey(new Date()) + ".jpg";
+        document.body.appendChild(a); a.click(); a.remove();
+        toast(T("Foto scaricata"), "mdi-camera", "var(--ok)");
+      }
+      if (!LIVE) { toast(T("Foto salvata in Media › aurora_glass"), "mdi-camera", "var(--ok)"); return; }
+      if (!/^camera\./.test(id || "") || !HASS || !HASS.callWS || !CFG.entry_id) { download(); return; }
+      toast(T("Scatto la foto…"), "mdi-camera", "var(--acc-text)");
+      HASS.callWS({ type: "aurora_glass/snapshot", entity_id: id }).then(function (r) {
+        toast(T("Foto salvata in Media › {f}", { f: (r && r.folder) || "aurora_glass" }), "mdi-camera", "var(--ok)");
+      }).catch(function (e) {
+        toast(T("Foto non salvata ({e}): la scarico dall'anteprima", { e: (e && e.message) || T("errore di Home Assistant") }), "mdi-alert-circle", "var(--warn)");
+        download();
+      });
     }
     function camsStatus() { camTiles.forEach(camMeta); }
     function camLive(t, onOff) {
@@ -1119,15 +1451,16 @@
       var list = (ENT.cameras || []).filter(function (c) { return sv(c.img) || sv(c.live) || sv(c.cam); });
       if (!list.length) { box.hidden = true; return; }
       list.forEach(function (c) {
-        var actHtml = "";
-        if (c.light || c.siren) {
-          actHtml = '<div class="cam-actions">' +
-            (c.light ? '<button class="cam-act-btn light-btn" type="button" data-cam-act="light" title="' + T("Luce") + '"><i class="mdi mdi-lightbulb-spot"></i><span>' + T("Luce") + '</span></button>' : '') +
-            (c.siren ? '<button class="cam-act-btn siren-btn" type="button" data-cam-act="siren" title="' + T("Sirena") + '"><i class="mdi mdi-bullhorn"></i><span>' + T("Sirena") + '</span></button>' : '') +
+        var x = LIVE ? camExtras(c) : { light: c.light, siren: c.siren, battery: c.battery };
+        var canSnap = /^camera\./.test(c.cam || c.live || c.img || "");
+        var actHtml = '<div class="cam-actions">' +
+            (x.light ? '<button class="cam-act-btn light-btn" type="button" data-cam-act="light" title="' + esc(T("Faretto")) + '"><i class="mdi mdi-lightbulb-spot"></i><span>' + T("Faretto") + '</span></button>' : '') +
+            (x.siren ? '<button class="cam-act-btn siren-btn" type="button" data-cam-act="siren" title="' + esc(T("Sirena")) + '"><i class="mdi mdi-bullhorn"></i><span>' + T("Sirena") + '</span></button>' : '') +
+            (canSnap ? '<button class="cam-act-btn" type="button" data-cam-act="snap" title="' + esc(T("Salva una foto")) + '"><i class="mdi mdi-camera"></i><span>' + T("Foto") + '</span></button>' : '') +
           '</div>';
-        }
+        if (!x.light && !x.siren && !canSnap) actHtml = "";
         var card = el("article", "card cam",
-          '<div class="cam-head"><h4>' + esc(c.n || niceName(c.cam || c.img || c.live)) + '</h4><span class="cam-off" hidden>Offline</span><span class="cam-meta"></span>' +
+          '<div class="cam-head"><h4>' + esc(c.n || niceName(c.cam || c.img || c.live)) + '</h4><span class="cam-bat" hidden><i class="mdi mdi-battery"></i><b>—</b></span><span class="cam-off" hidden>Offline</span><span class="cam-meta"></span>' +
           '<button class="cbtn" type="button" data-a="refresh" title="' + T("Aggiorna anteprima") + '"><i class="mdi mdi-refresh"></i></button>' +
           (c.live ? '<button class="cbtn go" type="button" data-a="live"><i class="mdi mdi-play-circle"></i><span>' + T("Diretta") + '</span></button>' : "") +
           '<button class="cbtn" type="button" data-a="open" title="' + T("Apri") + '"><i class="mdi mdi-arrow-expand"></i></button></div>' +
@@ -1136,7 +1469,7 @@
           actHtml);
         box.appendChild(card);
         hydrate(card);
-        var t = { c: c, card: card, last: 0, im: $(".cam-img", card), na: $(".cam-na", card), liveBox: $(".live-box", card), meta: $(".cam-meta", card), off: $(".cam-off", card), bLive: $('[data-a="live"]', card), liveEl: null, timer: 0 };
+        var t = { c: c, x: x, card: card, last: 0, im: $(".cam-img", card), na: $(".cam-na", card), liveBox: $(".live-box", card), meta: $(".cam-meta", card), off: $(".cam-off", card), bLive: $('[data-a="live"]', card), liveEl: null, timer: 0 };
         camTiles.push(t);
         $('[data-a="refresh"]', card).addEventListener("click", function () { camRefresh(t); });
         if (t.bLive) t.bLive.addEventListener("click", function () { camLive(t, !t.liveEl); });
@@ -1144,27 +1477,27 @@
         $('[data-a="open"]', card).addEventListener("click", function () { moreInfo(target); });
         t.na.addEventListener("click", function () { moreInfo(target); });
         t.im.addEventListener("click", function () { moreInfo(target); });
-        if (c.light) {
-          var lb = $('[data-cam-act="light"]', card);
-          if (lb) lb.addEventListener("click", function (e) {
-            e.stopPropagation();
-            if (LIVE) {
-              var dom = c.light.split(".")[0];
-              call(dom === "switch" ? "switch" : "light", "toggle", { entity_id: c.light });
-            }
-          });
-        }
-        if (c.siren) {
-          var sb = $('[data-cam-act="siren"]', card);
-          if (sb) sb.addEventListener("click", function (e) {
-            e.stopPropagation();
-            if (LIVE) {
-              var sSt = sv(c.siren), isOn = sSt && sSt.state === "on";
-              var dom = c.siren.split(".")[0];
-              call(dom === "switch" ? "switch" : "siren", isOn ? "turn_off" : "turn_on", { entity_id: c.siren });
-            }
-          });
-        }
+        var lb = $('[data-cam-act="light"]', card);
+        if (lb) lb.addEventListener("click", function (e) {
+          e.stopPropagation();
+          if (LIVE) { var dom = x.light.split(".")[0]; call(dom === "switch" ? "switch" : "light", "toggle", { entity_id: x.light }); }
+          else { lb.classList.toggle("active"); toast(lb.classList.contains("active") ? T("Faretto acceso") : T("Faretto spento"), "mdi-lightbulb-spot", "var(--ok)"); }
+        });
+        /* la sirena suona davvero: per accenderla serve un secondo tocco entro 3 secondi */
+        var sb = $('[data-cam-act="siren"]', card), sirenT = 0;
+        if (sb) sb.addEventListener("click", function (e) {
+          e.stopPropagation();
+          var isOn = LIVE ? (function () { var s2 = sv(x.siren); return !!s2 && s2.state === "on"; })() : sb.classList.contains("active");
+          if (!isOn && sb.dataset.sure !== "1") {
+            sb.dataset.sure = "1"; clearTimeout(sirenT); sirenT = setTimeout(function () { sb.dataset.sure = ""; }, 3000);
+            toast(T("Tocca ancora Sirena per farla suonare"), "mdi-bullhorn", "var(--warn)"); return;
+          }
+          sb.dataset.sure = "";
+          if (LIVE) { var dom = x.siren.split(".")[0]; call(dom === "switch" ? "switch" : "siren", isOn ? "turn_off" : "turn_on", { entity_id: x.siren }); }
+          else sb.classList.toggle("active", !isOn);
+        });
+        var nb = $('[data-cam-act="snap"]', card);
+        if (nb) nb.addEventListener("click", function (e) { e.stopPropagation(); camSnapshot(t); });
       });
       camsEnter();
     }
@@ -1250,248 +1583,318 @@
         return;
       }
       var s = sv(ENT.vacuum), st = s ? s.state : "docked", a = (s && s.attributes) || {};
-      if (nameEl) nameEl.textContent = a.friendly_name || niceName(ENT.vacuum);
+      if (nameEl) nameEl.textContent = tidyName(a.friendly_name) || niceName(ENT.vacuum);
       var isCleaning = st === "cleaning" || st === "on" || st === "mowing";
       wrap.classList.toggle("is-cleaning", isCleaning);
 
       if (stateEl) stateEl.textContent = robotState(st);
-      var bat = a.battery_level !== undefined ? a.battery_level : a.battery;
-      if (batEl) {
-        if (bat !== undefined && bat !== null) {
-          batEl.textContent = bat + "%";
-          if (batIco) {
-            var bIco = (st === "charging" || st === "docked") ? "mdi-battery-charging" :
-              bat > 80 ? "mdi-battery" : bat > 60 ? "mdi-battery-70" : bat > 40 ? "mdi-battery-50" : bat > 20 ? "mdi-battery-30" : "mdi-battery-alert";
-            setIco(batIco, bIco);
-          }
-        } else {
-          batEl.textContent = "--";
-        }
+      /* batteria: l'attributo battery_level (Home Assistant lo sta togliendo dai robot) o il sensore batteria dello stesso dispositivo */
+      var bat = a.battery_level !== undefined && a.battery_level !== null ? a.battery_level : a.battery;
+      if (bat === undefined || bat === null) { var bId = deviceBattery(ENT.vacuum), bs = bId ? sv(bId) : null; if (bs && !isUnavail(bs) && !isNaN(parseFloat(bs.state))) bat = Math.round(parseFloat(bs.state)); }
+      var chip = $("#vac-batt-chip");
+      if (chip) chip.hidden = bat === undefined || bat === null;
+      if (batEl && bat !== undefined && bat !== null) {
+        batEl.textContent = bat + "%";
+        if (chip) chip.classList.toggle("low", bat <= 20 && st !== "charging");
+        if (batIco) setIco(batIco, batIcon(+bat, st === "charging" || (st === "docked" && bat < 100)));
       }
     }
 
     /* ------------------------------------------------------------------ giardino e irrigazione */
+    /* Ogni zona ha un cursore con la durata: «Irriga» apre l'elettrovalvola e Home Assistant la chiude da solo
+       allo scadere (aurora_glass/irrigation/*: il timer vive nell'integrazione, anche a plancia chiusa e dopo un riavvio).
+       Senza l'integrazione (scheda installata a mano) il timer lo tiene la pagina, che deve restare aperta. */
+    var IRR = { ends: {}, local: {}, listed: false, backend: null };
+    function gardenZones() {
+      var zones = (CFG.garden && CFG.garden.zones) || [];
+      if (!LIVE && !zones.length) zones = [
+        { name: T("Zona Prato"), switch: "demo_sw_prato", moisture: "demo_m_prato", moistDemo: 48 },
+        { name: T("Zona Siepe"), switch: "demo_sw_siepe", moisture: "demo_m_siepe", moistDemo: 26 }
+      ];
+      return zones;
+    }
+    function zoneOn(z) { var s = z.switch ? sv(z.switch) : null; return !!s && (s.state === "on" || s.state === "open" || s.state === "opening"); }
+    function zoneCall(id, onOff) {
+      var dom = String(id).split(".")[0];
+      if (dom === "valve") return call("valve", onOff ? "open_valve" : "close_valve", { entity_id: id });
+      return call(dom === "input_boolean" ? "input_boolean" : "switch", onOff ? "turn_on" : "turn_off", { entity_id: id });
+    }
+    function zoneMinutes(id) { var v = parseInt(store("irr_" + id), 10); return v >= 1 && v <= 120 ? v : 10; }
+    function hhmm(ms) { var d = new Date(ms); return pad(d.getHours()) + ":" + pad(d.getMinutes()); }
+    function leftTxt(ms) { var s = Math.max(0, Math.round((ms - Date.now()) / 1000)), m = Math.floor(s / 60); return m >= 60 ? Math.floor(m / 60) + ":" + pad(m % 60) + ":" + pad(s % 60) : m + ":" + pad(s % 60); }
+    function irrList() {
+      if (!LIVE || IRR.listed || !HASS || !HASS.callWS) return;
+      IRR.listed = true;
+      HASS.callWS({ type: "aurora_glass/irrigation/list" }).then(function (r) {
+        IRR.backend = true; IRR.ends = {};
+        Object.keys((r && r.timers) || {}).forEach(function (id) { var t = Date.parse(r.timers[id]); if (!isNaN(t)) IRR.ends[id] = t; });
+        syncGarden();
+      }).catch(function () { IRR.backend = false; });
+    }
+    function irrStart(z, card) {
+      var id = z.switch, min = zoneMinutes(id), end = Date.now() + min * 60000;
+      if (!LIVE) { IRR.ends[id] = end; card.dataset.demo = "1"; syncGarden(); toast(T("Irrigazione avviata: si ferma alle {t}", { t: hhmm(end) }), "mdi-sprinkler", "var(--ok)"); return; }
+      function local() {
+        zoneCall(id, true);
+        clearTimeout(IRR.local[id]);
+        IRR.local[id] = setTimeout(function () { delete IRR.local[id]; delete IRR.ends[id]; zoneCall(id, false); }, min * 60000);
+        timers.push(IRR.local[id]);
+        IRR.ends[id] = end; syncGarden();
+        toast(T("Irrigazione avviata: si ferma alle {t} se la plancia resta aperta", { t: hhmm(end) }), "mdi-sprinkler", "var(--warn)");
+      }
+      if (IRR.backend === false || !HASS.callWS) { local(); return; }
+      HASS.callWS({ type: "aurora_glass/irrigation/start", entity_id: id, minutes: min }).then(function (r) {
+        IRR.backend = true; IRR.ends[id] = Date.parse(r.end) || end; syncGarden();
+        toast(T("Irrigazione avviata: si ferma da sola alle {t}", { t: hhmm(IRR.ends[id]) }), "mdi-sprinkler", "var(--ok)");
+      }).catch(function (e) {
+        /* integrazione assente o zona scritta solo nella config YAML della scheda: il timer lo tiene la pagina */
+        if (e && (e.code === "unknown_command" || e.code === "not_a_zone")) { if (e.code === "unknown_command") IRR.backend = false; local(); return; }
+        toast(T("Non riuscito: {e}", { e: (e && e.message) || T("errore di Home Assistant") }), "mdi-alert-circle", "var(--warn)");
+      });
+    }
+    function irrStop(z) {
+      var id = z.switch;
+      if (!LIVE) { delete IRR.ends[id]; syncGarden(); toast(T("Irrigazione spenta"), "mdi-sprinkler", "var(--warn)"); return; }
+      if (IRR.local[id]) { clearTimeout(IRR.local[id]); delete IRR.local[id]; }
+      if (IRR.ends[id] && IRR.backend) { HASS.callWS({ type: "aurora_glass/irrigation/stop", entity_id: id }).catch(function () { zoneCall(id, false); }); }
+      else zoneCall(id, false);
+      delete IRR.ends[id]; syncGarden();
+    }
+    function setRange(r) { r.style.setProperty("--p", ((r.value - r.min) / (r.max - r.min) * 100) + "%"); }
     function buildGarden() {
       var wrap = $("#garden-wrap"), grid = $("#garden-zones") || $("#garden-grid");
       if (!wrap || !grid) return;
-      var zones = (CFG.garden && CFG.garden.zones) || [];
-      if (!LIVE && !zones.length) {
-        zones = [
-          { name: T("Zona Prato"), switch: "demo_sw_prato", moisture: "demo_m_prato", moistDemo: 48 },
-          { name: T("Zona Siepe"), switch: "demo_sw_siepe", moisture: "demo_m_siepe", moistDemo: 26 }
-        ];
-      }
-      if (!zones.length) {
-        wrap.hidden = true;
-        return;
-      }
+      var zones = gardenZones();
+      if (!zones.length) { wrap.hidden = true; return; }
       wrap.hidden = false;
       grid.innerHTML = zones.map(function (z, idx) {
-        return '<div class="garden-card glass-card" data-zone-idx="' + idx + '" data-active="false">' +
+        var id = z.switch || "", min = zoneMinutes(id);
+        return '<div class="garden-card glass-card card" data-zone-idx="' + idx + '" data-active="false">' +
           '<div class="g-header">' +
             '<div class="g-ico"><i class="mdi mdi-sprinkler-variant"></i></div>' +
             '<div class="g-title">' +
               '<h4>' + esc(z.name || (LIVE && sv(z.switch) && sv(z.switch).attributes.friendly_name) || (T("Zona") + " " + (idx + 1))) + '</h4>' +
               '<span class="g-state g-status-txt">' + T("Spento") + '</span>' +
             '</div>' +
-            '<button class="g-toggle-btn g-valve-btn" type="button" data-sw="' + esc(z.switch || "sw") + '" title="' + T("Irriga") + '" aria-label="' + T("Irriga") + '" aria-pressed="false"><i class="mdi mdi-sprinkler"></i></button>' +
+            (id ? '<button class="g-toggle-btn g-valve-btn" type="button" title="' + esc(T("Irriga")) + '" aria-label="' + esc(T("Irriga")) + '" aria-pressed="false"><i class="mdi mdi-sprinkler"></i></button>' : "") +
           '</div>' +
           '<div class="g-water-flow"><div class="flow-wave"></div></div>' +
-          '<div class="g-footer">' +
-            '<div class="g-moisture">' +
+          (id ? '<div class="g-timer"><div class="g-timer-top"><span><i class="mdi mdi-timer-outline"></i> ' + esc(T("Durata")) + '</span><b class="g-min">' + esc(T("{n} min", { n: min })) + '</b></div>' +
+            '<input class="g-range" type="range" min="1" max="60" step="1" value="' + min + '" aria-label="' + esc(T("Durata dell'irrigazione in minuti")) + '"></div>' : "") +
+          (z.moisture ? '<div class="g-footer"><div class="g-moisture">' +
               '<span class="gm-lbl"><i class="mdi mdi-water-percent"></i> ' + T("Umidità terreno") + '</span>' +
-              '<div class="gm-bar"><i style="width:' + (z.moistDemo || 40) + '%"></i></div>' +
-              '<span class="gm-val g-moist-txt">' + (z.moistDemo ? z.moistDemo + " %" : "-- %") + '</span>' +
-            '</div>' +
-          '</div>' +
+              '<div class="gm-bar"><i style="width:' + (z.moistDemo || 0) + '%"></i></div>' +
+              '<span class="gm-val g-moist-txt">' + (z.moistDemo ? z.moistDemo + " %" : "--") + '</span>' +
+            '</div></div>' : "") +
         '</div>';
       }).join("");
+      hydrate(grid);
+      $$(".g-range", grid).forEach(setRange);
 
+      grid.addEventListener("input", function (e) {
+        var r = e.target.closest(".g-range"); if (!r) return;
+        var card = r.closest(".garden-card"), z = zones[+card.dataset.zoneIdx];
+        store("irr_" + z.switch, r.value); setRange(r);
+        $(".g-min", card).textContent = T("{n} min", { n: r.value });
+      });
       grid.addEventListener("click", function (e) {
-        var vb = e.target.closest(".g-valve-btn") || e.target.closest(".g-toggle-btn");
+        var vb = e.target.closest(".g-valve-btn");
+        var card = e.target.closest(".garden-card"); if (!card) return;
+        var z = zones[+card.dataset.zoneIdx]; if (!z) return;
         if (vb) {
           e.stopPropagation();
-          var card = vb.closest(".garden-card");
-          var sw = vb.dataset.sw;
-          if (LIVE && sw) {
-            call(String(sw).split(".")[0] === "valve" ? "valve" : "switch", "toggle", { entity_id: sw });
-          } else if (card) {
-            var active = card.classList.toggle("is-active");
-            card.dataset.active = active ? "true" : "false";
-            vb.setAttribute("aria-pressed", active ? "true" : "false");
-            var stTxt = $(".g-status-txt", card) || $(".g-state", card);
-            if (stTxt) stTxt.textContent = active ? T("In irrigazione") : T("Spento");
-            toast(active ? T("Irrigazione avviata") : T("Irrigazione spenta"), "mdi-sprinkler", active ? "var(--ok)" : "var(--warn)");
-          }
+          var on = LIVE ? zoneOn(z) : !!IRR.ends[z.switch];
+          if (LIVE && isUnavail(sv(z.switch))) { toast(T("{n}: dispositivo non disponibile", { n: z.name || niceName(z.switch) }), "mdi-alert-circle", "var(--warn)"); return; }
+          if (on) irrStop(z); else irrStart(z, card);
           return;
         }
-        var c = e.target.closest(".garden-card");
-        if (c && LIVE) {
-          var idx = parseInt(c.dataset.zoneIdx, 10);
-          var z = zones[idx];
-          if (z) moreInfo(z.moisture || z.switch);
-        }
+        if (e.target.closest(".g-timer")) return;
+        if (LIVE) moreInfo(z.moisture || z.switch);
       });
       syncGarden();
+    }
+    function gardenTick() {
+      $$(".garden-card").forEach(function (card) {
+        var z = gardenZones()[+card.dataset.zoneIdx]; if (!z || !z.switch) return;
+        var end = IRR.ends[z.switch], st = $(".g-status-txt", card);
+        if (!end) return;
+        if (end <= Date.now()) { delete IRR.ends[z.switch]; if (!LIVE) syncGarden(); return; }
+        if (st) st.textContent = T("In irrigazione · {t}", { t: leftTxt(end) });
+      });
     }
     function syncGarden() {
       var wrap = $("#garden-wrap"), grid = $("#garden-zones") || $("#garden-grid");
       if (!wrap || !grid) return;
-      var zones = (CFG.garden && CFG.garden.zones) || [];
-      if (!LIVE && !zones.length) { wrap.hidden = false; return; }
-      if (LIVE && !zones.length) { wrap.hidden = true; return; }
+      var zones = gardenZones();
+      if (!zones.length) { wrap.hidden = true; return; }
       wrap.hidden = false;
+      irrList();
       $$(".garden-card", grid).forEach(function (card) {
-        var idx = parseInt(card.dataset.zoneIdx, 10);
-        var z = zones[idx];
+        var z = zones[+card.dataset.zoneIdx];
         if (!z) return;
-        var swSt = z.switch ? sv(z.switch) : null;
-        var isOn = swSt && swSt.state === "on";
-        card.classList.toggle("is-active", !!isOn);
+        var na = LIVE && z.switch && isUnavail(sv(z.switch));
+        var isOn = LIVE ? zoneOn(z) : !!IRR.ends[z.switch];
+        /* il nome della zona è quello dell'elettrovalvola (la scheda nasce prima di ricevere gli stati) */
+        var h4 = $(".g-title h4", card), zs = LIVE && !z.name && z.switch ? sv(z.switch) : null;
+        if (h4 && zs && zs.attributes.friendly_name && h4.textContent !== zs.attributes.friendly_name) h4.textContent = zs.attributes.friendly_name;
+        if (LIVE && !isOn && IRR.ends[z.switch]) { delete IRR.ends[z.switch]; if (IRR.local[z.switch]) { clearTimeout(IRR.local[z.switch]); delete IRR.local[z.switch]; } }
+        card.classList.toggle("is-active", isOn);
         card.dataset.active = isOn ? "true" : "false";
         var vb = $(".g-valve-btn", card);
-        if (vb) vb.setAttribute("aria-pressed", isOn ? "true" : "false");
-        var stTxt = $(".g-status-txt", card);
-        if (stTxt) stTxt.textContent = isOn ? T("In irrigazione") : T("Spento");
+        if (vb) { vb.setAttribute("aria-pressed", isOn ? "true" : "false"); var lbl = isOn ? T("Ferma l'irrigazione") : T("Irriga"); vb.title = lbl; vb.setAttribute("aria-label", lbl); }
+        var rg = $(".g-range", card); if (rg) rg.disabled = isOn;
+        var stTxt = $(".g-status-txt", card), end = IRR.ends[z.switch];
+        if (stTxt) stTxt.textContent = na ? T("Non disponibile") : !isOn ? T("Spento") : end ? T("In irrigazione · {t}", { t: leftTxt(end) }) : T("In irrigazione");
         if (z.moisture) {
-          var mSt = sv(z.moisture);
-          var moistTxt = $(".g-moist-txt", card);
-          if (moistTxt) {
-            if (mSt && !isUnavail(mSt)) {
-              var u = mSt.attributes.unit_of_measurement || "%";
-              moistTxt.textContent = mSt.state + " " + u;
-              var mv = parseFloat(mSt.state);
-              if (!isNaN(mv) && mv < 30) moistTxt.style.color = "var(--warn)";
-              else moistTxt.style.color = "";
-            } else if (!LIVE && z.moistDemo) {
-              moistTxt.textContent = z.moistDemo + " %";
-              if (z.moistDemo < 30) moistTxt.style.color = "var(--warn)";
-            } else {
-              moistTxt.textContent = "--";
-            }
-          }
+          var moistTxt = $(".g-moist-txt", card), bar = $(".gm-bar i", card), mv = NaN;
+          if (!LIVE) mv = z.moistDemo;
+          else { var mSt = sv(z.moisture); if (mSt && !isUnavail(mSt)) { mv = parseFloat(mSt.state); if (moistTxt) moistTxt.textContent = mSt.state + " " + (mSt.attributes.unit_of_measurement || "%"); } else if (moistTxt) moistTxt.textContent = "--"; }
+          if (!LIVE && moistTxt) moistTxt.textContent = mv + " %";
+          if (moistTxt) moistTxt.style.color = !isNaN(mv) && mv < 30 ? "var(--warn)" : "";
+          if (bar) bar.style.width = (isNaN(mv) ? 0 : Math.max(0, Math.min(100, mv))) + "%";
         }
       });
     }
 
-    /* ------------------------------------------------------------------ meteo dinamico e stazione meteo */
+    /* ------------------------------------------------------------------ meteo: previsioni, frase AI e stazione meteo */
+    /* Da Home Assistant 2024.3 le previsioni non sono più nell'attributo «forecast»: si chiedono con
+       weather/subscribe_forecast (giornaliere, oppure due al giorno o orarie se il servizio meteo dà solo quelle).
+       L'attributo resta come riserva per le versioni vecchie. */
+    var FC = { entity: null, type: null, data: null, unsub: null, failed: false };
+    function forecastSubscribe() {
+      var h = HASS, id = ENT.weather, w = sv(id);
+      if (!LIVE || !h || !h.connection || !h.connection.subscribeMessage || !w) return;
+      var f = w.attributes.supported_features || 0, type = (f & 1) ? "daily" : (f & 4) ? "twice_daily" : (f & 2) ? "hourly" : null;
+      if (!type || (FC.entity === id && FC.type === type)) return;
+      if (FC.unsub) { try { FC.unsub(); } catch (e) {} FC.unsub = null; }
+      FC.entity = id; FC.type = type; FC.data = null; FC.failed = false;
+      h.connection.subscribeMessage(function (ev) { FC.data = (ev && ev.forecast) || []; syncWeatherForecasts(); },
+        { type: "weather/subscribe_forecast", entity_id: id, forecast_type: type })
+        .then(function (un) {
+          /* scheda fermata nel frattempo: si chiude e al prossimo aggiornamento ci si abbona di nuovo */
+          if (FC.entity !== id || !running) { try { un(); } catch (e) {} if (FC.entity === id) { FC.entity = null; FC.type = null; } return; }
+          FC.unsub = un;
+        })
+        .catch(function () { FC.failed = true; syncWeatherForecasts(); });
+    }
+    function forecastUnsub() { if (FC.unsub) { try { FC.unsub(); } catch (e) {} } FC.unsub = null; FC.entity = null; FC.type = null; }
+    function dayKey(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+    /* oggi e domani: massima, minima, condizione e probabilità di pioggia, anche partendo da previsioni orarie */
+    function forecastDays(list) {
+      var days = {}, order = [];
+      (list || []).forEach(function (x) {
+        if (!x || !x.datetime) return;
+        var d = new Date(x.datetime); if (isNaN(d)) return;
+        var k = dayKey(d), o = days[k];
+        if (!o) { o = days[k] = { hi: null, lo: null, cond: null, pop: null, conds: {} }; order.push(k); }
+        var t = parseFloat(x.temperature), lo = parseFloat(x.templow), p = parseFloat(x.precipitation_probability);
+        if (!isNaN(t)) { o.hi = o.hi === null ? t : Math.max(o.hi, t); if (isNaN(lo)) o.lo = o.lo === null ? t : Math.min(o.lo, t); }
+        if (!isNaN(lo)) o.lo = o.lo === null ? lo : Math.min(o.lo, lo);
+        if (!isNaN(p)) o.pop = o.pop === null ? p : Math.max(o.pop, p);
+        if (x.condition && x.is_daytime !== false) { o.conds[x.condition] = (o.conds[x.condition] || 0) + 1; }
+      });
+      order.forEach(function (k) { var o = days[k], best = 0; Object.keys(o.conds).forEach(function (c) { if (o.conds[c] > best) { best = o.conds[c]; o.cond = c; } }); });
+      var now = new Date(), tom = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      var a = days[dayKey(now)], b = days[dayKey(tom)];
+      /* servizi che partono da domani: il primo giorno disponibile fa da «oggi» solo se è proprio oggi */
+      return { today: a || null, tomorrow: b || null };
+    }
+    function fcChip(which, d) {
+      var chip = $("#w-fc-" + which); if (!chip) return false;
+      chip.hidden = !d || d.hi === null;
+      if (chip.hidden) return false;
+      setIco($("#w-fc-" + which + "-ico"), condIcon(d.cond));
+      $("#w-fc-" + which + "-max").textContent = fmt(d.hi, 0) + "°";
+      $("#w-fc-" + which + "-min").textContent = d.lo === null ? "—" : fmt(d.lo, 0) + "°";
+      var pop = $("#w-fc-" + which + "-pop");
+      if (pop) { pop.hidden = d.pop === null || d.pop < 10; $("#w-fc-" + which + "-pop-val").textContent = Math.round(d.pop || 0) + "%"; }
+      return true;
+    }
+    /* frase del meteo: lo stato di un sensore, di un input_text o di un text; se il testo è lungo
+       (oltre 255 caratteri Home Assistant lo mette negli attributi) si legge l'attributo */
+    var AI_ATTRS = ["text", "summary", "message", "description", "response", "content", "forecast", "riepilogo", "testo"];
+    function aiText(s) {
+      if (!s) return "";
+      var st = isUnavail(s) ? "" : String(s.state || "").trim(), best = st;
+      AI_ATTRS.forEach(function (k) { var v = s.attributes[k]; if (typeof v === "string" && v.trim().length > best.length) best = v.trim(); });
+      return /^-?\d+([.,]\d+)?$/.test(best) ? "" : best;
+    }
+    /* stazione meteo: [chiave della config, nome, icona, decimali, sezione]; quelli non scelti non compaiono */
+    var WS_FIELDS = [
+      ["temp_out", T("Temperatura esterna"), "mdi-thermometer", 1, "out"], ["hum_out", T("Umidità esterna"), "mdi-water-percent", 0, "out"],
+      ["wind", T("Vento"), "mdi-weather-windy", 1, "out"], ["gust", T("Raffica"), "mdi-weather-windy-variant", 1, "out"],
+      ["rain", T("Pioggia"), "mdi-weather-pouring", 1, "out"], ["uv", T("Indice UV"), "mdi-white-balance-sunny", 1, "out"],
+      ["pressure", T("Pressione"), "mdi-gauge", 0, "out"], ["lightning", T("Fulmini"), "mdi-lightning-bolt", 0, "out"],
+      ["temp_in", T("Temperatura interna"), "mdi-home-thermometer-outline", 1, "in"], ["hum_in", T("Umidità interna"), "mdi-water-percent", 0, "in"]
+    ];
+    var WS_DEMO = { temp_out: [12.4, "°C"], hum_out: [78, "%"], wind: [18.5, "km/h"], gust: [31, "km/h"], rain: [4.2, "mm"], uv: [3.1, ""], pressure: [1014, "hPa"], temp_in: [21.3, "°C"], hum_in: [52, "%"] };
+    function wsEnt(k) { var ws = ENT.weather_station || {}; if (k === "lightning") return ws.lightning_distance || ws.lightning_count || null; return ws[k] || null; }
+    function hasStation() { return !LIVE || WS_FIELDS.some(function (f) { return !!wsEnt(f[0]); }); }
+    function wsOpen() { var m = $("#wsbox"); renderStation(); m.classList.add("open"); m.setAttribute("aria-hidden", "false"); later(function () { $("#ws-close").focus({ preventScroll: true }); }, 250); }
+    function wsClose() { var m = $("#wsbox"); m.classList.remove("open"); m.setAttribute("aria-hidden", "true"); }
+    function wsVal(id, dec) {
+      var s = sv(id); if (isUnavail(s)) return null;
+      var v = parseFloat(s.state), u = s.attributes.unit_of_measurement || "";
+      return isNaN(v) ? { n: esc(s.state), u: esc(u) } : { n: fmt(v, dec), u: esc(u), v: v };
+    }
+    function renderStation() {
+      var grid = $("#ws-grid"); if (!grid) return;
+      var html = "", sec = null, ws = ENT.weather_station || {};
+      WS_FIELDS.forEach(function (f) {
+        var k = f[0], val = null, id = null, cls = "ws-card", extra = "";
+        if (!LIVE) {
+          if (k === "lightning") { val = { n: "12", u: "km" }; extra = '<small class="ws-x">' + esc(T("{n} colpi", { n: 4 })) + "</small>"; cls += " lightning-alert"; }
+          else val = { n: fmt(WS_DEMO[k][0], f[3]), u: WS_DEMO[k][1] };
+        } else {
+          id = wsEnt(k); if (!id) return;
+          if (k === "lightning") {
+            var dist = ws.lightning_distance ? wsVal(ws.lightning_distance, 0) : null, cnt = ws.lightning_count ? wsVal(ws.lightning_count, 0) : null;
+            val = dist || cnt;
+            if (dist && cnt) extra = '<small class="ws-x">' + esc(T("{n} colpi", { n: cnt.n })) + "</small>";
+            if (dist && dist.v !== undefined && dist.v < 25 && (!cnt || cnt.v > 0)) cls += " lightning-alert";
+            if (!dist && cnt) val = { n: cnt.n, u: T("colpi") };
+          } else val = wsVal(id, f[3]);
+          if (!val) cls += " na";
+        }
+        if (f[4] !== sec) { sec = f[4]; html += '<p class="ws-sec">' + esc(sec === "out" ? T("All'esterno") : T("Dentro casa")) + "</p>"; }
+        html += '<button type="button" class="' + cls + '"' + (id ? ' data-ws="' + esc(id) + '"' : "") + '><span class="ws-lbl"><i class="mdi ' + f[2] + '"></i>' + esc(f[1]) + "</span>" +
+          '<span class="ws-val">' + (val ? val.n + (val.u ? "<small>" + val.u + "</small>" : "") : "—") + extra + "</span></button>";
+      });
+      if (grid.dataset.sig !== html) { grid.dataset.sig = html; grid.innerHTML = html; hydrate(grid); }
+      var sub = $("#ws-sub"); if (sub) sub.textContent = LIVE ? T("tocca un valore per lo storico") : T("dati di esempio");
+    }
     function buildWeatherStation() {
-      var openBtn = $("#ws-open-btn"), modal = $("#ws-modal"), closeBtn = $("#ws-close");
-      if (openBtn && modal) {
-        openBtn.addEventListener("click", function () { modal.classList.add("active"); });
-      }
-      if (closeBtn && modal) {
-        closeBtn.addEventListener("click", function () { modal.classList.remove("active"); });
-      }
-      if (modal) {
-        modal.addEventListener("click", function (e) {
-          if (e.target === modal) modal.classList.remove("active");
-        });
-      }
+      var ct = $("#chip-temp"), m = $("#wsbox");
+      function openFromChip() { if (hasStation()) wsOpen(); else if (LIVE && ENT.weather) moreInfo(ENT.weather); }
+      ct.addEventListener("click", openFromChip);
+      ct.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openFromChip(); } });
+      $("#ws-close").addEventListener("click", wsClose);
+      m.addEventListener("click", function (e) { if (e.target === m) wsClose(); var c = e.target.closest("[data-ws]"); if (c && LIVE) moreInfo(c.dataset.ws); });
+      m.addEventListener("keydown", function (e) { if (e.key === "Escape") wsClose(); });
+      $$(".w-fc-chip").forEach(function (c) { c.addEventListener("click", function () { if (LIVE && ENT.weather) moreInfo(ENT.weather); }); });
+      var ai = $("#w-ai-summary"); if (ai) ai.addEventListener("click", function () { if (LIVE && ENT.weather_ai) moreInfo(ENT.weather_ai); });
       syncWeatherForecasts();
     }
     function syncWeatherForecasts() {
-      var ws = ENT.weather_station || {};
-      var hasWs = ws.wind || ws.rain || ws.uv || ws.pressure || ws.lightning_distance || ws.lightning_count;
-      var openBtn = $("#ws-open-btn"), hwBox = $("#hero-weather-box");
-
+      var hwBox = $("#hero-weather-box"), aiBox = $("#w-ai-summary"), aiTxt = $("#w-ai-text"), row = $("#w-forecast-row"), ct = $("#chip-temp");
+      if (ct) { ct.dataset.ws = hasStation() ? "1" : ""; ct.title = hasStation() ? T("Apri i dati della stazione meteo") : T("Apri il meteo"); }
       if (!LIVE) {
+        fcChip("today", { hi: 14, lo: 8, cond: "partlycloudy", pop: 20 });
+        fcChip("tomorrow", { hi: 17, lo: 7, cond: "cloudy", pop: null });
+        if (aiBox) { aiBox.hidden = false; aiTxt.textContent = T("Pomeriggio con nubi sparse e schiarite. Vento moderato e clima mite."); }
         if (hwBox) hwBox.hidden = false;
-        if (openBtn) openBtn.hidden = false;
-        var todayEl = $("#w-fc-today"), tmrowEl = $("#w-fc-tomorrow");
-        if (todayEl) todayEl.innerHTML = '<i class="mdi mdi-weather-partly-cloudy"></i> <span>' + T("Oggi") + ': <b>14° / 8°</b></span>';
-        if (tmrowEl) tmrowEl.innerHTML = '<i class="mdi mdi-weather-cloudy"></i> <span>' + T("Domani") + ': <b>17° / 7°</b></span>';
-        var aiBox = $("#w-ai-summary");
-        if (aiBox) {
-          aiBox.hidden = false;
-          aiBox.innerHTML = '<i class="mdi mdi-creation"></i> <span>' + T("Pomeriggio con nubi sparse e schiarite. Vento moderato e clima mite.") + '</span>';
-        }
-        var windEl = $("#ws-wind"), rainEl = $("#ws-rain"), uvEl = $("#ws-uv"), pressEl = $("#ws-press");
-        if (windEl) windEl.textContent = "18.5 km/h";
-        if (rainEl) rainEl.textContent = "4.2 mm";
-        if (uvEl) uvEl.textContent = "3.1 UV";
-        if (pressEl) pressEl.textContent = "1014 hPa";
-        var lightBox = $("#ws-lightning-box"), lightDist = $("#ws-light-dist"), lightCount = $("#ws-light-count");
-        if (lightBox) {
-          lightBox.hidden = false;
-          if (lightDist) lightDist.textContent = "12 km";
-          if (lightCount) lightCount.textContent = "4";
-          lightBox.style.borderColor = "var(--warn)";
-        }
         return;
       }
-
-      if (openBtn) openBtn.hidden = !hasWs;
-      if (hwBox) hwBox.hidden = !(hasWs || ENT.weather_ai || (wSt && wSt.attributes && wSt.attributes.forecast));
-
-      /* previsioni oggi e domani da Home Assistant weather */
-      var wSt = sv(ENT.weather);
-      if (wSt && wSt.attributes) {
-        var fc = wSt.attributes.forecast;
-        if (fc && fc.length > 0) {
-          var d0 = fc[0];
-          var d1 = fc[1] || fc[0];
-          var todayEl = $("#w-fc-today"), tmrowEl = $("#w-fc-tomorrow");
-          if (todayEl && d0) {
-            var t0 = (d0.temperature !== undefined ? d0.temperature : "--") + "°";
-            if (d0.templow !== undefined) t0 += " / " + d0.templow + "°";
-            todayEl.innerHTML = '<i class="mdi mdi-weather-partly-cloudy"></i> <span>' + T("Oggi") + ': <b>' + t0 + '</b></span>';
-          }
-          if (tmrowEl && d1) {
-            var t1 = (d1.temperature !== undefined ? d1.temperature : "--") + "°";
-            if (d1.templow !== undefined) t1 += " / " + d1.templow + "°";
-            tmrowEl.innerHTML = '<i class="mdi mdi-weather-cloudy"></i> <span>' + T("Domani") + ': <b>' + t1 + '</b></span>';
-          }
-        }
-      }
-
-      /* frase o riepilogo meteo AI */
-      var aiBox = $("#w-ai-summary");
-      if (aiBox) {
-        if (ENT.weather_ai) {
-          var aiSt = sv(ENT.weather_ai);
-          if (aiSt && aiSt.state && !isUnavail(aiSt)) {
-            aiBox.hidden = false;
-            aiBox.innerHTML = '<i class="mdi mdi-creation"></i> <span>' + esc(aiSt.state) + '</span>';
-          } else {
-            aiBox.hidden = true;
-          }
-        } else {
-          aiBox.hidden = true;
-        }
-      }
-
-      /* stazione meteo modale (es. Ecowitt) */
-      if (hasWs) {
-        var windSt = ws.wind ? sv(ws.wind) : null;
-        var rainSt = ws.rain ? sv(ws.rain) : null;
-        var uvSt = ws.uv ? sv(ws.uv) : null;
-        var pressSt = ws.pressure ? sv(ws.pressure) : null;
-        var lDistSt = ws.lightning_distance ? sv(ws.lightning_distance) : null;
-        var lCountSt = ws.lightning_count ? sv(ws.lightning_count) : null;
-
-        var windEl = $("#ws-wind"), rainEl = $("#ws-rain"), uvEl = $("#ws-uv"), pressEl = $("#ws-press");
-        if (windEl && windSt) windEl.textContent = windSt.state + " " + (windSt.attributes.unit_of_measurement || "km/h");
-        if (rainEl && rainSt) rainEl.textContent = rainSt.state + " " + (rainSt.attributes.unit_of_measurement || "mm");
-        if (uvEl && uvSt) uvEl.textContent = uvSt.state + " UV";
-        if (pressEl && pressSt) pressEl.textContent = pressSt.state + " " + (pressSt.attributes.unit_of_measurement || "hPa");
-
-        var lightBox = $("#ws-lightning-box"), lightDist = $("#ws-light-dist"), lightCount = $("#ws-light-count");
-        if (lightBox) {
-          var hasLightning = lDistSt || lCountSt;
-          lightBox.hidden = !hasLightning;
-          if (hasLightning) {
-            var distVal = lDistSt ? parseFloat(lDistSt.state) : NaN;
-            if (lightDist) lightDist.textContent = !isNaN(distVal) ? (distVal + " " + (lDistSt.attributes.unit_of_measurement || "km")) : "--";
-            if (lightCount) lightCount.textContent = lCountSt ? lCountSt.state : "--";
-            if (!isNaN(distVal) && distVal < 25) {
-              lightBox.style.borderColor = "var(--warn)";
-            } else {
-              lightBox.style.borderColor = "";
-            }
-          }
-        }
-      }
+      forecastSubscribe();
+      var wSt = sv(ENT.weather), list = FC.data;
+      if (!list && wSt && Array.isArray(wSt.attributes.forecast)) list = wSt.attributes.forecast;   /* Home Assistant prima del 2024.3 */
+      var days = forecastDays(list), any = fcChip("today", days.today);
+      any = fcChip("tomorrow", days.tomorrow) || any;
+      if (row) row.hidden = !any;
+      var txt = ENT.weather_ai ? aiText(sv(ENT.weather_ai)) : "";
+      if (aiBox) { aiBox.hidden = !txt; if (txt) aiTxt.textContent = txt; }
+      if (hwBox) hwBox.hidden = !any && !txt;
+      if ($("#wsbox").classList.contains("open")) renderStation();
     }
 
     /* ------------------------------------------------------------------ infrastruttura: Server e UPS (NUT) */
@@ -2196,6 +2599,7 @@
       if (running) return; running = true;
       every(function () { if (!LIVE) { chipPower(demoPower()); if (!$("#view-en").hidden) renderEnergy(); } else { livePoll(); if (!$("#view-en").hidden) { enLoad(false); kpiStats(); } } enAge(); tickClock(); lastMotionText(); camsTick(); var d = new Date(), ts = pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds()); $$("[data-stamp]").forEach(function (n) { n.textContent = ts; }); }, 1000);
       every(tickDate, 60000);
+      every(gardenTick, 1000);
       every(function () { if (stOpen === "motion") renderPop(false); }, 5000);
       if (!LIVE) later(motionLoop, 1800);
       applyFx();
@@ -2207,7 +2611,7 @@
       if (ro) { ro.disconnect(); ro = null; }
       fxHero.stop(); fxPage.stop();
     }
-    function destroy() { stop(); if (PK) { PK.destroy(); PK = null; } unbinds.forEach(function (u) { u(); }); unbinds = []; }
+    function destroy() { stop(); forecastUnsub(); if (PK) { PK.destroy(); PK = null; } unbinds.forEach(function (u) { u(); }); unbinds = []; }
 
     /* ------------------------------------------------------------------ pacchetti (vedi pacchetti.js) */
     var PK = null, hassWait = [];
@@ -2326,7 +2730,7 @@
     if (EMB) HOST.setAttribute("data-embedded", "1");
     hydrate(ROOT);
 
-    buildScenes(); buildRooms(); buildSecurity(); buildDrawer(); buildClima(); buildEnergy(); buildVacuum(); buildGarden(); buildWeatherStation(); refreshAll();
+    buildScenes(); buildRooms(); buildSecurity(); buildDrawer(); buildClima(); buildEnergy(); buildVacuum(); buildGarden(); buildWeatherStation(); buildColorBox(); buildAlarmsX(); buildBatteries(); refreshAll();
     var th = store("theme"); setTheme(th === "light" ? "light" : "dark");
     setBtn(S.btn === "icon" ? "icon" : S.btn === "compact" ? "compact" : "img");
     setClimaStyle(store("clima_style") || CFG.climate_style || "split");

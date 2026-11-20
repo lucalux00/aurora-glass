@@ -79,14 +79,21 @@ windows:
   camera: light.camera
 
 entities:
-  alarm: alarm_control_panel.allarme      # centrale allarme
+  alarm: alarm_control_panel.allarme      # centrale allarme (i tasti seguono le sue modalità: In casa, Notte, Fuori casa)
+  alarms:                                 # facoltativo: modalità delle telecamere (Arlo, Blink…) o un'altra centrale
+    - alarm_control_panel.arlo_base
   weather: weather.forecast_home          # meteo dinamico e previsioni oggi/domani (es. 3B Meteo)
-  weather_ai: sensor.riepilogo_meteo_ai   # facoltativo: frase descrittiva o sommario AI
+  weather_ai: input_text.meteo_ai         # facoltativo: frase del meteo (sensor, input_text o text)
   climate: climate.salotto                # climatizzatore o termostato
 
-  # --- STAZIONE METEO (es. Ecowitt, Netatmo): rilevamento vento, pioggia, UV, fulmini
+  # --- STAZIONE METEO (es. Ecowitt, Netatmo): si apre toccando la temperatura in alto
   weather_station:
+    temp_out: sensor.ecowitt_outdoor_temperature   # sostituisce la temperatura del servizio meteo
+    hum_out: sensor.ecowitt_outdoor_humidity
+    temp_in: sensor.ecowitt_indoor_temperature
+    hum_in: sensor.ecowitt_indoor_humidity
     wind: sensor.ecowitt_wind_speed
+    gust: sensor.ecowitt_wind_gust
     rain: sensor.ecowitt_rain_rate
     uv: sensor.ecowitt_uv_index
     pressure: sensor.ecowitt_relative_pressure
@@ -96,7 +103,11 @@ entities:
   # --- ROBOT ASPIRAPOLVERE (es. Roborock Saros 10R / Dreame / Roomba)
   vacuum: vacuum.roborock_saros_10r
 
-  # --- TELECAMERE (vista Sicurezza) con comandi rapidi per faretto e sirena
+  # --- BATTERIE: la sezione trova da sola i sensori batteria; batteries: false la nasconde
+  # batteries: false
+
+  # --- TELECAMERE (vista Sicurezza): faretto, sirena e batteria si trovano da soli tra le entità
+  #     dello stesso dispositivo; scrivili qui solo per sceglierne altri (false = nessuno)
   cameras:
     - n: Ingresso
       img: camera.ingresso

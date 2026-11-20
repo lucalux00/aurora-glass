@@ -18,6 +18,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.typing import ConfigType
 
+from .actions import async_setup_actions
 from .const import CONF_URL_PATH, DOMAIN, PANEL_ELEMENT, URL_BASE, VERSION
 from .editor import async_setup_editor
 from .helpers import build_card_config, panel_title
@@ -38,6 +39,9 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     if not hass.data[DOMAIN].get("editor"):
         async_setup_editor(hass)
         hass.data[DOMAIN]["editor"] = True
+    # timer dell'irrigazione e foto delle telecamere (vedi actions.py)
+    if "irrigation" not in hass.data[DOMAIN]:
+        await async_setup_actions(hass)
     return True
 
 

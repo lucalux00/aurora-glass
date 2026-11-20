@@ -59,6 +59,8 @@ DEVICES_SCHEMA = vol.Schema(
         vol.Optional("energy"): _one,
         vol.Optional("appliances", default=list): ENTITIES,
         vol.Optional("cameras", default=list): ENTITIES,
+        # altre centrali: modalità delle telecamere (Arlo, Blink…) o una seconda centrale
+        vol.Optional("alarms", default=list): ENTITIES,
         vol.Optional("currency"): vol.Any(None, vol.All(str, vol.Length(max=5))),
         # robot (aspirapolvere e tagliaerba), giardino, meteo avanzato, server e UPS: prima venivano scartati
         vol.Optional("vacuums", default=list): ENTITIES,

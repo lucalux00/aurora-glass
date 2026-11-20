@@ -184,7 +184,52 @@
     "Stazione Meteo": "Weather Station", "Vento": "Wind", "Pioggia oggi": "Rain today", "Indice UV": "UV Index", "Pressione": "Pressure", "Fulmini": "Lightning", "{n} colpi": "{n} strikes", "Ultimo fulmine a {d} km": "Last strike at {d} km", "Nessun fulmine recente": "No recent strikes",
     "Infrastruttura & Gruppo di Continuità": "Infrastructure & UPS", "Server": "Server", "UPS": "UPS", "Alimentazione da rete": "Grid power", "Alimentazione a batteria": "Battery power", "Autonomia": "Runtime", "Carico": "Load",
     "Sanificazione": "Sanitisation", "Sanificazione consigliata": "Sanitisation recommended", "{n} kWh questo mese": "{n} kWh this month", "Sanificazione: {c}/{l}": "Sanitisation: {c}/{l}", "Cicli completati: {n}": "Completed cycles: {n}",
-    "Luce": "Light", "Sirena": "Siren", "Icone MDI": "MDI Icons", "Cronotermostato": "Thermostat", "Termostato": "Thermostat"
+    "Luce": "Light", "Sirena": "Siren", "Icone MDI": "MDI Icons", "Cronotermostato": "Thermostat", "Termostato": "Thermostat",
+    /* 3.8.2 · testi della 3.8.0 rimasti senza traduzione */
+    "Scena personalizzata": "Custom scene", "Stile clima: {s}": "Climate style: {s}", "Modello robot impostato: {m}": "Robot model set: {m}", "Batteria": "Battery",
+    "Rientro alla base": "Returning to dock", "Errore": "Error", "Rete Online": "Grid online", "Su Batteria!": "On battery!", "Tocca per azzerare il contatore": "Tap to reset the counter",
+    "ripristinato": "reset", "Server & UPS": "Server & UPS", "Tipo / Modello di Robot": "Robot type / model", "es. vacuum.roborock_saros_10r": "e.g. vacuum.roborock_saros_10r",
+    "Sensore Vento": "Wind sensor", "velocità vento km/h": "wind speed km/h", "Sensore Pioggia": "Rain sensor", "pioggia mm o mm/h": "rain mm or mm/h", "indice raggi ultravioletti": "ultraviolet index",
+    "Pressione atmosferica": "Air pressure", "pressione in hPa": "pressure in hPa", "Distanza fulmini": "Lightning distance", "km dal temporale": "km from the storm", "Scariche fulmini": "Lightning strikes", "numero colpi rilevati": "number of strikes detected",
+    "Monitoraggio hardware del server Home Assistant (Mini PC) e del gruppo di continuità (UPS tramite NUT).": "Hardware monitoring of the Home Assistant server (mini PC) and of the UPS (via NUT).",
+    "Server Home Assistant (Mini PC)": "Home Assistant server (mini PC)", "Utilizzo CPU": "CPU usage", "percentuale %": "percentage %", "Memoria RAM": "RAM", "Temperatura CPU": "CPU temperature", "gradi °C": "degrees °C",
+    "Utilizzo Disco": "Disk usage", "Gruppo di Continuità (UPS NUT)": "UPS (NUT)", "Livello Batteria UPS": "UPS battery level", "Carico UPS": "UPS load", "percentuale % o W": "percentage % or W",
+    "Autonomia Residua": "Remaining runtime", "minuti rimanenti": "minutes left", "Stato Linea UPS": "UPS line status", "Online / Su batteria": "Online / On battery", "Volt V": "Volts V",
+    "Stile Clima & Riscaldamento": "Climate & heating style", "Modello Robot": "Robot model", "Tagliaerba": "Lawn mower", "Pausa": "Pause", "Domani": "Tomorrow", "Previsione meteo del giorno…": "Today's weather…",
+    "Apri dettagli stazione meteo": "Open weather station details", "Comandi robot": "Robot controls", "Avvia o riprendi pulizia": "Start or resume cleaning", "Metti in pausa": "Pause", "Torna alla base di ricarica": "Return to the charging dock", "Carico W": "Load W",
+    /* 3.8.2 · allarme e altre centrali */
+    "Armato · In casa": "Armed · Home", "Porte e finestre sorvegliate mentre sei in casa.": "Doors and windows watched while you are home.", "Allarme in casa": "Alarm home",
+    "Armato · Vacanza": "Armed · Vacation", "Tutta la casa è sorvegliata finché sei via.": "The whole house is watched while you are away.", "Allarme vacanza": "Alarm vacation",
+    "Armato · Personalizzato": "Armed · Custom", "Armato con le zone escluse che hai scelto.": "Armed with the zones you chose to bypass.", "Allarme personalizzato": "Alarm custom",
+    "In casa": "Home", "Vacanza": "Vacation", "Standby": "Standby", "Telecamere giardino": "Garden cameras", "Modalità telecamere e altre centrali": "Camera modes and other alarm panels",
+    "i tasti seguono le modalità che la centrale sa fare: In casa, Notte, Fuori casa": "the buttons follow the modes the panel supports: Home, Night, Away",
+    "es. Arlo, Blink: Fuori casa, In casa, Standby": "e.g. Arlo, Blink: Away, Home, Standby",
+    /* 3.8.2 · telecamere */
+    "Faretto": "Spotlight", "Faretto acceso": "Spotlight on", "Faretto spento": "Spotlight off", "Foto": "Photo", "Salva una foto": "Save a photo", "Batteria {p}": "Battery {p}",
+    "Tocca ancora Sirena per farla suonare": "Tap Siren again to sound it", "Nessuna immagine da salvare": "No image to save", "Foto scaricata": "Photo downloaded", "Scatto la foto…": "Taking the photo…",
+    "Foto salvata in Media › aurora_glass": "Photo saved in Media › aurora_glass", "Foto salvata in Media › {f}": "Photo saved in Media › {f}", "Foto non salvata ({e}): la scarico dall'anteprima": "Photo not saved ({e}): downloading the preview instead",
+    "Faretto, sirena e batteria di ogni telecamera vengono trovati da soli tra le entità dello stesso dispositivo. Il tasto Foto salva l'immagine in Media › aurora_glass.": "Each camera's spotlight, siren and battery are found automatically among the entities of the same device. The Photo button saves the image in Media › aurora_glass.",
+    /* 3.8.2 · irrigazione */
+    "Zona": "Zone", "Zona Prato": "Lawn zone", "Zona Siepe": "Hedge zone", "Irriga": "Water", "Ferma l'irrigazione": "Stop watering", "In irrigazione": "Watering", "In irrigazione · {t}": "Watering · {t}",
+    "Irrigazione spenta": "Watering stopped", "Durata": "Duration", "{n} min": "{n} min", "Durata dell'irrigazione in minuti": "Watering time in minutes", "Umidità terreno": "Soil moisture",
+    "Irrigazione avviata: si ferma alle {t}": "Watering started: stops at {t}", "Irrigazione avviata: si ferma da sola alle {t}": "Watering started: stops by itself at {t}",
+    "Irrigazione avviata: si ferma alle {t} se la plancia resta aperta": "Watering started: stops at {t} if the dashboard stays open",
+    "Nella plancia ogni zona ha un cursore con la durata: Home Assistant chiude l'elettrovalvola da solo allo scadere, anche con la plancia chiusa.": "On the dashboard each zone has a duration slider: Home Assistant closes the valve by itself when time is up, even with the dashboard closed.",
+    /* 3.8.2 · meteo e stazione meteo */
+    "Temperatura esterna": "Outdoor temperature", "Umidità esterna": "Outdoor humidity", "Temperatura interna": "Indoor temperature", "Umidità interna": "Indoor humidity",
+    "Raffica": "Gust", "raffica massima km/h": "max gust km/h", "colpi": "strikes", "All'esterno": "Outdoors", "Dentro casa": "Indoors", "tocca un valore per lo storico": "tap a value for its history", "dati di esempio": "sample data",
+    "Apri i dati della stazione meteo": "Open the weather station data", "Apri il meteo": "Open the weather", "Pomeriggio con nubi sparse e schiarite. Vento moderato e clima mite.": "Afternoon with scattered clouds and sunny spells. Moderate wind and mild weather.",
+    "previsioni di oggi e domani e temperatura esterna in alto": "today's and tomorrow's forecast and the outdoor temperature at the top", "Frase del meteo (AI)": "Weather sentence (AI)",
+    "sensore, input_text o text con la frase da mostrare": "sensor, input_text or text holding the sentence to show", "Stazione Meteo (es. Ecowitt, Netatmo)": "Weather station (e.g. Ecowitt, Netatmo)",
+    "si apre toccando la temperatura in alto": "opens when you tap the temperature at the top", "se c'è, sostituisce quella del servizio meteo": "if set, it replaces the weather service's one", "es. la console della stazione": "e.g. the station's console",
+    /* 3.8.2 · batterie */
+    "Batterie": "Batteries", "dalla più scarica": "lowest first", "Mostra tutte": "Show all", "Mostra tutte ({n})": "Show all ({n})", "Mostra meno": "Show less", "Scarica": "Low", "OK": "OK",
+    "{n} da cambiare": "{n} to replace", "{n} da cambiare o ricaricare": "{n} to replace or recharge", "{n} dispositivi, dalla più scarica": "{n} devices, lowest first",
+    "Sensore porta ingresso": "Front door sensor", "Telecamera giardino": "Garden camera", "Sensore movimento": "Motion sensor", "Termometro camera": "Bedroom thermometer", "Telecomando": "Remote",
+    /* 3.8.2 · colori ed effetti */
+    "Colori ed effetti": "Colours and effects", "Colori ed effetti di {n}": "Colours and effects of {n}", "Colore": "Colour", "Scegli un altro colore": "Pick another colour", "Bianco": "White",
+    "Luminosità": "Brightness", "Effetti": "Effects", "Altre impostazioni": "More settings", "Calda": "Warm", "Naturale": "Neutral", "Fredda": "Cool",
+    "Spenta: scegli un colore per accenderla": "Off: pick a colour to turn it on", "Colore impostato": "Colour set", "Bianco {n}": "White: {n}", "Luminosità {p}%": "Brightness {p}%", "Effetto: {n}": "Effect: {n}"
   };
   var DICT = { en: EN };
 

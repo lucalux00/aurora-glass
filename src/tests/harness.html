@@ -19,6 +19,8 @@
   /* 3.6: luminosità come in Home Assistant (0-255, null da spenta); Island resta una luce solo on/off */
   var LASTB = { "light.living_room_lamp": 153, "light.living_room_ceiling": 200, "light.tv_strip": 255, "light.kitchen": 3, "light.bedroom": 77, "light.bathroom": 255 };
   Object.keys(LASTB).forEach(function (id) { S[id].attributes.supported_color_modes = ["brightness"]; S[id].attributes.brightness = S[id].state === "on" ? LASTB[id] : null; });
+  /* 3.8.2: la striscia della TV è RGB con effetti */
+  Object.assign(S["light.tv_strip"].attributes, { supported_color_modes: ["hs", "color_temp"], color_mode: "hs", rgb_color: [255, 120, 0], effect_list: ["None", "Rainbow", "Candle", "Party"], effect: "None", min_color_temp_kelvin: 2200, max_color_temp_kelvin: 6500 });
   S["binary_sensor.living_motion"] = st("binary_sensor.living_motion", "on", { friendly_name: "Living motion", device_class: "motion" });
   S["binary_sensor.kitchen_motion"] = st("binary_sensor.kitchen_motion", "off", { device_class: "motion" });
   S["binary_sensor.front_door"] = st("binary_sensor.front_door", "off", { friendly_name: "Front door", device_class: "door" });
@@ -27,21 +29,28 @@
   S["sensor.living_temp"] = st("sensor.living_temp", "21.4", { unit_of_measurement: "°C", device_class: "temperature" });
   S["sensor.bedroom_temp"] = st("sensor.bedroom_temp", "17.2", { unit_of_measurement: "°C", device_class: "temperature" });
   S["alarm_control_panel.home"] = st("alarm_control_panel.home", "disarmed", { friendly_name: "Home alarm", supported_features: 7 });
-  S["weather.home"] = st("weather.home", "rainy", { temperature: 11.8, temperature_unit: "°C", forecast: [
-    { datetime: "2026-11-18T12:00:00Z", condition: "rainy", temperature: 13, templow: 8, precipitation: 4.2 },
-    { datetime: "2026-11-19T12:00:00Z", condition: "partlycloudy", temperature: 16, templow: 7, precipitation: 0 }
-  ] });
-  S["sensor.weather_ai"] = st("sensor.weather_ai", "Piogge sparse nel pomeriggio con schiarite in serata. Vento debole.");
+  S["weather.home"] = st("weather.home", "rainy", { temperature: 11.8, temperature_unit: "°C", supported_features: 1, friendly_name: "Forecast home" });
+  function fcDay(off, cond, hi, lo, pop) { var d = new Date(); d.setDate(d.getDate() + off); d.setHours(12, 0, 0, 0); return { datetime: d.toISOString(), condition: cond, temperature: hi, templow: lo, precipitation_probability: pop }; }
+  var FORECAST = [fcDay(0, "rainy", 13, 8, 70), fcDay(1, "partlycloudy", 16, 7, 10), fcDay(2, "sunny", 18, 9, 0)];
+  /* frase del meteo in un input_text (come nella segnalazione 3.8.1) */
+  S["input_text.meteo_ai"] = st("input_text.meteo_ai", "Piogge sparse nel pomeriggio con schiarite in serata. Vento debole.", { friendly_name: "Meteo AI", max: 255 });
+  S["sensor.ws_temp_out"] = st("sensor.ws_temp_out", "12.6", { unit_of_measurement: "°C", device_class: "temperature", friendly_name: "Ecowitt Outdoor Temperature" });
+  S["sensor.ws_hum_out"] = st("sensor.ws_hum_out", "81", { unit_of_measurement: "%", device_class: "humidity", friendly_name: "Ecowitt Outdoor Humidity" });
+  S["sensor.ws_temp_in"] = st("sensor.ws_temp_in", "21.2", { unit_of_measurement: "°C", device_class: "temperature", friendly_name: "Ecowitt Indoor Temperature" });
+  S["sensor.ws_hum_in"] = st("sensor.ws_hum_in", "54", { unit_of_measurement: "%", device_class: "humidity", friendly_name: "Ecowitt Indoor Humidity" });
+  S["sensor.ws_gust"] = st("sensor.ws_gust", "31.2", { unit_of_measurement: "km/h" });
   S["sensor.ws_wind"] = st("sensor.ws_wind", "18.5", { unit_of_measurement: "km/h" });
   S["sensor.ws_rain"] = st("sensor.ws_rain", "4.2", { unit_of_measurement: "mm" });
   S["sensor.ws_uv"] = st("sensor.ws_uv", "3.1", { unit_of_measurement: "UV" });
   S["sensor.ws_pressure"] = st("sensor.ws_pressure", "1014.2", { unit_of_measurement: "hPa" });
   S["sensor.ws_lightning_dist"] = st("sensor.ws_lightning_dist", "12", { unit_of_measurement: "km" });
   S["sensor.ws_lightning_count"] = st("sensor.ws_lightning_count", "4", { unit_of_measurement: "scariche" });
-  S["vacuum.roborock"] = st("vacuum.roborock", "docked", { friendly_name: "Roborock Saros 10R", battery_level: 95 });
+  /* robot senza battery_level: la batteria è un sensore dello stesso dispositivo */
+  S["vacuum.roborock"] = st("vacuum.roborock", "docked", { friendly_name: "Roborock Saros 10R" });
+  S["sensor.roborock_battery"] = st("sensor.roborock_battery", "76", { unit_of_measurement: "%", device_class: "battery", friendly_name: "Roborock Saros 10R Battery" });
   S["switch.irr_zone1"] = st("switch.irr_zone1", "off", { friendly_name: "Irrigazione Prato" });
   S["sensor.moist_zone1"] = st("sensor.moist_zone1", "48", { unit_of_measurement: "%" });
-  S["switch.irr_zone2"] = st("switch.irr_zone2", "off", { friendly_name: "Irrigazione Siepe" });
+  S["valve.irr_zone2"] = st("valve.irr_zone2", "closed", { friendly_name: "Irrigazione Siepe", supported_features: 3 });
   S["sensor.moist_zone2"] = st("sensor.moist_zone2", "26", { unit_of_measurement: "%" });
   S["sensor.srv_cpu"] = st("sensor.srv_cpu", "18", { unit_of_measurement: "%" });
   S["sensor.srv_ram"] = st("sensor.srv_ram", "42", { unit_of_measurement: "%" });
@@ -55,9 +64,18 @@
   S["counter.lavatrice_cicli"] = st("counter.lavatrice_cicli", "28");
   S["counter.lavastoviglie_cicli"] = st("counter.lavastoviglie_cicli", "12");
   S["sensor.washing_month"] = st("sensor.washing_month", "24.5", { unit_of_measurement: "kWh" });
-  S["camera.ingresso"] = st("camera.ingresso", "idle", { friendly_name: "Telecamera Ingresso", entity_picture: "/assets/btn/cam_demo.jpg" });
-  S["light.faretto_cam"] = st("light.faretto_cam", "off", { friendly_name: "Faretto Telecamera" });
-  S["switch.sirena_cam"] = st("switch.sirena_cam", "off", { friendly_name: "Sirena Telecamera" });
+  /* telecamera con faretto, sirena, batteria e LED di stato sullo stesso dispositivo (come Reolink, Arlo, Ring) */
+  S["camera.ingresso"] = st("camera.ingresso", "idle", { friendly_name: "Telecamera Ingresso", entity_picture: "../../dist/btn/luce_ingresso_off.png" });
+  S["light.ingresso_floodlight"] = st("light.ingresso_floodlight", "off", { friendly_name: "Ingresso Floodlight" });
+  S["light.ingresso_status_led"] = st("light.ingresso_status_led", "on", { friendly_name: "Ingresso Status LED" });
+  S["siren.ingresso_siren"] = st("siren.ingresso_siren", "off", { friendly_name: "Ingresso Siren" });
+  S["sensor.ingresso_battery"] = st("sensor.ingresso_battery", "18", { unit_of_measurement: "%", device_class: "battery", friendly_name: "Ingresso Battery" });
+  S["sensor.front_door_battery"] = st("sensor.front_door_battery", "7", { unit_of_measurement: "%", device_class: "battery", friendly_name: "Front door Battery" });
+  S["sensor.living_motion_battery"] = st("sensor.living_motion_battery", "44", { unit_of_measurement: "%", device_class: "battery", friendly_name: "Living motion Battery" });
+  S["binary_sensor.kitchen_window_battery_low"] = st("binary_sensor.kitchen_window_battery_low", "off", { device_class: "battery", friendly_name: "Kitchen window Battery" });
+  S["sensor.phone_battery"] = st("sensor.phone_battery", "unavailable", { unit_of_measurement: "%", device_class: "battery", friendly_name: "Pixel Battery" });
+  /* modalità telecamere Arlo (hass-aarlo): in casa e fuori casa, standby = disarmed */
+  S["alarm_control_panel.aarlo_base"] = st("alarm_control_panel.aarlo_base", "armed_away", { friendly_name: "Arlo Base", supported_features: 3, code_format: null });
   S["sensor.house_power"] = st("sensor.house_power", "642", { unit_of_measurement: "W" });
   S["climate.living"] = st("climate.living", "cool", { friendly_name: "Living AC", hvac_modes: ["off", "cool", "heat", "dry", "fan_only"], current_temperature: 24, temperature: 22, min_temp: 16, max_temp: 30, fan_modes: ["auto", "low", "high"], fan_mode: "auto", hvac_action: "cooling" });
   S["scene.movie"] = st("scene.movie", "unknown", { friendly_name: "Movie night" });
@@ -73,14 +91,29 @@
         if (/^light\./.test(id) && o.state !== "unavailable") {
           var at = Object.assign({}, o.attributes);
           if (LASTB[id] !== undefined) { if (o.state === "on" && at.brightness) LASTB[id] = at.brightness; at.brightness = ns === "on" ? LASTB[id] : null; }
+          if (data.rgb_color) { at.rgb_color = data.rgb_color; at.color_mode = "hs"; }
+          if (data.color_temp_kelvin) { at.color_temp_kelvin = data.color_temp_kelvin; at.color_mode = "color_temp"; }
+          if (data.effect) at.effect = data.effect;
+          if (data.brightness_pct) { at.brightness = Math.round(data.brightness_pct * 2.55); LASTB[id] = at.brightness; }
           S[id] = st(id, ns, at);
-        } else if (/^(switch|input_boolean)\./.test(id)) {
+        } else if (/^(switch|input_boolean|siren)\./.test(id)) {
           S[id] = st(id, ns, o.attributes);
+        } else if (/^valve\./.test(id)) {
+          S[id] = st(id, s === "open_valve" ? "open" : s === "close_valve" ? "closed" : o.state, o.attributes);
+        } else if (/^alarm_control_panel\./.test(id)) {
+          var m = { alarm_disarm: "disarmed", alarm_arm_home: "armed_home", alarm_arm_away: "armed_away", alarm_arm_night: "armed_night" }[s];
+          if (m) S[id] = st(id, m, o.attributes);
         }
       });
       push();
       return Promise.resolve();
     },
+    /* Home Assistant dal 2024.3: previsioni con weather/subscribe_forecast */
+    connection: { subscribeMessage: function (cb, msg) {
+      window.SUBS = (window.SUBS || []).concat([msg]);
+      if (msg.type === "weather/subscribe_forecast") setTimeout(function () { cb({ type: msg.forecast_type, forecast: FORECAST }); }, 200);
+      return Promise.resolve(function () { window.UNSUBS = (window.UNSUBS || 0) + 1; });
+    } },
     callWS: function (m) { return Promise.resolve({}); }
   };
   function push() { hass = Object.assign({}, hass, { states: Object.assign({}, S) }); panel.hass = hass; }
@@ -94,6 +127,12 @@
   var entities = {}, devices = { d_ac: { id: "d_ac", area_id: "bedroom", name: "Bedroom AC" } }, areas = { living: { area_id: "living", name: "Living room" }, kitchen: { area_id: "kitchen", name: "Kitchen" }, bedroom: { area_id: "bedroom", name: "Bedroom" } };
   Object.keys(S).forEach(function (id) { entities[id] = { entity_id: id, area_id: /living|tv_strip/.test(id) ? "living" : /kitchen|coffee/.test(id) ? "kitchen" : null }; });
   entities["climate.bedroom_ir"] = { entity_id: "climate.bedroom_ir", device_id: "d_ac", area_id: null };
+  /* registro dei dispositivi: faretto, sirena, batteria e LED di stato (configurazione) della telecamera; batteria del robot */
+  Object.assign(devices, { d_cam: { id: "d_cam", name: "Telecamera Ingresso", area_id: "living" }, d_vac: { id: "d_vac", name: "Roborock Saros 10R", area_id: null },
+    d_door: { id: "d_door", name: "Sensore porta ingresso", area_id: "living" }, d_motion: { id: "d_motion", name: null, area_id: "living" } });
+  [["camera.ingresso", "d_cam"], ["light.ingresso_floodlight", "d_cam"], ["siren.ingresso_siren", "d_cam"], ["sensor.ingresso_battery", "d_cam", "diagnostic"], ["light.ingresso_status_led", "d_cam", "config"],
+   ["vacuum.roborock", "d_vac"], ["sensor.roborock_battery", "d_vac", "diagnostic"], ["binary_sensor.front_door", "d_door"], ["sensor.front_door_battery", "d_door", "diagnostic"],
+   ["binary_sensor.living_motion", "d_motion"], ["sensor.living_motion_battery", "d_motion", "diagnostic"]].forEach(function (x) { entities[x[0]].device_id = x[1]; if (x[2]) entities[x[0]].entity_category = x[2]; });
   /* statistiche del contatore: a settembre Home Assistant ha azzerato la somma (change negativo), il contatore dice +367 kWh */
   function statRows(per, from) {
     var now = new Date(), rows = [], d, i;
@@ -114,39 +153,47 @@
       { area_id: null, name: "Office <b>&</b> study", image: "sgabuzzino", lights: ["light.office"], motion: [], openings: [], temperature: [] },
       { area_id: null, name: "Bathroom", image: "bagno_piccolo", lights: ["light.bathroom"], motion: [], openings: [], temperature: [] }
     ],
-    devices: { alarm: "alarm_control_panel.home", weather: "weather.home", weather_ai: "sensor.weather_ai",
-      weather_station: { wind: "sensor.ws_wind", rain: "sensor.ws_rain", uv: "sensor.ws_uv", pressure: "sensor.ws_pressure", lightning_distance: "sensor.ws_lightning_dist", lightning_count: "sensor.ws_lightning_count" },
-      vacuum: "vacuum.roborock",
-      garden: { zones: [{ name: "Prato", switch: "switch.irr_zone1", moisture: "sensor.moist_zone1" }, { name: "Siepe", switch: "switch.irr_zone2", moisture: "sensor.moist_zone2" }] },
-      server: { cpu: "sensor.srv_cpu", ram: "sensor.srv_ram", temp: "sensor.srv_temp", disk: "sensor.srv_disk" },
-      ups: { battery: "sensor.ups_battery", load: "sensor.ups_load", runtime: "sensor.ups_runtime", status: "sensor.ups_status", voltage: "sensor.ups_voltage" },
+    /* come li salva l'editor «Stanze e dispositivi» (chiavi piatte) */
+    devices: { alarm: "alarm_control_panel.home", alarms: ["alarm_control_panel.aarlo_base"], weather: "weather.home", weather_ai: "input_text.meteo_ai",
+      ws_temp_out: "sensor.ws_temp_out", ws_hum_out: "sensor.ws_hum_out", ws_temp_in: "sensor.ws_temp_in", ws_hum_in: "sensor.ws_hum_in",
+      ws_wind: "sensor.ws_wind", ws_gust: "sensor.ws_gust", ws_rain: "sensor.ws_rain", ws_uv: "sensor.ws_uv", ws_press: "sensor.ws_pressure", ws_lightning_dist: "sensor.ws_lightning_dist", ws_lightning_count: "sensor.ws_lightning_count",
+      vacuums: ["vacuum.roborock"], vacuum_model: "Roborock",
+      garden_z1_sw: "switch.irr_zone1", garden_z1_moist: "sensor.moist_zone1", garden_z2_sw: "valve.irr_zone2", garden_z2_moist: "sensor.moist_zone2",
+      server_cpu: "sensor.srv_cpu", server_ram: "sensor.srv_ram", server_temp: "sensor.srv_temp", server_disk: "sensor.srv_disk",
+      ups_battery: "sensor.ups_battery", ups_load: "sensor.ups_load", ups_runtime: "sensor.ups_runtime", ups_status: "sensor.ups_status", ups_voltage: "sensor.ups_voltage",
       climate: ["climate.living", "climate.bedroom_ir"], power: "sensor.house_power", energy: "sensor.house_energy",
-      appliances: [
-        { p: "sensor.washing_machine_power", month: "sensor.washing_month", counter: "counter.lavatrice_cicli", counter_limit: 30 },
-        { p: "sensor.dishwasher_power", counter: "counter.lavastoviglie_cicli", counter_limit: 25 }
-      ],
-      cameras: [{ img: "camera.ingresso", live: "camera.ingresso", light: "light.faretto_cam", siren: "switch.sirena_cam" }],
+      appliances: ["sensor.washing_machine_power", "sensor.dishwasher_power"],
+      cameras: ["camera.ingresso"],
       currency: q.get("cur") || "€" },
     scenes: { morning: ["light.kitchen", "light.bathroom"], cinema: ["scene.movie"], dinner: ["light.kitchen", "light.kitchen_island", "light.living_room_lamp"], night_alarm: true, away_alarm: true }
   };
   /* come build_card_config in helpers.py */
   function cardFrom(o) {
-    var d = o.devices, ent = {
-      alarm: d.alarm, weather: d.weather, weather_ai: d.weather_ai, weather_station: d.weather_station,
-      vacuum: d.vacuum, server: d.server, ups: d.ups,
-      cameras: d.cameras,
-      energy: { power: d.power, energyTotal: d.energy, appliances: d.appliances.map(function (p) { return typeof p === "string" ? { p: p } : p; }) }
-    };
+    var d = o.devices, ent = {}, pick = function (map) { var r = {}; Object.keys(map).forEach(function (k) { if (d[map[k]]) r[k] = d[map[k]]; }); return Object.keys(r).length ? r : null; };
+    ["alarm", "weather"].forEach(function (k) { if (d[k]) ent[k] = d[k]; });
     if (d.climate && d.climate.length) { ent.climate = d.climate[0]; ent.climates = d.climate; }
+    var en = {}; if (d.power) { en.power = d.power; ent.power = d.power; } if (d.energy) en.energyTotal = d.energy;
+    if (d.appliances && d.appliances.length) en.appliances = d.appliances.map(function (a) { return { p: a }; });
+    if (Object.keys(en).length) ent.energy = en;
+    if (d.cameras && d.cameras.length) ent.cameras = d.cameras.map(function (c) { return { cam: c, img: c, live: c, poll: 10 }; });
+    var al = (d.alarms || []).filter(function (a) { return a !== d.alarm; }); if (al.length) ent.alarms = al;
+    if (d.vacuums && d.vacuums.length) { ent.vacuums = d.vacuums; ent.vacuum = d.vacuums[0]; }
+    if (d.weather_ai) ent.weather_ai = d.weather_ai;
+    var ws = pick({ temp_out: "ws_temp_out", hum_out: "ws_hum_out", temp_in: "ws_temp_in", hum_in: "ws_hum_in", wind: "ws_wind", gust: "ws_gust", rain: "ws_rain", uv: "ws_uv", pressure: "ws_press", lightning_distance: "ws_lightning_dist", lightning_count: "ws_lightning_count" });
+    if (ws) ent.weather_station = ws;
+    var srv = pick({ cpu: "server_cpu", ram: "server_ram", temp: "server_temp", disk: "server_disk" }); if (srv) ent.server = srv;
+    var ups = pick({ battery: "ups_battery", load: "ups_load", runtime: "ups_runtime", status: "ups_status", voltage: "ups_voltage" }); if (ups) ent.ups = ups;
+    var zones = []; for (var i = 1; i <= 4; i++) if (d["garden_z" + i + "_sw"] || d["garden_z" + i + "_moist"]) zones.push({ switch: d["garden_z" + i + "_sw"] || null, moisture: d["garden_z" + i + "_moist"] || null });
     var sc = [];
     ["morning", "cinema", "dinner"].forEach(function (id) { var v = o.scenes[id] || [], ha = v.filter(function (x) { return /^(scene|script)\./.test(x); }); if (ha.length) sc.push({ id: id, entity: ha[0] }); else if (v.length) sc.push({ id: id, lights: v }); });
     sc.push({ id: "night", alarm: o.scenes.night_alarm && d.alarm ? "armed_night" : null }, { id: "away", alarm: o.scenes.away_alarm && d.alarm ? "armed_away" : null });
-    sc.push({ id: "relax", name: "Relax", sub: "Luce soffusa", icon: "mdi-weather-sunset", lights: ["light.living_room_lamp"] });
-    var c = { language: lang, assets: "../../dist/btn/", button_style: q.get("btn") || "img", climate_style: q.get("clstyle") || "split", garden: d.garden, rooms: o.rooms.map(function (r) { return { name: r.name, area: r.area_id, image: r.image, lights: r.lights, motion: r.motion, openings: r.openings, temperature: r.temperature }; }), scenes: sc, entities: ent, currency: d.currency };
+    var c = { language: lang, assets: "../../dist/btn/", button_style: q.get("btn") || "img", climate_style: q.get("clstyle") || "split", rooms: o.rooms.map(function (r) { return { name: r.name, area: r.area_id, image: r.image, lights: r.lights, motion: r.motion, openings: r.openings, temperature: r.temperature }; }), scenes: sc, entities: ent, currency: d.currency };
+    if (zones.length) c.garden = { zones: zones };
+    if (d.vacuum_model) c.vacuum_model = d.vacuum_model;
     if (q.get("edit") !== "0") c.entry_id = "test_entry";
     return c;
   }
-  window.SAVES = [];
+  window.SAVES = []; window.IRR_ENDS = {};
   hass.entities = entities; hass.devices = devices; hass.areas = areas;
   if (q.get("admin") === "0") hass.user.is_admin = false;
   hass.callWS = function (m) {
@@ -158,6 +205,21 @@
     }
     if (m.type === "recorder/statistics_during_period") { var r = {}; r[m.statistic_ids[0]] = statRows(m.period, m.start_time); return Promise.resolve(r); }
     if (m.type === "history/history_during_period") return Promise.resolve({});
+    /* 3.8.2: timer dell'irrigazione e foto, come actions.py */
+    var zoneIds = stored ? [1, 2, 3, 4].map(function (i) { return stored.devices["garden_z" + i + "_sw"]; }).filter(Boolean) : [];
+    if (/^aurora_glass\/irrigation\//.test(m.type) && m.type !== "aurora_glass/irrigation/list" && zoneIds.indexOf(m.entity_id) < 0) return Promise.reject({ code: "not_a_zone", message: m.entity_id + " is not a garden zone" });
+    if (m.type === "aurora_glass/irrigation/start") {
+      window.IRR_ENDS[m.entity_id] = new Date(Date.now() + m.minutes * 60000).toISOString();
+      hass.callService(/^valve/.test(m.entity_id) ? "valve" : "switch", /^valve/.test(m.entity_id) ? "open_valve" : "turn_on", { entity_id: m.entity_id });
+      return Promise.resolve({ end: window.IRR_ENDS[m.entity_id] });
+    }
+    if (m.type === "aurora_glass/irrigation/stop") {
+      delete window.IRR_ENDS[m.entity_id];
+      hass.callService(/^valve/.test(m.entity_id) ? "valve" : "switch", /^valve/.test(m.entity_id) ? "close_valve" : "turn_off", { entity_id: m.entity_id });
+      return Promise.resolve({ stopped: true });
+    }
+    if (m.type === "aurora_glass/irrigation/list") return Promise.resolve({ timers: window.IRR_ENDS });
+    if (m.type === "aurora_glass/snapshot") { window.SNAPS = (window.SNAPS || []).concat([m.entity_id]); return Promise.resolve({ folder: "aurora_glass", file: "ingresso.jpg" }); }
     return Promise.resolve({});
   };
   var card = q.get("cfg") === "default" ? { language: lang } : cardFrom(stored);
