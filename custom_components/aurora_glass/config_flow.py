@@ -215,7 +215,9 @@ class AuroraFlowSteps:
     async def async_step_devices(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
             keys = ("alarm", "weather", "climate", "power", "energy", "appliances", "cameras", "currency")
-            self._conf[CONF_DEVICES] = {k: user_input.get(k) for k in keys}
+            # le scelte fatte dalla plancia (robot, giardino, server…) restano: qui si cambiano solo questi campi
+            extra = {k: v for k, v in (self._conf.get(CONF_DEVICES) or {}).items() if k not in keys}
+            self._conf[CONF_DEVICES] = {**extra, **{k: user_input.get(k) for k in keys}}
             for k in ("climate", "appliances", "cameras"):
                 self._conf[CONF_DEVICES][k] = as_list(user_input.get(k))
             if not self._conf[CONF_DEVICES].get("currency"):

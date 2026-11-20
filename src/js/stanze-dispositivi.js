@@ -23,7 +23,7 @@
     alarm: { ic: "mdi-shield-home", ok: function (id) { return /^alarm_control_panel\./.test(id); } },
     weather: { ic: "mdi-weather-partly-cloudy", ok: function (id) { return /^weather\./.test(id); } },
     cameras: { ic: "mdi-cctv", ok: function (id) { return /^camera\./.test(id); } },
-    vacuum: { ic: "mdi-robot-vacuum", ok: function (id) { return /^vacuum\./.test(id); } },
+    vacuum: { ic: "mdi-robot-vacuum", ok: function (id) { return /^(vacuum|lawn_mower)\./.test(id); } },
     switch_any: { ic: "mdi-toggle-switch", ok: function (id) { return /^(switch|valve)\./.test(id); } },
     moisture: { ic: "mdi-water-percent", ok: function (id, s) { return /^sensor\./.test(id); } },
     sensor_any: { ic: "mdi-gauge", ok: function (id) { return /^(sensor|binary_sensor)\./.test(id); } },
@@ -85,9 +85,11 @@
         devices: {
           alarm: d.alarm || null, weather: d.weather || null, climate: list(d.climate), power: d.power || null, energy: d.energy || null,
           appliances: list(d.appliances), cameras: list(d.cameras), currency: d.currency || null,
-          vacuum: d.vacuum || null, vacuum_model: d.vacuum_model || "Roborock",
+          vacuums: list(d.vacuums).length ? list(d.vacuums) : list(d.vacuum), vacuum_model: d.vacuum_model || "Roborock",
           garden_z1_sw: d.garden_z1_sw || null, garden_z1_moist: d.garden_z1_moist || null,
           garden_z2_sw: d.garden_z2_sw || null, garden_z2_moist: d.garden_z2_moist || null,
+          garden_z3_sw: d.garden_z3_sw || null, garden_z3_moist: d.garden_z3_moist || null,
+          garden_z4_sw: d.garden_z4_sw || null, garden_z4_moist: d.garden_z4_moist || null,
           weather_ai: d.weather_ai || null,
           ws_wind: d.ws_wind || null, ws_rain: d.ws_rain || null, ws_uv: d.ws_uv || null, ws_press: d.ws_press || null,
           ws_lightning_dist: d.ws_lightning_dist || null, ws_lightning_count: d.ws_lightning_count || null,
@@ -209,14 +211,16 @@
           return '<button class="hf-chip' + (sel ? " on" : "") + '" type="button" data-a="vac-m" data-m="' + m[0] + '"><i class="mdi ' + m[1] + '"></i>' + m[0] + '</button>';
         }).join("") + '</div></div>';
 
-      return one("d.vacuum", "vacuum", T("Robot Aspirapolvere"), T("es. vacuum.roborock_saros_10r")) + mHtml;
+      return '<p class="note-sm">' + esc(T("Aggiungi tutti i robot che hai: aspirapolvere, lavapavimenti e tagliaerba. Con più di uno nella plancia compare una riga per passare dall'uno all'altro.")) + "</p>" +
+        multi("d.vacuums", "vacuum", T("Robot di casa"), T("es. vacuum.roborock_saros_10r")) + mHtml;
     }
     function renderGarden() {
-      return '<p class="note-sm">' + esc(T("Configura le zone del giardino con le relative elettrovalvole e sensori di umidità del terreno.")) + "</p>" +
-        one("d.garden_z1_sw", "switch_any", T("Zona 1: Elettrovalvola"), T("interruttore irrigazione prato")) +
-        one("d.garden_z1_moist", "moisture", T("Zona 1: Umidità terreno"), T("sensore percentuale umidità")) +
-        one("d.garden_z2_sw", "switch_any", T("Zona 2: Elettrovalvola"), T("interruttore irrigazione siepe")) +
-        one("d.garden_z2_moist", "moisture", T("Zona 2: Umidità terreno"), T("sensore percentuale umidità"));
+      var h = '<p class="note-sm">' + esc(T("Ogni zona è un'elettrovalvola (interruttore o valvola di Home Assistant) con, se vuoi, il sensore di umidità del terreno. Le zone senza elettrovalvola né sensore non compaiono. Il nome della zona è quello dell'elettrovalvola.")) + "</p>";
+      for (var i = 1; i <= 4; i++) {
+        h += one("d.garden_z" + i + "_sw", "switch_any", T("Zona {n}: elettrovalvola", { n: i }), i === 1 ? T("es. irrigazione prato") : "") +
+          one("d.garden_z" + i + "_moist", "moisture", T("Zona {n}: umidità terreno", { n: i }), T("sensore in %"));
+      }
+      return h;
     }
     function renderInfra() {
       return '<p class="note-sm">' + esc(T("Monitoraggio hardware del server Home Assistant (Mini PC) e del gruppo di continuità (UPS tramite NUT).")) + "</p>" +

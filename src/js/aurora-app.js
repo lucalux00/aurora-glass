@@ -267,7 +267,10 @@
       else ["lights", "motion", "opens", "temps"].forEach(function (g2) { if (e[g2]) Object.keys(e[g2]).forEach(function (k) { ENT[g2][k] = e[g2][k]; }); });
       ["alarm", "weather", "power", "climate", "cameras"].forEach(function (k) { if (e[k] !== undefined) ENT[k] = e[k]; });
       /* nuove funzionalità: robot, giardino, meteo avanzato, clima stile, server e ups */
-      ENT.vacuum = e.vacuum || CFG.vacuum || null;
+      /* più robot (aspirapolvere, lavapavimenti, tagliaerba): robot: [vacuum.a, lawn_mower.b]; quello mostrato si sceglie con la riga sopra la scheda */
+      ENT.vacuums = arrIds(e.vacuums !== undefined ? e.vacuums : (e.vacuum || CFG.vacuum || null));
+      var vcSel = store("robot_sel");
+      ENT.vacuum = ENT.vacuums.indexOf(vcSel) > -1 ? vcSel : (ENT.vacuums[0] || null);
       ENT.garden = e.garden || CFG.garden || null;
       ENT.weather_station = e.weather_station || CFG.weather_station || null;
       ENT.weather_ai = e.weather_ai || CFG.weather_ai || CFG.ai_forecast || null;
@@ -866,7 +869,7 @@
       var k = m.toLowerCase();
       if (vacName && !LIVE) vacName.textContent = modelNames[k] || m;
       if (vacIco && modelIcons[k]) setIco(vacIco, modelIcons[k]);
-      var modTag = $("#vac-model"); if (modTag) modTag.textContent = (modelNames[k] || m).split(" ")[0];
+      var modTag = $("#vac-model"); if (modTag) modTag.textContent = LIVE ? "" : (modelNames[k] || m).split(" ")[0];
     }
     $$("#robot-style button").forEach(function (b) { b.addEventListener("click", function () { setRobotModel(b.dataset.v); toast(T("Modello robot impostato: {m}", { m: b.textContent }), "mdi-robot-vacuum", "var(--ok)"); }); });
     $("#reset-all").addEventListener("click", function () { try { Object.keys(localStorage).filter(function (k) { return k.indexOf("aurora-v3-") === 0; }).forEach(function (k) { localStorage.removeItem(k); }); } catch (e) {} location.reload(); });
@@ -965,7 +968,7 @@
     /* ------------------------------------------------------------------ Home Assistant: sincronizzazione */
     var tracked = {};
     function trackedIds() {
-      var ids = [ENT.alarm, ENT.weather, ENT.power, ENT.vacuum, ENT.weather_ai].concat(ENT.climates);
+      var ids = [ENT.alarm, ENT.weather, ENT.power, ENT.weather_ai].concat(ENT.climates, ENT.vacuums);
       Object.keys(ENT.lights).forEach(function (k) { ids.push(ENT.lights[k]); });
       Object.keys(ENT.motion).forEach(function (k) { (ENT.motion[k] || []).forEach(function (i) { ids.push(i); }); });
       Object.keys(ENT.opens).forEach(function (k) { ids.push(ENT.opens[k]); });
@@ -1167,53 +1170,74 @@
     }
 
     /* ------------------------------------------------------------------ robot aspirapolvere */
+    /* aspirapolvere: vacuum.start / pause / return_to_base; tagliaerba: lawn_mower.start_mowing / pause / dock */
+    function robotCmd(what) {
+      var mower = /^lawn_mower\./.test(ENT.vacuum || "");
+      return mower ? ["lawn_mower", { start: "start_mowing", pause: "pause", dock: "dock" }[what]] : ["vacuum", { start: "start", pause: "pause", dock: "return_to_base" }[what]];
+    }
     function buildVacuum() {
       var wrap = $("#vacuum-wrap");
       if (!wrap) return;
       var startBtn = $("#vac-act-play") || $("#vac-start-btn"),
           pauseBtn = $("#vac-act-pause") || $("#vac-pause-btn"),
           dockBtn = $("#vac-act-dock") || $("#vac-dock-btn");
-      if (startBtn) startBtn.addEventListener("click", function (e) {
-        e.stopPropagation();
-        if (LIVE && ENT.vacuum) call("vacuum", "start", { entity_id: ENT.vacuum });
-        else {
-          wrap.classList.add("is-cleaning");
-          var st = $("#vac-status") || $("#vac-state"); if (st) st.textContent = T("In pulizia");
-          toast(T("Robot: avvio pulizia"), "mdi-robot-vacuum", "var(--ok)");
-        }
-      });
-      if (pauseBtn) pauseBtn.addEventListener("click", function (e) {
-        e.stopPropagation();
-        if (LIVE && ENT.vacuum) call("vacuum", "pause", { entity_id: ENT.vacuum });
-        else {
-          wrap.classList.remove("is-cleaning");
-          var st = $("#vac-status") || $("#vac-state"); if (st) st.textContent = T("In pausa");
-          toast(T("Robot: in pausa"), "mdi-pause", "var(--warn)");
-        }
-      });
-      if (dockBtn) dockBtn.addEventListener("click", function (e) {
-        e.stopPropagation();
-        if (LIVE && ENT.vacuum) call("vacuum", "return_to_base", { entity_id: ENT.vacuum });
-        else {
-          wrap.classList.remove("is-cleaning");
-          var st = $("#vac-status") || $("#vac-state"); if (st) st.textContent = T("Alla base");
-          toast(T("Robot: rientro alla base"), "mdi-home-map-marker", "var(--acc-text)");
-        }
-      });
+      function act(what, demoState, demoToast, demoIcon, demoColor) {
+        return function (e) {
+          e.stopPropagation();
+          if (LIVE && ENT.vacuum) { var c = robotCmd(what); call(c[0], c[1], { entity_id: ENT.vacuum }); }
+          else {
+            wrap.classList.toggle("is-cleaning", what === "start");
+            var st = $("#vac-status") || $("#vac-state"); if (st) st.textContent = T(demoState);
+            toast(T(demoToast), demoIcon, demoColor);
+          }
+        };
+      }
+      if (startBtn) startBtn.addEventListener("click", act("start", "In pulizia", "Robot: avvio pulizia", "mdi-robot-vacuum", "var(--ok)"));
+      if (pauseBtn) pauseBtn.addEventListener("click", act("pause", "In pausa", "Robot: in pausa", "mdi-pause", "var(--warn)"));
+      if (dockBtn) dockBtn.addEventListener("click", act("dock", "Alla base", "Robot: rientro alla base", "mdi-home-map-marker", "var(--acc-text)"));
       wrap.addEventListener("click", function () {
         if (LIVE && ENT.vacuum) moreInfo(ENT.vacuum);
         else toast("Roborock Saros 10R · " + T("Batteria") + " 95%", "mdi-robot-vacuum", "var(--ok)");
       });
+      var pick = $("#vac-pick");
+      if (pick) pick.addEventListener("click", function (e) {
+        var b = e.target.closest("[data-vac]"); if (!b) return;
+        ENT.vacuum = b.dataset.vac; store("robot_sel", ENT.vacuum); syncVacuum();
+      });
       syncVacuum();
+    }
+    /* riga dei robot (solo se sono più di uno) */
+    function renderRobotPick() {
+      var row = $("#vac-pick");
+      if (!row) return;
+      var ids = ENT.vacuums.filter(function (id) { return !LIVE || sv(id); });
+      row.hidden = ids.length < 2;
+      if (row.hidden) return;
+      var html = ids.map(function (id) {
+        var s = sv(id), na = !s || isUnavail(s);
+        return '<button class="cl-pk" type="button" role="tab" data-vac="' + esc(id) + '" aria-selected="' + (id === ENT.vacuum ? "true" : "false") + '" style="--cl:' + (na ? "#64748B" : "var(--ok)") + '">' +
+          '<span class="cl-pk-dot" aria-hidden="true"></span><span class="cl-pk-t"><b>' + esc(niceName(id)) + "</b><small>" + esc(na ? T("Non disponibile") : robotState(s.state)) + "</small></span></button>";
+      }).join("");
+      if (row.dataset.sig !== html) { row.dataset.sig = html; row.innerHTML = html; }
+    }
+    function robotState(st) {
+      return ({ docked: T("Alla base"), charging: T("In carica"), cleaning: T("In pulizia"), mowing: T("Taglia l'erba"), paused: T("In pausa"), idle: T("In attesa"), returning: T("Rientro alla base"), error: T("Errore") })[st] || st;
     }
     function syncVacuum() {
       var wrap = $("#vacuum-wrap");
       if (!wrap) return;
+      if (LIVE && ENT.vacuums.length && !sv(ENT.vacuum)) {
+        var alt = ENT.vacuums.filter(function (id) { return sv(id); })[0];
+        if (alt) ENT.vacuum = alt;
+      }
       if (LIVE && (!ENT.vacuum || !sv(ENT.vacuum))) {
         wrap.hidden = true;
         return;
       }
       wrap.hidden = false;
+      renderRobotPick();
+      var mowerNow = /^lawn_mower\./.test(ENT.vacuum || "");
+      var playLbl = $("#vac-act-play span"); if (playLbl) playLbl.textContent = T(mowerNow ? "Taglia" : "Pulisci");
       var nameEl = $("#vac-name"),
           stateEl = $("#vac-status") || $("#vac-state"),
           batEl = $("#vac-batt-val") || $("#vac-bat"),
@@ -1227,19 +1251,10 @@
       }
       var s = sv(ENT.vacuum), st = s ? s.state : "docked", a = (s && s.attributes) || {};
       if (nameEl) nameEl.textContent = a.friendly_name || niceName(ENT.vacuum);
-      var isCleaning = st === "cleaning" || st === "on";
+      var isCleaning = st === "cleaning" || st === "on" || st === "mowing";
       wrap.classList.toggle("is-cleaning", isCleaning);
 
-      var stateMap = {
-        docked: T("Alla base"),
-        charging: T("In carica"),
-        cleaning: T("In pulizia"),
-        paused: T("In pausa"),
-        idle: T("In attesa"),
-        returning: T("Rientro alla base"),
-        error: T("Errore")
-      };
-      if (stateEl) stateEl.textContent = stateMap[st] || st;
+      if (stateEl) stateEl.textContent = robotState(st);
       var bat = a.battery_level !== undefined ? a.battery_level : a.battery;
       if (batEl) {
         if (bat !== undefined && bat !== null) {
@@ -1276,7 +1291,7 @@
           '<div class="g-header">' +
             '<div class="g-ico"><i class="mdi mdi-sprinkler-variant"></i></div>' +
             '<div class="g-title">' +
-              '<h4>' + esc(z.name || (T("Zona") + " " + (idx + 1))) + '</h4>' +
+              '<h4>' + esc(z.name || (LIVE && sv(z.switch) && sv(z.switch).attributes.friendly_name) || (T("Zona") + " " + (idx + 1))) + '</h4>' +
               '<span class="g-state g-status-txt">' + T("Spento") + '</span>' +
             '</div>' +
             '<button class="g-toggle-btn g-valve-btn" type="button" data-sw="' + esc(z.switch || "sw") + '" title="' + T("Irriga") + '" aria-label="' + T("Irriga") + '" aria-pressed="false"><i class="mdi mdi-sprinkler"></i></button>' +
@@ -1299,7 +1314,7 @@
           var card = vb.closest(".garden-card");
           var sw = vb.dataset.sw;
           if (LIVE && sw) {
-            call("switch", "toggle", { entity_id: sw });
+            call(String(sw).split(".")[0] === "valve" ? "valve" : "switch", "toggle", { entity_id: sw });
           } else if (card) {
             var active = card.classList.toggle("is-active");
             card.dataset.active = active ? "true" : "false";
@@ -2315,7 +2330,7 @@
     var th = store("theme"); setTheme(th === "light" ? "light" : "dark");
     setBtn(S.btn === "icon" ? "icon" : S.btn === "compact" ? "compact" : "img");
     setClimaStyle(store("clima_style") || CFG.climate_style || "split");
-    setRobotModel(store("robot_model") || "roborock");
+    setRobotModel(String(CFG.vacuum_model || store("robot_model") || "roborock").toLowerCase().replace("tagliaerba", "mower"));
     tickDate(); tickClock(); applyWorld();
     render(); setAlarm("disarmed", true); render();
     start();

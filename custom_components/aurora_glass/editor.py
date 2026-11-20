@@ -16,7 +16,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import config_validation as cv
 
-from .const import CONF_DEVICES, CONF_ROOMS, CONF_SCENES, DOMAIN, LIGHT_IMAGES
+from .const import CONF_DEVICES, CONF_ROOMS, CONF_SCENES, DOMAIN, EXTRA_ENTITY_KEYS, LIGHT_IMAGES
 from .helpers import as_list, guess_image
 
 MAX_ROOMS = 40
@@ -60,6 +60,10 @@ DEVICES_SCHEMA = vol.Schema(
         vol.Optional("appliances", default=list): ENTITIES,
         vol.Optional("cameras", default=list): ENTITIES,
         vol.Optional("currency"): vol.Any(None, vol.All(str, vol.Length(max=5))),
+        # robot (aspirapolvere e tagliaerba), giardino, meteo avanzato, server e UPS: prima venivano scartati
+        vol.Optional("vacuums", default=list): ENTITIES,
+        vol.Optional("vacuum_model"): vol.Any(None, vol.All(str, vol.Length(max=20))),
+        **{vol.Optional(k): _one for k in EXTRA_ENTITY_KEYS},
     },
     extra=vol.REMOVE_EXTRA,
 )

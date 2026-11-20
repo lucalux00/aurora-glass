@@ -1,7 +1,7 @@
 """Costanti dell'integrazione Aurora Glass."""
 
 DOMAIN = "aurora_glass"
-VERSION = "3.8.0"
+VERSION = "3.8.1"
 
 # file della scheda e immagini dei pulsanti, serviti da Home Assistant
 URL_BASE = "/aurora_glass"
@@ -42,3 +42,12 @@ IMAGE_HINTS = [
 ]
 
 CURRENCY_SYMBOLS = {"EUR": "€", "USD": "$", "GBP": "£", "CHF": "CHF", "JPY": "¥", "INR": "₹", "AUD": "$", "CAD": "$", "NZD": "$"}
+
+# Entità facoltative che l'editor della plancia può impostare (robot, giardino, meteo avanzato, server, UPS)
+GARDEN_ZONES = 4
+EXTRA_ENTITY_KEYS = (
+    "vacuum", "weather_ai",
+    "ws_wind", "ws_rain", "ws_uv", "ws_press", "ws_lightning_dist", "ws_lightning_count",
+    "server_cpu", "server_ram", "server_temp", "server_disk",
+    "ups_battery", "ups_load", "ups_runtime", "ups_status", "ups_voltage",
+) + tuple(f"garden_z{i}_{k}" for i in range(1, GARDEN_ZONES + 1) for k in ("sw", "moist"))

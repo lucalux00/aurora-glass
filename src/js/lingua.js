@@ -176,6 +176,9 @@
     "freddo": "cooling", "caldo": "heating", "deumidifica": "dry", "ventola": "fan only", "automatico": "auto",
     "Guida e installazione": "How to install it", "Guida completa e installazione": "Full guide and install",
     /* robot, giardino, meteo, server e nuove funzioni */
+    "Taglia": "Mow", "Taglia l'erba": "Mowing", "In attesa": "Waiting", "Robot di casa": "Home robots", "Zona {n}: elettrovalvola": "Zone {n}: valve", "Zona {n}: umidità terreno": "Zone {n}: soil moisture", "sensore in %": "sensor in %", "es. irrigazione prato": "e.g. lawn irrigation",
+    "Aggiungi tutti i robot che hai: aspirapolvere, lavapavimenti e tagliaerba. Con più di uno nella plancia compare una riga per passare dall'uno all'altro.": "Add every robot you have: vacuum, mop and lawn mower. With more than one, a row appears to switch between them.",
+    "Ogni zona è un'elettrovalvola (interruttore o valvola di Home Assistant) con, se vuoi, il sensore di umidità del terreno. Le zone senza elettrovalvola né sensore non compaiono. Il nome della zona è quello dell'elettrovalvola.": "Each zone is a valve (a Home Assistant switch or valve) with, if you like, its soil moisture sensor. Zones with neither valve nor sensor are hidden. The zone name is the valve's name.",
     "Robot Aspirapolvere": "Robot vacuum", "In pulizia": "Cleaning", "In carica": "Charging", "In pausa": "Paused", "Alla base": "Docked", "Ritorno alla base": "Returning to dock", "Pulisci": "Clean", "Base": "Dock", "Robot": "Robot",
     "Giardino & Irrigazione": "Garden & Irrigation", "Zone smart": "Smart zones", "Umidità suolo": "Soil moisture", "Inattivo": "Idle", "Irrigazione attiva": "Watering active",
     "Stazione Meteo": "Weather Station", "Vento": "Wind", "Pioggia oggi": "Rain today", "Indice UV": "UV Index", "Pressione": "Pressure", "Fulmini": "Lightning", "{n} colpi": "{n} strikes", "Ultimo fulmine a {d} km": "Last strike at {d} km", "Nessun fulmine recente": "No recent strikes",
