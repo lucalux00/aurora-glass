@@ -933,7 +933,9 @@
     "Nessun sensore di movimento risponde": "No motion sensor is responding", "Nessun movimento recente": "No recent motion",
     /* mondo, ora, effetti */
     "Mondo: {n}": "World: {n}", "Buon pomeriggio": "Good afternoon", "Buonasera": "Good evening", "Ora reale ripristinata": "Real time restored",
-    "Nessuno": "None", "Il mondo cambierà ogni 30 secondi": "The world will change every 30 seconds",
+    "Nessuno": "None", "Meteo reale": "Real weather", "Gli effetti seguono il meteo reale": "Effects now follow the real weather",
+    "Pioggia, neve, temporale e nebbia seguono il meteo di Home Assistant": "Rain, snow, storms and fog follow the Home Assistant weather",
+    "Scegli un'entità meteo per seguire il meteo reale": "Pick a weather entity to follow the real weather", "Il mondo cambierà ogni 30 secondi": "The world will change every 30 seconds",
     "Casetta": "Little house", "Sole, luna, nuvole e la tua casetta con le finestre che si accendono": "Sun, moon, clouds and your little house with windows that light up",
     "Città": "City", "Grattacieli con finestre che si accendono, auto, aereo e insegne al neon": "Skyscrapers with windows that light up, cars, a plane and neon signs",
     "Montagna": "Mountains", "Cime innevate, funivia, baita, aurora boreale e neve che cade": "Snowy peaks, cable car, chalet, northern lights and falling snow",
@@ -2603,7 +2605,7 @@
     /* un mondo di un pacchetto arriva dopo l'avvio: lo ricordo e lo rimetto quando il pacchetto lo registra */
     var worldWanted = AMB.W[S.world] ? null : S.world;
     if (!AMB.W[S.world]) S.world = "casetta";
-    if (S.fx !== "none" && !FX.E[S.fx]) S.fx = "none";
+    if (S.fx !== "none" && S.fx !== "auto" && !FX.E[S.fx]) S.fx = "none";
     var drawerOpen = false;
     var clockLive = true, hour = 21, artFront = $("#art-a"), artBack = $("#art-b"), artKey = "", artTok = 0;
     var userName = "Alex";
@@ -2657,8 +2659,19 @@
     var fxHero = new FX.Fx($("#fx-hero"), { k: 1, alpha: 1, onFlash: flash });
     var fxPage = new FX.Fx($("#fx-page"), { k: .55, alpha: .6, onFlash: flash });
     function flash(a) { HOST.style.setProperty("--flash", a.toFixed(3)); }
+    /* «Meteo reale»: l'effetto segue la condizione dell'entità meteo scelta nella procedura guidata */
+    var WEATHER_FX = { rainy: "pioggia", pouring: "pioggia", hail: "pioggia", "lightning-rainy": "temporale", lightning: "temporale",
+      snowy: "neve", "snowy-rainy": "neve", fog: "nebbia" };
+    var fxShown = null;
+    function weatherFx() { var w = LIVE ? sv(ENT.weather) : null; var k = w && WEATHER_FX[w.state]; return k && FX.E[k] ? k : "none"; }
+    function shownFx() { return S.fx === "auto" ? weatherFx() : S.fx; }
+    function paintFx(force) {
+      var k = shownFx(), key = k + "|" + S.fxPage;
+      if (key === fxShown && !force) return;
+      fxShown = key; fxHero.set(k); fxPage.set(S.fxPage ? k : "none");
+    }
     function applyFx() {
-      fxHero.set(S.fx); fxPage.set(S.fxPage ? S.fx : "none");
+      paintFx(true);
       store("fx", S.fx); store("fxpage", S.fxPage ? "1" : "0");
       $$(".fxchip").forEach(function (c) { c.classList.toggle("sel", c.dataset.fx === S.fx); });
       $("#fx-page-toggle").setAttribute("aria-pressed", S.fxPage ? "true" : "false");
@@ -2676,6 +2689,12 @@
       var none = el("button", "fxchip", '<i class="mdi mdi-cancel"></i>' + T("Nessuno"), { type: "button", "data-fx": "none" });
       none.addEventListener("click", function () { S.fx = "none"; applyFx(); });
       fg.appendChild(none);
+      var auto = el("button", "fxchip", '<i class="mdi mdi-weather-partly-snowy-rainy"></i>' + T("Meteo reale"), { type: "button", "data-fx": "auto", title: T("Pioggia, neve, temporale e nebbia seguono il meteo di Home Assistant") });
+      auto.addEventListener("click", function () {
+        S.fx = "auto"; applyFx();
+        toast(LIVE && sv(ENT.weather) ? T("Gli effetti seguono il meteo reale") : T("Scegli un'entità meteo per seguire il meteo reale"), "mdi-weather-partly-snowy-rainy", "var(--acc-text)");
+      });
+      fg.appendChild(auto);
       Object.keys(FX.E).forEach(function (id) {
         var e = FX.E[id], c = el("button", "fxchip", '<i class="mdi ' + e.icon + '"></i>' + T(e.name), { type: "button", "data-fx": id });
         c.addEventListener("click", function () { S.fx = id; applyFx(); });
@@ -2896,6 +2915,7 @@
       var w = sv(ENT.weather), ct = $("#chip-temp"), wsT = wsEnt("temp_out") ? sv(wsEnt("temp_out")) : null;
       if (wsT && !isUnavail(wsT) && !isNaN(parseFloat(wsT.state))) { ct.hidden = false; $("#temp-val").textContent = fmt(parseFloat(wsT.state)) + " " + (wsT.attributes.unit_of_measurement || "°C"); setIco($("#temp-ico"), w ? condIcon(w.state) : "mdi-thermometer"); }
       else if (w && w.attributes.temperature !== undefined) { ct.hidden = false; $("#temp-val").textContent = fmt(w.attributes.temperature) + " " + (w.attributes.temperature_unit || "°C"); setIco($("#temp-ico"), condIcon(w.state)); } else ct.hidden = true;
+      if (S.fx === "auto") paintFx();
       var p = sv(ENT.energy.power) || sv(ENT.power), cp = $("#chip-power");
       if (p && !isUnavail(p) && !isNaN(parseFloat(p.state))) { cp.hidden = false; var v = parseFloat(p.state), u = p.attributes.unit_of_measurement || "W"; if (u === "kW") v *= 1000; chipPower(v); } else cp.hidden = true;
       var nm = HASS && HASS.user && HASS.user.name ? HASS.user.name.split(" ")[0] : "";
