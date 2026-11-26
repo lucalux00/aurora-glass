@@ -11,6 +11,7 @@ import json
 import pathlib
 import re
 import shutil
+import sys
 import zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -53,7 +54,28 @@ def add_tree(z: zipfile.ZipFile, folder: pathlib.Path, arc: str) -> None:
             z.write(f, arc + "/" + f.relative_to(folder).as_posix())
 
 
+def check() -> int:
+    """Per GitHub: la scheda dentro custom_components è quella che si costruisce da src/ (niente pacchetto vecchio in una release)."""
+    target = ROOT / "custom_components" / "aurora_glass" / "frontend"
+    js = target / "aurora-v3.js"
+    if not js.is_file():
+        print(f"MANCA {js}")
+        return 1
+    if js.read_text(encoding="utf-8").replace("\r\n", "\n") != bundle("/aurora_glass/btn/"):
+        print(f"{js.relative_to(ROOT)} non corrisponde a src/: lancia python tools/build.py")
+        return 1
+    src_btn = {f.name: f.read_bytes() for f in (SRC / "assets" / "btn").iterdir() if f.is_file()}
+    out_btn = {f.name: f.read_bytes() for f in (target / "btn").iterdir() if f.is_file()} if (target / "btn").is_dir() else {}
+    if src_btn != out_btn:
+        print("le immagini in frontend/btn non corrispondono a src/assets/btn: lancia python tools/build.py")
+        return 1
+    print(f"Aurora Glass {VERSION}: scheda allineata ai sorgenti ({js.stat().st_size // 1024} KB, {len(out_btn)} immagini)")
+    return 0
+
+
 def main() -> None:
+    if "--check" in sys.argv:
+        raise SystemExit(check())
     write_card(ROOT / "custom_components" / "aurora_glass" / "frontend", "/aurora_glass/btn/")
     write_card(ROOT / "dist", "")
     out = ROOT / "build"

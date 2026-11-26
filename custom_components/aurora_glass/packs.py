@@ -410,7 +410,9 @@ def ws_pack_data(hass: HomeAssistant, connection: websocket_api.ActiveConnection
 @callback
 def ws_pack_data_save(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
     pid = msg["pack"]
-    if not ID_RE.match(pid):
+    mgr: PackManager = hass.data[DOMAIN]["packs"]
+    # 3.8.3: solo i pacchetti installati salvano dati (prima qualsiasi id, quindi un archivio senza limite)
+    if not ID_RE.match(pid) or pid not in mgr.installed:
         connection.send_error(msg["id"], "invalid_pack", "invalid pack id")
         return
     if len(json.dumps(msg["data"])) > MAX_DATA:

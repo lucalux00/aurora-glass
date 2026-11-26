@@ -193,7 +193,7 @@
     if (q.get("edit") !== "0") c.entry_id = "test_entry";
     return c;
   }
-  window.SAVES = []; window.IRR_ENDS = {};
+  window.SAVES = []; window.IRR_ENDS = {}; window.IRR_CLOSING = {}; window.VALVE_STUCK = false;
   hass.entities = entities; hass.devices = devices; hass.areas = areas;
   if (q.get("admin") === "0") hass.user.is_admin = false;
   hass.callWS = function (m) {
@@ -208,17 +208,23 @@
     /* 3.8.2: timer dell'irrigazione e foto, come actions.py */
     var zoneIds = stored ? [1, 2, 3, 4].map(function (i) { return stored.devices["garden_z" + i + "_sw"]; }).filter(Boolean) : [];
     if (/^aurora_glass\/irrigation\//.test(m.type) && m.type !== "aurora_glass/irrigation/list" && zoneIds.indexOf(m.entity_id) < 0) return Promise.reject({ code: "not_a_zone", message: m.entity_id + " is not a garden zone" });
+    /* 3.8.3: come actions.py, una valvola non disponibile non si avvia e una che non si chiude resta «da chiudere»
+       (window.VALVE_STUCK = true simula una valvola che riceve il comando ma resta aperta) */
+    var vState = function (id) { return S[id] ? S[id].state : null; };
     if (m.type === "aurora_glass/irrigation/start") {
+      if (!vState(m.entity_id) || vState(m.entity_id) === "unavailable" || vState(m.entity_id) === "unknown") return Promise.reject({ code: "unavailable", message: m.entity_id + " is not available" });
+      delete window.IRR_CLOSING[m.entity_id];
       window.IRR_ENDS[m.entity_id] = new Date(Date.now() + m.minutes * 60000).toISOString();
       hass.callService(/^valve/.test(m.entity_id) ? "valve" : "switch", /^valve/.test(m.entity_id) ? "open_valve" : "turn_on", { entity_id: m.entity_id });
       return Promise.resolve({ end: window.IRR_ENDS[m.entity_id] });
     }
     if (m.type === "aurora_glass/irrigation/stop") {
       delete window.IRR_ENDS[m.entity_id];
+      if (window.VALVE_STUCK || vState(m.entity_id) === "unavailable") { window.IRR_CLOSING[m.entity_id] = true; return Promise.resolve({ stopped: true, closed: false }); }
       hass.callService(/^valve/.test(m.entity_id) ? "valve" : "switch", /^valve/.test(m.entity_id) ? "close_valve" : "turn_off", { entity_id: m.entity_id });
-      return Promise.resolve({ stopped: true });
+      return Promise.resolve({ stopped: true, closed: true });
     }
-    if (m.type === "aurora_glass/irrigation/list") return Promise.resolve({ timers: window.IRR_ENDS });
+    if (m.type === "aurora_glass/irrigation/list") return Promise.resolve({ timers: window.IRR_ENDS, closing: Object.keys(window.IRR_CLOSING) });
     if (m.type === "aurora_glass/snapshot") { window.SNAPS = (window.SNAPS || []).concat([m.entity_id]); return Promise.resolve({ folder: "aurora_glass", file: "ingresso.jpg" }); }
     return Promise.resolve({});
   };

@@ -19,3 +19,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: home-assistant/actions/hassfest@master
+  tests:
+    # backend con un Home Assistant vero in memoria: irrigazione, editor, pacchetti
+    name: Test con Home Assistant
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - run: pip install pytest-homeassistant-custom-component==0.13.375
+      - run: python -m pytest -q
+  card:
+    # scheda: pacchetto allineato ai sorgenti, frasi tradotte, banco di prova con i pulsanti premuti a 390 e 1280 px
+    name: Scheda e banco di prova
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: python tools/build.py --check
+      - run: node tools/check_i18n.mjs
+      - run: python tools/build.py
+      - run: node tools/check_harness.mjs

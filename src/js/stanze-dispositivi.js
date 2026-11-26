@@ -241,6 +241,8 @@
     function renderInfra() {
       return '<p class="note-sm">' + esc(T("Monitoraggio hardware del server Home Assistant (Mini PC) e del gruppo di continuità (UPS tramite NUT).")) + "</p>" +
         '<div class="hf-group"><h4><i class="mdi mdi-server"></i>' + esc(T("Server Home Assistant (Mini PC)")) + '</h4></div>' +
+        /* 3.8.3 · issue #2: i sensori di System Monitor nascono disattivati, quindi non compaiono in nessun elenco finché non si attivano */
+        '<p class="note-sm">' + esc(T("I sensori di System Monitor (CPU, memoria, temperatura, disco) nascono disattivati: per sceglierli qui attivali prima in Impostazioni → Dispositivi e servizi → System Monitor → entità.")) + "</p>" +
         one("d.server_cpu", "sensor_any", T("Utilizzo CPU"), T("percentuale %")) +
         one("d.server_ram", "sensor_any", T("Memoria RAM"), T("percentuale %")) +
         one("d.server_temp", "sensor_any", T("Temperatura CPU"), T("gradi °C")) +
@@ -344,7 +346,7 @@
         return '<button class="hk-row' + (on ? " on" : "") + (na(r.s) ? " na" : "") + '" type="button" role="option" aria-selected="' + on + '" data-id="' + esc(r.id) + '">' +
           '<span class="hk-ck"><i class="mdi mdi-check"></i></span><span class="hk-t"><b>' + esc(r.n) + (warn ? ' <i class="mdi mdi-alert hk-w" title="' + esc(T("Sembra un elettrodomestico o una presa, non una luce")) + '"></i>' : "") + "</b><small>" + esc(r.id + (r.an ? " · " + r.an : "") + " · " + stateTxt(r.s)) + "</small></span>" +
           (P.used[r.id] ? '<em class="tag">' + esc(T("già in {n}", { n: P.used[r.id] })) + "</em>" : "") + "</button>";
-      }).join("") + (more ? '<p class="hf-empty">' + esc(T("Ce ne sono altre: scrivi qualcosa per cercarle")) + "</p>" : "") + (!rows.length ? '<p class="hf-empty">' + esc(T("Nessuna entità trovata")) + "</p>" : "");
+      }).join("") + (more ? '<p class="hf-empty">' + esc(T("Ce ne sono altre: scrivi qualcosa per cercarle")) + "</p>" : "") + (!rows.length ? '<p class="hf-empty">' + esc(T("Nessuna entità trovata")) + "<br>" + esc(T("Se esiste ma non compare, potrebbe essere disattivata: attivala in Impostazioni → Dispositivi e servizi → Entità.")) + "</p>" : "");
       api.hydrate($("#hk-list"));
       $("#hk-count").textContent = P.multiple ? T(P.sel.length === 1 ? "{n} scelta" : "{n} scelte", { n: P.sel.length }) : "";
     }

@@ -1,4 +1,4 @@
-/* Aurora Glass v3.8.2 — scheda per Home Assistant (generata da tools/build.py) */
+/* Aurora Glass v3.8.3 — scheda per Home Assistant (generata da tools/build.py) */
 
 /* ---- disegno.js ---- */
 /* ============================================================================
@@ -1046,7 +1046,10 @@
     "Buonanotte inserisce l'allarme notte": "Good night arms the night alarm", "Esco di casa inserisce l'allarme fuori casa": "Leaving home arms the away alarm",
     "Tocca ancora per eliminare": "Tap again to delete", "Tocca ancora il cestino per eliminare «{n}»": "Tap the bin again to delete “{n}”", "Nuova stanza": "New room",
     "Tocca per aggiungere o togliere, poi Fatto": "Tap to add or remove, then Done", "Tocca quello giusto": "Tap the right one", "già in {n}": "already in {n}",
-    "Ce ne sono altre: scrivi qualcosa per cercarle": "There are more: type to search", "Nessuna entità trovata": "No entities found", "{n} scelta": "{n} selected", "{n} scelte": "{n} selected",
+    "Ce ne sono altre: scrivi qualcosa per cercarle": "There are more: type to search", "Nessuna entità trovata": "No entities found",
+    "Se esiste ma non compare, potrebbe essere disattivata: attivala in Impostazioni → Dispositivi e servizi → Entità.": "If it exists but doesn't show up, it may be disabled: enable it in Settings → Devices & services → Entities.",
+    "I sensori di System Monitor (CPU, memoria, temperatura, disco) nascono disattivati: per sceglierli qui attivali prima in Impostazioni → Dispositivi e servizi → System Monitor → entità.": "System Monitor sensors (CPU, memory, temperature, disk) are created disabled: to pick them here, first enable them in Settings → Devices & services → System Monitor → entities.",
+"{n} scelta": "{n} selected", "{n} scelte": "{n} selected",
     "Scarta le modifiche?": "Discard changes?", "Hai modifiche non salvate: tocca di nuovo per scartarle": "You have unsaved changes: tap again to discard them",
     "Dai un nome a ogni stanza": "Give every room a name", "Salvato: la plancia si aggiorna su tutti i dispositivi": "Saved: the dashboard updates on every device",
     "Non salvato: {e}": "Not saved: {e}", "Non riesco a leggere la configurazione: {e}": "Can't read the configuration: {e}", "Stanze e dispositivi salvati": "Rooms and devices saved",
@@ -1089,7 +1092,9 @@
     "Faretto, sirena e batteria di ogni telecamera vengono trovati da soli tra le entità dello stesso dispositivo. Il tasto Foto salva l'immagine in Media › aurora_glass.": "Each camera's spotlight, siren and battery are found automatically among the entities of the same device. The Photo button saves the image in Media › aurora_glass.",
     /* 3.8.2 · irrigazione */
     "Zona": "Zone", "Zona Prato": "Lawn zone", "Zona Siepe": "Hedge zone", "Irriga": "Water", "Ferma l'irrigazione": "Stop watering", "In irrigazione": "Watering", "In irrigazione · {t}": "Watering · {t}",
-    "Irrigazione spenta": "Watering stopped", "Durata": "Duration", "{n} min": "{n} min", "Durata dell'irrigazione in minuti": "Watering time in minutes", "Umidità terreno": "Soil moisture",
+    "Chiusura in corso: Home Assistant riprova finché la valvola non si chiude": "Closing: Home Assistant keeps retrying until the valve is closed",
+    "Non disponibile · da chiudere": "Unavailable · to be closed", "Chiusura in corso…": "Closing…",
+    "Irrigazione spenta": "Watering stopped","Durata": "Duration", "{n} min": "{n} min", "Durata dell'irrigazione in minuti": "Watering time in minutes", "Umidità terreno": "Soil moisture",
     "Irrigazione avviata: si ferma alle {t}": "Watering started: stops at {t}", "Irrigazione avviata: si ferma da sola alle {t}": "Watering started: stops by itself at {t}",
     "Irrigazione avviata: si ferma alle {t} se la plancia resta aperta": "Watering started: stops at {t} if the dashboard stays open",
     "Nella plancia ogni zona ha un cursore con la durata: Home Assistant chiude l'elettrovalvola da solo allo scadere, anche con la plancia chiusa.": "On the dashboard each zone has a duration slider: Home Assistant closes the valve by itself when time is up, even with the dashboard closed.",
@@ -1485,6 +1490,8 @@
     function renderInfra() {
       return '<p class="note-sm">' + esc(T("Monitoraggio hardware del server Home Assistant (Mini PC) e del gruppo di continuità (UPS tramite NUT).")) + "</p>" +
         '<div class="hf-group"><h4><i class="mdi mdi-server"></i>' + esc(T("Server Home Assistant (Mini PC)")) + '</h4></div>' +
+        /* 3.8.3 · issue #2: i sensori di System Monitor nascono disattivati, quindi non compaiono in nessun elenco finché non si attivano */
+        '<p class="note-sm">' + esc(T("I sensori di System Monitor (CPU, memoria, temperatura, disco) nascono disattivati: per sceglierli qui attivali prima in Impostazioni → Dispositivi e servizi → System Monitor → entità.")) + "</p>" +
         one("d.server_cpu", "sensor_any", T("Utilizzo CPU"), T("percentuale %")) +
         one("d.server_ram", "sensor_any", T("Memoria RAM"), T("percentuale %")) +
         one("d.server_temp", "sensor_any", T("Temperatura CPU"), T("gradi °C")) +
@@ -1588,7 +1595,7 @@
         return '<button class="hk-row' + (on ? " on" : "") + (na(r.s) ? " na" : "") + '" type="button" role="option" aria-selected="' + on + '" data-id="' + esc(r.id) + '">' +
           '<span class="hk-ck"><i class="mdi mdi-check"></i></span><span class="hk-t"><b>' + esc(r.n) + (warn ? ' <i class="mdi mdi-alert hk-w" title="' + esc(T("Sembra un elettrodomestico o una presa, non una luce")) + '"></i>' : "") + "</b><small>" + esc(r.id + (r.an ? " · " + r.an : "") + " · " + stateTxt(r.s)) + "</small></span>" +
           (P.used[r.id] ? '<em class="tag">' + esc(T("già in {n}", { n: P.used[r.id] })) + "</em>" : "") + "</button>";
-      }).join("") + (more ? '<p class="hf-empty">' + esc(T("Ce ne sono altre: scrivi qualcosa per cercarle")) + "</p>" : "") + (!rows.length ? '<p class="hf-empty">' + esc(T("Nessuna entità trovata")) + "</p>" : "");
+      }).join("") + (more ? '<p class="hf-empty">' + esc(T("Ce ne sono altre: scrivi qualcosa per cercarle")) + "</p>" : "") + (!rows.length ? '<p class="hf-empty">' + esc(T("Nessuna entità trovata")) + "<br>" + esc(T("Se esiste ma non compare, potrebbe essere disattivata: attivala in Impostazioni → Dispositivi e servizi → Entità.")) + "</p>" : "");
       api.hydrate($("#hk-list"));
       $("#hk-count").textContent = P.multiple ? T(P.sel.length === 1 ? "{n} scelta" : "{n} scelte", { n: P.sel.length }) : "";
     }
@@ -3284,7 +3291,8 @@
     /* Ogni zona ha un cursore con la durata: «Irriga» apre l'elettrovalvola e Home Assistant la chiude da solo
        allo scadere (aurora_glass/irrigation/*: il timer vive nell'integrazione, anche a plancia chiusa e dopo un riavvio).
        Senza l'integrazione (scheda installata a mano) il timer lo tiene la pagina, che deve restare aperta. */
-    var IRR = { ends: {}, local: {}, listed: false, backend: null };
+    /* closing: valvole che l'integrazione sta ancora chiudendo (non rispondevano o non risultavano chiuse: riprova da sola) */
+    var IRR = { ends: {}, local: {}, closing: {}, listed: false, backend: null };
     function gardenZones() {
       var zones = (CFG.garden && CFG.garden.zones) || [];
       if (!LIVE && !zones.length) zones = [
@@ -3306,8 +3314,9 @@
       if (!LIVE || IRR.listed || !HASS || !HASS.callWS) return;
       IRR.listed = true;
       HASS.callWS({ type: "aurora_glass/irrigation/list" }).then(function (r) {
-        IRR.backend = true; IRR.ends = {};
+        IRR.backend = true; IRR.ends = {}; IRR.closing = {};
         Object.keys((r && r.timers) || {}).forEach(function (id) { var t = Date.parse(r.timers[id]); if (!isNaN(t)) IRR.ends[id] = t; });
+        ((r && r.closing) || []).forEach(function (id) { IRR.closing[id] = true; });
         syncGarden();
       }).catch(function () { IRR.backend = false; });
     }
@@ -3336,7 +3345,13 @@
       var id = z.switch;
       if (!LIVE) { delete IRR.ends[id]; syncGarden(); toast(T("Irrigazione spenta"), "mdi-sprinkler", "var(--warn)"); return; }
       if (IRR.local[id]) { clearTimeout(IRR.local[id]); delete IRR.local[id]; }
-      if (IRR.ends[id] && IRR.backend) { HASS.callWS({ type: "aurora_glass/irrigation/stop", entity_id: id }).catch(function () { zoneCall(id, false); }); }
+      /* con l'integrazione la chiusura la segue Home Assistant: se la valvola non risponde riprova finché non risulta chiusa */
+      if (IRR.backend !== false && HASS.callWS) {
+        HASS.callWS({ type: "aurora_glass/irrigation/stop", entity_id: id }).then(function (r) {
+          IRR.backend = true;
+          if (r && r.closed === false) { IRR.closing[id] = true; syncGarden(); toast(T("Chiusura in corso: Home Assistant riprova finché la valvola non si chiude"), "mdi-timer-sand", "var(--warn)"); }
+        }).catch(function (e) { if (e && e.code === "unknown_command") IRR.backend = false; zoneCall(id, false); });
+      }
       else zoneCall(id, false);
       delete IRR.ends[id]; syncGarden();
     }
@@ -3418,13 +3433,14 @@
         var h4 = $(".g-title h4", card), zs = LIVE && !z.name && z.switch ? sv(z.switch) : null;
         if (h4 && zs && zs.attributes.friendly_name && h4.textContent !== zs.attributes.friendly_name) h4.textContent = zs.attributes.friendly_name;
         if (LIVE && !isOn && IRR.ends[z.switch]) { delete IRR.ends[z.switch]; if (IRR.local[z.switch]) { clearTimeout(IRR.local[z.switch]); delete IRR.local[z.switch]; } }
+        if (LIVE && !isOn && !na && IRR.closing[z.switch]) delete IRR.closing[z.switch];
         card.classList.toggle("is-active", isOn);
         card.dataset.active = isOn ? "true" : "false";
         var vb = $(".g-valve-btn", card);
         if (vb) { vb.setAttribute("aria-pressed", isOn ? "true" : "false"); var lbl = isOn ? T("Ferma l'irrigazione") : T("Irriga"); vb.title = lbl; vb.setAttribute("aria-label", lbl); }
         var rg = $(".g-range", card); if (rg) rg.disabled = isOn;
         var stTxt = $(".g-status-txt", card), end = IRR.ends[z.switch];
-        if (stTxt) stTxt.textContent = na ? T("Non disponibile") : !isOn ? T("Spento") : end ? T("In irrigazione · {t}", { t: leftTxt(end) }) : T("In irrigazione");
+        if (stTxt) stTxt.textContent = na ? (IRR.closing[z.switch] ? T("Non disponibile · da chiudere") : T("Non disponibile")) : !isOn ? T("Spento") : IRR.closing[z.switch] ? T("Chiusura in corso…") : end ? T("In irrigazione · {t}", { t: leftTxt(end) }) : T("In irrigazione");
         if (z.moisture) {
           var moistTxt = $(".g-moist-txt", card), bar = $(".gm-bar i", card), mv = NaN;
           if (!LIVE) mv = z.moistDemo;
@@ -3606,19 +3622,29 @@
         return;
       }
       wrap.hidden = false;
+      /* 3.8.3 · un sensore che non risponde mostra «—» (prima «unavailable%»); unità dalla sua entità (°F, MiB, secondi…) */
+      function infraNum(id) { var s = id ? sv(id) : null; if (isUnavail(s)) return null; var v = parseFloat(s.state); return isNaN(v) ? null : v; }
+      function infraUnit(id, def) { var s = id ? sv(id) : null; return (s && s.attributes && s.attributes.unit_of_measurement) || def; }
+      function infraTxt(id, def) {
+        var v = infraNum(id), u = infraUnit(id, def);
+        if (v === null) return "—";
+        return fmt(Math.round(v * 10) / 10) + (u === "%" || u.charAt(0) === "°" ? u : " " + u);
+      }
+      function infraBar(sel, id, scale) {
+        var b = $(sel); if (!b) return;
+        var v = infraNum(id), u = infraUnit(id, "%");
+        if (v !== null && /°F/.test(u)) v = (v - 32) / 1.8;
+        b.style.width = v === null || (u !== "%" && u.charAt(0) !== "°") ? "0%" : Math.min(100, Math.max(0, v * (scale || 1))) + "%";
+      }
       var srvCard = $("#infra-server") || $("#srv-card");
       if (srvCard) {
         srvCard.hidden = !hasSrv;
         if (hasSrv) {
-          var cpuSt = srv.cpu ? sv(srv.cpu) : null;
-          var ramSt = srv.ram ? sv(srv.ram) : null;
-          var tempSt = srv.temp ? sv(srv.temp) : null;
-          var diskSt = srv.disk ? sv(srv.disk) : null;
           var cpuEl = $("#srv-cpu"), ramEl = $("#srv-ram"), tempEl = $("#srv-temp"), diskEl = $("#srv-disk");
-          if (cpuEl && cpuSt) { cpuEl.textContent = cpuSt.state + "%"; var cb2 = $("#srv-cpu-bar"); if (cb2) cb2.style.width = cpuSt.state + "%"; }
-          if (ramEl && ramSt) { ramEl.textContent = ramSt.state + "%"; var rb2 = $("#srv-ram-bar"); if (rb2) rb2.style.width = ramSt.state + "%"; }
-          if (tempEl && tempSt) { tempEl.textContent = tempSt.state + "°C"; var tb2 = $("#srv-temp-bar"); if (tb2) tb2.style.width = Math.min(100, parseFloat(tempSt.state) * 1.2) + "%"; }
-          if (diskEl && diskSt) diskEl.textContent = diskSt.state + "%";
+          if (cpuEl && srv.cpu) { cpuEl.textContent = infraTxt(srv.cpu, "%"); infraBar("#srv-cpu-bar", srv.cpu); }
+          if (ramEl && srv.ram) { ramEl.textContent = infraTxt(srv.ram, "%"); infraBar("#srv-ram-bar", srv.ram); }
+          if (tempEl && srv.temp) { tempEl.textContent = infraTxt(srv.temp, "°C"); infraBar("#srv-temp-bar", srv.temp, 1.2); }
+          if (diskEl && srv.disk) diskEl.textContent = infraTxt(srv.disk, "%");
         }
       }
       var upsCard = $("#infra-ups") || $("#ups-card");
@@ -3631,22 +3657,26 @@
           var statSt = ups.status ? sv(ups.status) : null;
           var voltSt = ups.voltage ? sv(ups.voltage) : null;
 
-          var batVal = batSt ? parseFloat(batSt.state) : NaN;
+          var batVal = batSt && !isUnavail(batSt) ? parseFloat(batSt.state) : NaN;
           var batEl2 = $("#ups-batt-val") || $("#ups-bat"), fillEl2 = $("#ups-bar") || $("#ups-bat-fill");
-          if (batEl2) batEl2.textContent = !isNaN(batVal) ? (batVal + "%") : "--";
-          if (fillEl2 && !isNaN(batVal)) fillEl2.style.width = Math.min(100, Math.max(0, batVal)) + "%";
+          if (batEl2) batEl2.textContent = !isNaN(batVal) ? (Math.round(batVal) + "%") : "—";
+          if (fillEl2) fillEl2.style.width = isNaN(batVal) ? "0%" : Math.min(100, Math.max(0, batVal)) + "%";
 
           var loadEl2 = $("#ups-load"), runEl2 = $("#ups-runtime") || $("#ups-time"), stEl2 = $("#ups-status-txt") || $("#ups-status"), voltEl2 = $("#ups-volt");
-          if (loadEl2 && loadSt) loadEl2.textContent = loadSt.state + (loadSt.attributes.unit_of_measurement || "%");
-          if (runEl2 && runSt) runEl2.textContent = runSt.state + " " + (runSt.attributes.unit_of_measurement || "min");
+          if (loadEl2 && loadSt) loadEl2.textContent = infraTxt(ups.load, "%");
+          if (runEl2 && runSt) {
+            /* NUT dà l'autonomia in secondi: si mostra in minuti */
+            var rv = infraNum(ups.runtime), ru = infraUnit(ups.runtime, "min");
+            runEl2.textContent = rv === null ? "—" : ru === "s" ? Math.round(rv / 60) + " min" : ru === "h" ? fmt(Math.round(rv * 10) / 10) + " h" : Math.round(rv) + " " + ru;
+          }
           if (stEl2 && statSt) {
-            var raw = (statSt.state || "").toUpperCase();
-            var stLabel = raw.indexOf("OL") > -1 ? T("Rete Online") : raw.indexOf("OB") > -1 ? T("Su Batteria!") : statSt.state;
+            var raw = isUnavail(statSt) ? "" : (statSt.state || "").toUpperCase();
+            var stLabel = isUnavail(statSt) ? "—" : raw.indexOf("OL") > -1 ? T("Rete Online") : raw.indexOf("OB") > -1 ? T("Su Batteria!") : statSt.state;
             stEl2.textContent = stLabel;
             if (raw.indexOf("OB") > -1) stEl2.style.color = "var(--warn)";
             else stEl2.style.color = "";
           }
-          if (voltEl2 && voltSt) voltEl2.textContent = voltSt.state + " V";
+          if (voltEl2 && voltSt) voltEl2.textContent = infraTxt(ups.voltage, "V");
         }
       }
     }
@@ -4453,7 +4483,7 @@
   var App = window.AuroraApp;
   /* nomi con la versione per la pagina della barra laterale: dopo un aggiornamento la versione nuova
      non trova mai i nomi già occupati da quella vecchia rimasta in memoria nel browser */
-  var VER = "3.8.2".replace(/\./g, "-");
+  var VER = "3.8.3".replace(/\./g, "-");
   var CARD_TAG = "aurora-glass-card-" + VER, PANEL_TAG = "aurora-glass-panel-" + VER;
   var OVERRIDES = [
     ":host { display: block; position: relative; --lp: absolute; --sp: absolute; --so: hidden auto; height: var(--aurora-height, calc(100vh - var(--header-height, 56px))); min-height: 520px; overflow: hidden; }",
@@ -4505,7 +4535,7 @@
       var self = this, cfg = JSON.parse(this._sig || "{}");
       this._app = new App({
         root: this._root, host: this, layer: this._root.querySelector("#shell"), scroll: this._root.querySelector("#scroll"),
-        assets: cfg.assets || defaultAssets(), live: true, embedded: true, haIcons: true, config: cfg, hass: this._hass, lang: haLang(this._hass, cfg), version: "3.8.2",
+        assets: cfg.assets || defaultAssets(), live: true, embedded: true, haIcons: true, config: cfg, hass: this._hass, lang: haLang(this._hass, cfg), version: "3.8.3",
         call: function (domain, service, data) { return self._hass.callService(domain, service, data); },
         moreInfo: function (entityId) { self.dispatchEvent(new CustomEvent("hass-more-info", { bubbles: true, composed: true, detail: { entityId: entityId } })); }
       });
