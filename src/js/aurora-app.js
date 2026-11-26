@@ -83,9 +83,9 @@
       bagno_piccolo: [T("Bagno piccolo"), "luce_bagno_piccolo", "mdi-toilet"], bagno_doccia: [T("Bagno doccia"), "luce_bagno_doccia", "mdi-shower-head"], lavanderia: [T("Lavanderia"), "luce_lavanderia", "mdi-washing-machine"], sgabuzzino: [T("Sgabuzzino"), "luce_sgabuzzino", "mdi-package-variant-closed"]
     };
     var ROOMS = [
-      { n: T("Zona giorno"), ic: "mdi-sofa", c: "#8B5CF6", w: 3, l: ["salotto", "ingresso", "corridoio"], s: ["salotto", "ingresso", "corridoio"], o: ["ingresso", "balcone_salotto"] },
+      { n: T("Zona giorno"), ic: "mdi-sofa", c: "#8B5CF6", w: 3, l: ["salotto", "ingresso", "corridoio"], s: ["salotto", "ingresso", "corridoio"], o: ["ingresso", "balcone_salotto"], cv: ["tapparella_salotto"] },
       { n: T("Cucina"), ic: "mdi-chef-hat", c: "#F59E0B", w: 3, l: ["cucina", "balcone"], s: ["cucina"], o: ["balcone_cucina"], cell: true },
-      { n: T("Zona notte"), ic: "mdi-bed-king", c: "#3B82F6", w: 2, l: ["camera", "cameretta"], s: ["camera", "cameretta"], o: ["cameretta", "balcone_camera"] },
+      { n: T("Zona notte"), ic: "mdi-bed-king", c: "#3B82F6", w: 2, l: ["camera", "cameretta"], s: ["camera", "cameretta"], o: ["cameretta", "balcone_camera"], cv: ["tenda_camera"] },
       { n: T("Bagni"), ic: "mdi-shower-head", c: "#14B8A6", w: 2, l: ["bagno_piccolo", "bagno_doccia"], s: [], o: ["bagno"] },
       { n: T("Servizi"), ic: "mdi-washing-machine", c: "#22C55E", w: 2, l: ["lavanderia", "sgabuzzino"], s: ["lavanderia", "sgabuzzino"], o: ["lavanderia"] }
     ];
@@ -93,6 +93,8 @@
     var MOTION = [["salotto", T("Salotto")], ["ingresso", T("Ingresso")], ["cucina", T("Cucina")], ["corridoio", T("Corridoio")], ["cameretta", T("Cameretta")], ["lavanderia", T("Lavanderia")], ["sgabuzzino", T("Sgabuzzino")], ["camera", T("Camera")]];
     var OPENS = { ingresso: [T("Porta ingresso"), "sensore_porta", T("Aperta"), T("Chiusa")], balcone_salotto: [T("Balcone salotto"), "sensore_finestra", T("Aperto"), T("Chiuso")], balcone_cucina: [T("Balcone cucina"), "sensore_finestra", T("Aperto"), T("Chiuso")],
       cameretta: [T("Finestra cameretta"), "sensore_finestra", T("Aperta"), T("Chiusa")], balcone_camera: [T("Balcone camera"), "sensore_finestra", T("Aperto"), T("Chiuso")], bagno: [T("Finestra bagno"), "sensore_finestra", T("Aperta"), T("Chiusa")], lavanderia: [T("Finestra lavanderia"), "sensore_finestra", T("Aperta"), T("Chiusa")], cancello: [T("Serratura"), "sensore_cancello", T("Sbloccata"), T("Bloccata")] };
+    /* 3.9.0 · tapparelle e tende: chiave → [nome, tipo (device_class o null)]; nell'anteprima due di esempio */
+    var COVERS = { tapparella_salotto: [T("Tapparella salotto"), "shutter"], tenda_camera: [T("Tenda camera"), "curtain"] };
     var TLBL = {};
     Object.keys(LIGHTS).forEach(function (k) { TLBL[k] = LIGHTS[k][0]; });
     var OP = {}, OPNA = {}, motNa = 0;
@@ -134,7 +136,8 @@
         appliances: []
       },
       climate: "climate.salotto",
-      cameras: []
+      cameras: [],
+      covers: { tapparella_salotto: "cover.tapparella_salotto", tenda_camera: "cover.tenda_camera" }
     };
     /* finestre illuminate dei mondi: ogni finestra (salotto, cucina, camera, cameretta, ingresso) segue una luce */
     var WINMAP = { salotto: "salotto", cucina: "cucina", camera: "camera", cameretta: "cameretta", ingresso: "ingresso" };
@@ -175,13 +178,13 @@
       gate: ["sensore_cancello", "Aperto", "Chiuso"], lock: ["sensore_cancello", "Sbloccata", "Bloccata"]
     };
     function roomsFromCfg() {
-      LIGHTS = {}; ROOMS = []; MOTION = []; OPENS = {}; TLBL = {};
-      ENT.lights = {}; ENT.motion = {}; ENT.opens = {}; ENT.temps = {}; state.lights = {};
+      LIGHTS = {}; ROOMS = []; MOTION = []; OPENS = {}; TLBL = {}; COVERS = {};
+      ENT.lights = {}; ENT.motion = {}; ENT.opens = {}; ENT.temps = {}; ENT.covers = {}; state.lights = {};
       CFG.rooms.forEach(function (r, i) {
         if (!r) return;
         var name = r.name || T("Stanza") + " " + (i + 1), rk = "r" + i;
         var rImg = libImg(r.image) || guessImg(name) || "luce_salotto";
-        var room = { n: name, ic: mdi(r.icon) || IMG_ICON[rImg] || "mdi-home", c: r.color || ROOM_COLORS[i % ROOM_COLORS.length], l: [], s: [], o: [], t: [] };
+        var room = { n: name, ic: mdi(r.icon) || IMG_ICON[rImg] || "mdi-home", c: r.color || ROOM_COLORS[i % ROOM_COLORS.length], l: [], s: [], o: [], t: [], cv: [] };
         arrIds(r.lights).forEach(function (x, j) {
           x = typeof x === "string" ? { entity: x } : x;
           if (!x || !x.entity) return;
@@ -198,6 +201,14 @@
           var k = rk + "o" + j, kd = OPEN_KIND[openKind(x)] || OPEN_KIND.door;
           OPENS[k] = [x.name || niceName(x.entity), kd[0], T(kd[1]), T(kd[2])];
           ENT.opens[k] = x.entity; room.o.push(k);
+        });
+        /* tapparelle: covers: [cover.x] oppure [{ entity: cover.x, name: "Tenda", type: curtain }] */
+        arrIds(r.covers).forEach(function (x, j) {
+          x = typeof x === "string" ? { entity: x } : x;
+          if (!x || !x.entity) return;
+          var k = rk + "c" + j;
+          COVERS[k] = [x.name || niceName(x.entity) || name, x.type || null];
+          ENT.covers[k] = x.entity; room.cv.push(k);
         });
         var tmp = arrIds(r.temperature).map(function (x) { return typeof x === "string" ? x : x && x.entity; }).filter(Boolean);
         if (tmp.length) { ENT.temps[rk] = tmp; TLBL[rk] = name; room.t.push(rk); }
@@ -269,7 +280,9 @@
         Object.keys(ENT.energy).forEach(function (k) { var v = ENT.energy[k]; if (typeof v === "string" && k !== "price" && k !== "limit") ENT.energy[k] = null; });
         roomsFromCfg();
       }
-      else ["lights", "motion", "opens", "temps"].forEach(function (g2) { if (e[g2]) Object.keys(e[g2]).forEach(function (k) { ENT[g2][k] = e[g2][k]; }); });
+      else ["lights", "motion", "opens", "temps", "covers"].forEach(function (g2) { if (e[g2]) Object.keys(e[g2]).forEach(function (k) { ENT[g2][k] = e[g2][k]; }); });
+      /* disposizione predefinita dentro Home Assistant: le tapparelle di esempio compaiono solo se la config le indica (entities.covers) */
+      if (LIVE && !CUSTOM && !e.covers) { COVERS = {}; ENT.covers = {}; ROOMS.forEach(function (r) { r.cv = []; }); }
       ["alarm", "weather", "power", "climate", "cameras"].forEach(function (k) { if (e[k] !== undefined) ENT[k] = e[k]; });
       /* nuove funzionalità: robot, giardino, meteo avanzato, clima stile, server e ups */
       /* più robot (aspirapolvere, lavapavimenti, tagliaerba): robot: [vacuum.a, lawn_mower.b]; quello mostrato si sceglie con la riga sopra la scheda */
@@ -371,6 +384,90 @@
       var o = OPENS[id];
       return '<span class="sens" data-op="' + id + '" data-img="' + o[1] + '" data-ov="op_' + id + '" data-label="' + esc(o[0]) + '" data-on="0"><span class="s-ph"><img class="s-img" alt="" draggable="false"></span><i class="mdi mdi-door-closed"></i>' + esc(o[0]) + PEN + "</span>";
     }
+    /* ------------------------------------------------------------------ 3.9.0 · tapparelle e tende
+       Una riga per tapparella dentro la sua stanza: icona, nome, stato («Aperta · 60%»), tasti su / stop / giù secondo
+       quello che sa fare (supported_features: 1 apri, 2 chiudi, 8 ferma) e una barretta con la posizione se la conosce.
+       Il nome apre la finestra di Home Assistant, dove si sceglie la posizione esatta. */
+    var CV_ICON = { shutter: ["mdi-window-shutter-open", "mdi-window-shutter"], blind: ["mdi-blinds-open", "mdi-blinds"], curtain: ["mdi-curtains", "mdi-curtains-closed"],
+      shade: ["mdi-roller-shade", "mdi-roller-shade-closed"], awning: ["mdi-awning-outline", "mdi-awning-outline"], garage: ["mdi-garage-open", "mdi-garage"], gate: ["mdi-gate-open", "mdi-gate"],
+      window: ["mdi-window-open", "mdi-window-closed"], door: ["mdi-door-open", "mdi-door-closed"], damper: ["mdi-window-shutter-open", "mdi-window-shutter"] };
+    var CVD = { tapparella_salotto: 60, tenda_camera: 0 }, CVM = {}, cvTimer = {};   /* anteprima: posizione e movimento simulati */
+    function cvKind(k) {
+      var c = COVERS[k] || ["", null], s = LIVE ? sv(ENT.covers[k]) : null, dc = (s && s.attributes && s.attributes.device_class) || c[1] || "";
+      if (CV_ICON[dc]) return dc;
+      var txt = (c[0] + " " + (ENT.covers[k] || "")).toLowerCase();
+      if (/tend|curtain|drape/.test(txt)) return /sole|awning|pergol/.test(txt) ? "awning" : "curtain";
+      if (/garage|basculant/.test(txt)) return "garage";
+      if (/cancell|gate/.test(txt)) return "gate";
+      if (/venezian|blind|frangisol|lamell/.test(txt)) return "blind";
+      return "shutter";
+    }
+    /* il garage e il cancello sono maschili: «Aperto»; tapparelle e tende «Aperta» */
+    function cvMasc(k) { var kd = cvKind(k); return kd === "garage" || kd === "gate"; }
+    function cvState(k) {
+      if (!LIVE) { var p = CVD[k] || 0; return { na: false, pos: p, posKnown: true, open: p > 0, moving: CVM[k] || null, feat: 15 }; }
+      var s = sv(ENT.covers[k]);
+      if (isUnavail(s)) return { na: true };
+      var a = s.attributes || {}, pos = typeof a.current_position === "number" ? Math.round(a.current_position) : null;
+      return { na: false, pos: pos, posKnown: pos !== null, open: s.state === "open" || s.state === "opening" || (s.state !== "closed" && pos !== null && pos > 0),
+        moving: s.state === "opening" ? "up" : s.state === "closing" ? "down" : null, feat: a.supported_features || 0 };
+    }
+    function cvText(k, st) {
+      if (st.na) return T("Non disponibile");
+      var m = cvMasc(k);
+      if (st.moving === "up") return T("Si apre…");
+      if (st.moving === "down") return T("Si chiude…");
+      if (!st.open) return T(m ? "Chiuso" : "Chiusa");
+      if (st.posKnown && st.pos < 100) return T(m ? "Aperto · {p}%" : "Aperta · {p}%", { p: st.pos });
+      return T(m ? "Aperto" : "Aperta");
+    }
+    function coverRow(k) {
+      var c = COVERS[k];
+      if (!c || (LIVE && !ENT.covers[k])) return "";
+      return '<div class="cv-row" data-cover="' + k + '">' +
+        '<button class="cv-main" type="button" aria-label="' + esc(T("Posizione di {n}", { n: c[0] })) + '"><span class="cv-ic"><i class="mdi mdi-window-shutter"></i></span>' +
+        '<span class="cv-txt"><b>' + esc(c[0]) + '</b><small class="cv-st">' + esc(T("Chiusa")) + "</small></span></button>" +
+        '<span class="cv-btns">' +
+          '<button class="cv-b" type="button" data-a="open" aria-label="' + esc(T("Apri {n}", { n: c[0] })) + '" title="' + esc(T("Apri")) + '"><i class="mdi mdi-arrow-up"></i></button>' +
+          '<button class="cv-b" type="button" data-a="stop" aria-label="' + esc(T("Ferma {n}", { n: c[0] })) + '" title="' + esc(T("Ferma")) + '"><i class="mdi mdi-stop"></i></button>' +
+          '<button class="cv-b" type="button" data-a="close" aria-label="' + esc(T("Chiudi {n}", { n: c[0] })) + '" title="' + esc(T("Chiudi")) + '"><i class="mdi mdi-arrow-down"></i></button>' +
+        '</span><span class="cv-bar" aria-hidden="true"><i></i></span></div>';
+    }
+    function demoCover(k, a) {
+      clearInterval(cvTimer[k]); CVM[k] = null;
+      if (a !== "stop") {
+        CVM[k] = a === "open" ? "up" : "down";
+        cvTimer[k] = every(function () {
+          CVD[k] = Math.max(0, Math.min(100, (CVD[k] || 0) + (a === "open" ? 10 : -10)));
+          if (CVD[k] === 0 || CVD[k] === 100) { clearInterval(cvTimer[k]); CVM[k] = null; }
+          syncCovers();
+        }, 220);
+      }
+      syncCovers();
+    }
+    function coverCmd(k, a) {
+      if (!LIVE) { demoCover(k, a); return; }
+      var name = COVERS[k][0];
+      if (cvState(k).na) { toast(T("{n}: dispositivo non disponibile", { n: name }), "mdi-alert-circle", "var(--warn)"); return; }
+      call("cover", a === "open" ? "open_cover" : a === "close" ? "close_cover" : "stop_cover", { entity_id: ENT.covers[k] });
+    }
+    function syncCovers() {
+      if (LIVE && !HASS) return;
+      $$(".cv-row").forEach(function (row) {
+        var k = row.dataset.cover, st = cvState(k), ic = CV_ICON[cvKind(k)] || CV_ICON.shutter;
+        row.classList.toggle("na", !!st.na); row.classList.toggle("is-open", !!st.open); row.dataset.moving = st.moving || "";
+        setIco($(".cv-ic i", row), st.open ? ic[0] : ic[1]);
+        $(".cv-st", row).textContent = cvText(k, st);
+        var bar = $(".cv-bar", row);
+        bar.hidden = !!st.na || !st.posKnown;
+        if (st.posKnown) $("i", bar).style.width = st.pos + "%";
+        var f = st.feat || 0, ob = $('[data-a="open"]', row), sb = $('[data-a="stop"]', row), cb = $('[data-a="close"]', row);
+        /* tasti secondo quello che sa fare; se non risponde restano visibili ma spenti */
+        ob.hidden = !st.na && !(f & 1); cb.hidden = !st.na && !(f & 2); sb.hidden = !st.na && !(f & 8);
+        [ob, sb, cb].forEach(function (b) { b.disabled = !!st.na; });
+        ob.classList.toggle("on", st.moving === "up"); cb.classList.toggle("on", st.moving === "down");
+      });
+    }
     function longPress(node, fn) {
       var t = 0, fired = false;
       node.addEventListener("pointerdown", function () { fired = false; clearTimeout(t); t = setTimeout(function () { fired = true; fn(); }, 550); });
@@ -396,6 +493,8 @@
         var chips = r.s.filter(hasMotion).map(sensChip).join("") + (r.t || []).filter(hasTemp).map(tempChip).join("") + r.o.map(openChip).join("");
         var body = orbs;
         if (r.cell) body += '<div class="sens-cell sensors">' + chips + "</div>"; else if (chips) body += '<div class="sensors strip">' + chips + "</div>";
+        var covers = (r.cv || []).map(coverRow).join("");
+        if (covers) body += '<div class="covers">' + covers + "</div>";
         if (!r.l.length) card.classList.add("nolights");
         card.innerHTML = '<div class="room-head"><span class="r-ico"><i class="mdi ' + r.ic + '"></i></span><h3>' + esc(r.n) + '</h3><span class="count">0/' + r.l.length + '</span></div><div class="bar"><i></i></div><div class="room-body">' + body + "</div>";
         hydrate(card);
@@ -432,6 +531,12 @@
       $$("[data-op]").forEach(function (c) { c.addEventListener("click", function () { onOpenTap(c.dataset.op); }); c.style.cursor = "pointer"; });
       $$(".sens[data-sensor]").forEach(function (c) { if (LIVE) { c.addEventListener("click", function () { moreInfo(roomMot(c.dataset.sensor).id); }); c.style.cursor = "pointer"; } });
       $$(".tsens").forEach(function (c) { if (LIVE) { c.addEventListener("click", function () { moreInfo(roomTemp(c.dataset.temp).id); }); c.style.cursor = "pointer"; } });
+      $$(".cv-row").forEach(function (row) {
+        var k = row.dataset.cover;
+        $$(".cv-b", row).forEach(function (b) { b.addEventListener("click", function (e) { e.stopPropagation(); coverCmd(k, b.dataset.a); }); });
+        $(".cv-main", row).addEventListener("click", function () { if (LIVE) moreInfo(ENT.covers[k]); });
+      });
+      syncCovers();
     }
     /* ------------------------------------------------------------------ colori ed effetti delle luci RGB */
     var LC = { k: null, demo: {} };
@@ -1184,6 +1289,7 @@
       Object.keys(ENT.motion).forEach(function (k) { (ENT.motion[k] || []).forEach(function (i) { ids.push(i); }); });
       Object.keys(ENT.opens).forEach(function (k) { ids.push(ENT.opens[k]); });
       Object.keys(ENT.temps).forEach(function (k) { arrIds(ENT.temps[k]).forEach(function (i) { ids.push(i); }); });
+      Object.keys(ENT.covers || {}).forEach(function (k) { ids.push(ENT.covers[k]); });
       (ENT.cameras || []).forEach(function (c) {
         if (c.cam) ids.push(c.cam);
         var x = camExtras(c);
@@ -1240,6 +1346,7 @@
         c.title = r.na ? T("Sensore di temperatura non disponibile") : "";
       });
       motNa = mNa;
+      syncCovers();
       $("#hero-motion").textContent = act ? T("Movimento: {n}", { n: act }) : (mTot && mNa === mTot ? T("Sensori di movimento offline") : mNa ? T("Nessun movimento") + " · " + T(mNa === 1 ? "{n} sensore offline" : "{n} sensori offline", { n: mNa }) : T("Casa tranquilla"));
       if (newest) { lastMotion = newest.label; lastAt = newest.t.getTime(); lastMotionText(); } else $("#last-motion").textContent = mTot && mNa === mTot ? T("Nessun sensore di movimento risponde") : T("Nessun movimento recente");
       // aperture

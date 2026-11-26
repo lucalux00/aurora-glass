@@ -263,6 +263,30 @@ main { display: flex; flex-direction: column; gap: 22px; padding: 18px 0 150px; 
 .tsens .t-ph i { display: inline-block; margin: 0; font-size: 1rem; }
 .tsens b { color: var(--text); font-weight: 800; font-variant-numeric: tabular-nums; }
 .room.nolights .count, .room.nolights .bar { display: none; }
+/* 3.9.0 · tapparelle e tende: una riga per tapparella con nome, stato, tasti su / stop / giù e la posizione in basso */
+.covers { grid-column: 1 / -1; display: grid; gap: 6px; }
+.cv-row { position: relative; display: flex; align-items: center; gap: 8px; padding: 6px; border-radius: 16px; background: var(--surface-2); border: 1px solid transparent; overflow: hidden; transition: border-color .3s; }
+.cv-row.is-open { border-color: color-mix(in srgb, var(--room) 45%, transparent); }
+.cv-main { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.cv-ic { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; flex: none; color: #fff; font-size: 1.05rem; background: color-mix(in srgb, var(--room) 45%, #0b1020); }
+.cv-ic i { margin: 0; }
+.cv-txt { display: grid; min-width: 0; line-height: 1.25; }
+.cv-txt b { font-size: .8rem; font-weight: 800; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cv-txt small { font-size: .75rem; font-weight: 600; color: var(--dim); font-variant-numeric: tabular-nums; }
+.cv-row.na .cv-txt small { color: var(--warn); }
+.cv-btns { display: flex; gap: 4px; flex: none; }
+.cv-b { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; padding: 0; border: 1px solid transparent; background: var(--surface-2); color: var(--text); font-size: 1.05rem; cursor: pointer; transition: background .2s, color .2s; }
+.cv-b:hover:not(:disabled) { background: color-mix(in srgb, var(--room) 35%, transparent); }
+.cv-b.on { background: var(--room); color: #fff; }
+.cv-b:disabled { opacity: .4; cursor: default; }
+.cv-b i { margin: 0; }
+.cv-b[hidden], .cv-bar[hidden] { display: none; }
+.cv-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: color-mix(in srgb, var(--room) 15%, transparent); }
+.cv-bar i { display: block; height: 100%; width: 0; background: var(--room); transition: width .3s; }
+@media (prefers-reduced-motion: no-preference) {
+  .cv-row[data-moving="up"] .cv-ic, .cv-row[data-moving="down"] .cv-ic { animation: cvMove 1.2s ease-in-out infinite; }
+}
+@keyframes cvMove { 50% { opacity: .55; } }
 .rooms.auto { display: flex; flex-wrap: wrap; }
 .rooms.auto .room { flex: var(--n, 2) 1 calc(var(--n, 2) * 170px); min-width: min(100%, 290px); }
 .rooms.auto .room-body { grid-template-columns: repeat(var(--n, 2), minmax(0, 1fr)); }

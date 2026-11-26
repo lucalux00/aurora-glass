@@ -17,6 +17,7 @@
     motion: { ic: "mdi-motion-sensor", ok: function (id, s) { return /^binary_sensor\./.test(id) && MOTION.indexOf(dc(s)) > -1; } },
     openings: { ic: "mdi-door", ok: function (id, s) { return /^lock\./.test(id) || (/^binary_sensor\./.test(id) && OPEN.indexOf(dc(s)) > -1); } },
     temperature: { ic: "mdi-thermometer", ok: function (id, s) { return /^sensor\./.test(id) && dc(s) === "temperature"; } },
+    covers: { ic: "mdi-window-shutter", ok: function (id) { return /^cover\./.test(id); } },
     climate: { ic: "mdi-air-conditioner", ok: function (id) { return /^climate\./.test(id); } },
     power: { ic: "mdi-flash", ok: function (id, s) { return /^sensor\./.test(id) && dc(s) === "power"; } },
     energy: { ic: "mdi-counter", ok: function (id, s) { return /^sensor\./.test(id) && dc(s) === "energy"; } },
@@ -46,7 +47,8 @@
       ["security", T("Sicurezza"), "mdi-shield-home"], ["weather", T("Meteo"), "mdi-weather-partly-cloudy"], ["robot", T("Robot"), "mdi-robot-vacuum"], ["garden", T("Giardino"), "mdi-sprinkler-variant"],
       ["infra", T("Server & UPS"), "mdi-server-network"], ["scenes", T("Scene"), "mdi-palette"]];
     var ROOM_FIELDS = [["lights", T("Luci"), T("anche i relè e le prese che accendono una lampada")], ["motion", T("Sensori di movimento"), ""],
-      ["openings", T("Porte e finestre"), T("anche le serrature")], ["temperature", T("Temperatura"), ""]];
+      ["openings", T("Porte e finestre"), T("anche le serrature")], ["covers", T("Tapparelle e tende"), T("anche persiane, tende da sole e gruppi di tapparelle")],
+      ["temperature", T("Temperatura"), ""]];
 
     /* ------------------------------------------------------------------ dati di Home Assistant */
     function H() { return api.hass(); }
@@ -85,7 +87,7 @@
       var d = r.devices || {}, s = r.scenes || {};
       return {
         rooms: (r.rooms || []).map(function (x) {
-          return { area_id: x.area_id || null, name: x.name || "", image: x.image || "salotto", lights: list(x.lights), motion: list(x.motion), openings: list(x.openings), temperature: list(x.temperature) };
+          return { area_id: x.area_id || null, name: x.name || "", image: x.image || "salotto", lights: list(x.lights), motion: list(x.motion), openings: list(x.openings), temperature: list(x.temperature), covers: list(x.covers) };
         }),
         devices: {
           alarm: d.alarm || null, weather: d.weather || null, climate: list(d.climate), power: d.power || null, energy: d.energy || null,
@@ -149,6 +151,7 @@
       p.push(T(r.lights.length === 1 ? "{n} luce" : "{n} luci", { n: r.lights.length }));
       if (r.motion.length) p.push(T(r.motion.length === 1 ? "{n} sensore di movimento" : "{n} sensori di movimento", { n: r.motion.length }));
       if (r.openings.length) p.push(T(r.openings.length === 1 ? "{n} porta o finestra" : "{n} porte e finestre", { n: r.openings.length }));
+      if (r.covers.length) p.push(T(r.covers.length === 1 ? "{n} tapparella" : "{n} tapparelle", { n: r.covers.length }));
       if (r.temperature.length) p.push(T("temperatura"));
       return p.join(" · ");
     }
@@ -291,7 +294,7 @@
         D.rooms.splice(i, 1); openRoom = -1;
       }
       else if (a === "radd") {
-        D.rooms.push({ area_id: null, name: T("Nuova stanza"), image: "salotto", lights: [], motion: [], openings: [], temperature: [] });
+        D.rooms.push({ area_id: null, name: T("Nuova stanza"), image: "salotto", lights: [], motion: [], openings: [], temperature: [], covers: [] });
         openRoom = D.rooms.length - 1; render(true);
         later0(function () { var inp = $('.hr.open .hf-in', body); if (inp) { inp.scrollIntoView({ block: "center", behavior: "smooth" }); inp.focus(); inp.select(); } });
         return;
@@ -377,7 +380,7 @@
       var bad = D.rooms.map(function (r, i) { return r.name.trim() ? -1 : i; }).filter(function (i) { return i > -1; })[0];
       if (bad !== undefined) { tab = "rooms"; openRoom = bad; render(); api.toast(T("Dai un nome a ogni stanza"), "mdi-alert-circle", "var(--warn)"); return; }
       var btn = $("#hb-save"); btn.disabled = true;
-      var payload = { type: "aurora_glass/config/save", entry_id: api.entryId, rooms: D.rooms.map(function (r) { return { area_id: r.area_id, name: r.name.trim(), image: r.image, lights: r.lights, motion: r.motion, openings: r.openings, temperature: r.temperature }; }),
+      var payload = { type: "aurora_glass/config/save", entry_id: api.entryId, rooms: D.rooms.map(function (r) { return { area_id: r.area_id, name: r.name.trim(), image: r.image, lights: r.lights, motion: r.motion, openings: r.openings, temperature: r.temperature, covers: r.covers }; }),
         devices: D.devices, scenes: D.scenes };
       H().callWS(payload).then(function () {
         close();

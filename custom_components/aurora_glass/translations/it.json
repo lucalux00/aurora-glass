@@ -38,11 +38,13 @@
           "motion": "Sensori di movimento",
           "openings": "Porte, finestre e serrature",
           "temperature": "Sensore di temperatura",
+          "covers": "Tapparelle, tende e persiane",
           "image": "Immagine dei pulsanti"
         },
         "data_description": {
           "lights": "Ogni luce diventa un pulsante con un'immagine animata. Vanno bene anche gli interruttori.",
-          "image": "Il disegno usato per i pulsanti delle luci di questa stanza."
+          "image": "Il disegno usato per i pulsanti delle luci di questa stanza.",
+          "covers": "Le apri, fermi e chiudi dalla stanza; toccando il nome scegli la posizione. Vanno bene anche i gruppi di tapparelle."
         }
       },
       "lights": {
@@ -137,7 +139,11 @@
           "motion": "Sensori di movimento",
           "openings": "Porte, finestre e serrature",
           "temperature": "Sensore di temperatura",
+          "covers": "Tapparelle, tende e persiane",
           "image": "Immagine dei pulsanti"
+        },
+        "data_description": {
+          "covers": "Le apri, fermi e chiudi dalla stanza; toccando il nome scegli la posizione. Vanno bene anche i gruppi di tapparelle."
         }
       },
       "lights": {

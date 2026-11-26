@@ -38,11 +38,13 @@
           "motion": "Motion sensors",
           "openings": "Doors, windows and locks",
           "temperature": "Temperature sensor",
+          "covers": "Covers: shutters, blinds, curtains",
           "image": "Button picture"
         },
         "data_description": {
           "lights": "Each light becomes a button with an animated picture. Switches work too.",
-          "image": "The illustration used for this room's light buttons."
+          "image": "The illustration used for this room's light buttons.",
+          "covers": "Open, stop and close them from the room; tap the name for the position. Cover groups work too."
         }
       },
       "lights": {
@@ -137,7 +139,11 @@
           "motion": "Motion sensors",
           "openings": "Doors, windows and locks",
           "temperature": "Temperature sensor",
+          "covers": "Covers: shutters, blinds, curtains",
           "image": "Button picture"
+        },
+        "data_description": {
+          "covers": "Open, stop and close them from the room; tap the name for the position. Cover groups work too."
         }
       },
       "lights": {

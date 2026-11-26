@@ -46,6 +46,7 @@ ROOM_SCHEMA = vol.Schema(
         vol.Optional("motion", default=list): ENTITIES,
         vol.Optional("openings", default=list): ENTITIES,
         vol.Optional("temperature", default=list): ENTITIES,
+        vol.Optional("covers", default=list): ENTITIES,
     },
     extra=vol.REMOVE_EXTRA,
 )

@@ -49,6 +49,7 @@ Without Marketplace or HACS: copy `custom_components/aurora_glass` into your con
 - Alarm panel with code, cameras with live view
 - Climate control for one or more air conditioners (a row to switch between them); infrared ones (SwitchBot, Broadlink…) are shown as "last command", because Home Assistant can't know if they are really on
 - Top bar you can tap: the lights that are on (tap one to turn it off) and the rooms with motion, with when each sensor last saw someone
+- Covers in each room (shutters, blinds, curtains, awnings, garage doors, cover groups): open, stop and close with the state and position ("Open · 60%"); tap the name for the exact position. Found automatically in the room's area, or chosen in "Rooms and devices"
 - Garden: up to 4 watering zones with a duration slider. The valve closes by itself when time is up, even with the dashboard closed or after a restart; if the valve doesn't answer, Home Assistant keeps retrying until it reports closed and shows a notification
 - Robot vacuums and mowers, weather station, Home Assistant server and UPS (NUT) panels, chosen from "Rooms & devices" on the dashboard
 - Energy view: live power, kWh today / yesterday / month / year (worked out from your meter's history, no extra sensors needed, even if Home Assistant reset the meter's statistics) and costs = kWh × your tariff; appliances with their power sensors

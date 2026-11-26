@@ -49,16 +49,41 @@ const SCENARIO = `(async () => {
   window.S['sensor.srv_cpu'] = window.st('sensor.srv_cpu', 'unavailable', { unit_of_measurement: '%' });
   window.S['sensor.srv_temp'] = window.st('sensor.srv_temp', '104', { unit_of_measurement: '°F' }); window.push(); await sleep(400);
   const cpu = txt('#srv-cpu'), temp = txt('#srv-temp');
+  // 3.9.0 · tapparelle: stato, tasti secondo le funzioni, comando vero a Home Assistant
+  const row = (id) => [...r.querySelectorAll('.cv-row')].find((x) => x.querySelector('.cv-txt b').textContent.trim() === id);
+  const cvSt = (id) => row(id) ? row(id).querySelector('.cv-st').textContent.trim() : null;
+  const cvBtns = (id) => row(id) ? [...row(id).querySelectorAll('.cv-b')].filter((b) => !b.hidden).map((b) => b.dataset.a).join(',') : null;
+  const cv = { righe: r.querySelectorAll('.cv-row').length, tapparella: cvSt('Living room shutter'), tenda: cvSt('Bedroom curtain'), garage: cvSt('Garage'),
+    tastiTapparella: cvBtns('Living room shutter'), tastiTenda: cvBtns('Bedroom curtain') };
+  if (row('Living room shutter')) { row('Living room shutter').querySelector('[data-a="close"]').click(); await sleep(500); }
+  cv.dopoChiudi = cvSt('Living room shutter');
+  cv.chiamata = (window.CALLS || []).some((c) => c[0] === 'cover' && c[1] === 'close_cover' && c[2].entity_id === 'cover.living_shutter');
+  if (row('Bedroom curtain')) { row('Bedroom curtain').querySelector('[data-a="open"]').click(); await sleep(500); }
+  cv.dopoApri = cvSt('Bedroom curtain');
   const edit = r.querySelector('[data-home]'); if (edit) edit.click(); await sleep(600);
   const tab = Array.from(r.querySelectorAll('#hb-tabs button')).find((b) => /Server/.test(b.textContent)); if (tab) tab.click(); await sleep(400);
   const editor = txt('#hb-body') || '';
-  return { avvio, ferma, avviso, nonDisp, cpu, temp, sysmon: /System Monitor/.test(editor), editorAperto: !!tab };
+  return { avvio, ferma, avviso, nonDisp, cpu, temp, sysmon: /System Monitor/.test(editor), editorAperto: !!tab, cv };
 })()`;
 
 const ATTESI = {
   it: { avvio: /^In irrigazione · \d/, ferma: /^Chiusura in corso…$/, avviso: /Chiusura in corso/, nonDisp: /^Non disponibile · da chiudere$/ },
   en: { avvio: /^Watering · \d/, ferma: /^Closing…$/, avviso: /Closing/, nonDisp: /^Unavailable · to be closed$/ },
 };
+const ATTESI_CV = {
+  it: { righe: 3, tapparella: "Aperta · 60%", tenda: "Chiusa", garage: "Chiuso", tastiTapparella: "open,stop,close", tastiTenda: "open,close", dopoChiudi: "Chiusa", chiamata: true, dopoApri: "Aperta" },
+  en: { righe: 3, tapparella: "Open · 60%", tenda: "Closed", garage: "Closed", tastiTapparella: "open,stop,close", tastiTenda: "open,close", dopoChiudi: "Closed", chiamata: true, dopoApri: "Open" },
+};
+/* anteprima del sito: le due tapparelle di esempio si muovono davvero */
+const DEMO_CV = `(async () => {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const rows = [...document.querySelectorAll('.cv-row')];
+  if (rows.length !== 2) return { righe: rows.length };
+  const tenda = rows[1], st = () => tenda.querySelector('.cv-st').textContent.trim();
+  const prima = st();
+  tenda.querySelector('[data-a="open"]').click(); await sleep(3200);
+  return { righe: rows.length, prima, dopo: st() };
+})()`;
 
 try {
   let ver;
@@ -97,7 +122,13 @@ try {
           if (res.cpu !== "—") fail(where, `CPU non disponibile mostrata come ${JSON.stringify(res.cpu)}`);
           if (!/^40°C$|^40°F$|^104°F$/.test(res.temp || "")) fail(where, `temperatura in °F mostrata come ${JSON.stringify(res.temp)}`);
           if (!res.editorAperto || !res.sysmon) fail(where, "nell'editor Server & UPS manca l'aiuto per System Monitor");
+          for (const [k, v] of Object.entries(ATTESI_CV[lang])) if ((res.cv || {})[k] !== v) fail(where, `tapparelle ${k} = ${JSON.stringify((res.cv || {})[k])} (atteso ${JSON.stringify(v)})`);
         }
+      }
+      if (page.includes("index") && w === 390) {
+        const d = await evaluate(DEMO_CV);
+        const want = lang === "it" ? ["Chiusa", "Aperta"] : ["Closed", "Open"];
+        if (d.righe !== 2 || d.prima !== want[0] || d.dopo !== want[1]) fail(where, "tapparelle dell'anteprima: " + JSON.stringify(d));
       }
       if (SHOTS) {
         const shot = await send("Page.captureScreenshot", { format: "png" }, sessionId);
@@ -123,4 +154,4 @@ if (problems.length) {
   problems.forEach((p) => console.error("  " + p));
   process.exit(1);
 }
-console.log("check_harness: banco e anteprima senza errori, IT/EN, 390 e 1280 px, irrigazione, Server e editor provati");
+console.log("check_harness: banco e anteprima senza errori, IT/EN, 390 e 1280 px, irrigazione, tapparelle, Server e editor provati");

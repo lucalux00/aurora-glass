@@ -207,10 +207,10 @@ def match_room(text: str, rooms: list[dict[str, Any]]) -> int | None:
 
 
 def detect_room(hass: HomeAssistant, area_id: str, lamps: dict[str, str | None] | None = None) -> dict[str, Any]:
-    """Luci, movimento, aperture e temperatura che stanno in un'area."""
+    """Luci, movimento, aperture, tapparelle e temperatura che stanno in un'area."""
     lamps = lamp_candidates(hass) if lamps is None else lamps
     lights = [e for e, a in lamps.items() if a == area_id]
-    motion, openings, temps = [], [], []
+    motion, openings, temps, covers = [], [], [], []
     for entry in area_entities(hass, area_id):
         domain = entry.domain
         dc = _device_class(hass, entry)
@@ -220,7 +220,11 @@ def detect_room(hass: HomeAssistant, area_id: str, lamps: dict[str, str | None] 
             openings.append(entry.entity_id)
         elif domain == "sensor" and dc == "temperature":
             temps.append(entry.entity_id)
-    return {"lights": sorted(lights), "motion": sorted(motion), "openings": sorted(openings), "temperature": sorted(temps)[:1]}
+        elif domain == "cover":
+            # tapparelle, tende, persiane, tende da sole (3.9.0); anche i gruppi di tapparelle assegnati all'area
+            covers.append(entry.entity_id)
+    return {"lights": sorted(lights), "motion": sorted(motion), "openings": sorted(openings), "temperature": sorted(temps)[:1],
+            "covers": sorted(covers)}
 
 
 def suggested_areas(hass: HomeAssistant) -> list[str]:
@@ -231,7 +235,7 @@ def suggested_areas(hass: HomeAssistant) -> list[str]:
     out = []
     for area in areas:
         room = detect_room(hass, area.id, lamps)
-        if room["lights"] or room["motion"] or room["temperature"] or room["openings"]:
+        if room["lights"] or room["motion"] or room["temperature"] or room["openings"] or room["covers"]:
             out.append(area.id)
             continue
         probe = [{"name": area.name, "image": guess_image(area.name)}]
@@ -449,6 +453,7 @@ def build_card_config(conf: dict[str, Any], entry_id: str | None = None) -> dict
             "motion": list(room.get("motion") or []),
             "openings": list(room.get("openings") or []),
             "temperature": list(room.get("temperature") or []),
+            "covers": list(room.get("covers") or []),
         })
 
     scenes = []

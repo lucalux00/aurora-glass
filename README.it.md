@@ -45,6 +45,7 @@ Senza Marketplace né HACS: copia `custom_components/aurora_glass` nella cartell
 - Allarme con codice, telecamere con diretta
 - Clima per uno o più climatizzatori (una riga per passare dall'uno all'altro); quelli a infrarossi (SwitchBot, Broadlink…) compaiono come "ultimo comando", perché Home Assistant non può sapere se sono davvero accesi
 - Barra in alto da toccare: le luci accese (tocchi una luce e si spegne) e le stanze con movimento, con l'ultima volta che ogni sensore ha visto qualcuno
+- Tapparelle in ogni stanza (tapparelle, veneziane, tende, tende da sole, basculanti, gruppi di tapparelle): apri, ferma e chiudi con stato e posizione («Aperta · 60%»); toccando il nome scegli la posizione esatta. Trovate da sole nell'area della stanza, o scelte da «Stanze e dispositivi»
 - Giardino: fino a 4 zone di irrigazione con il cursore della durata. La valvola si chiude da sola allo scadere, anche a plancia chiusa o dopo un riavvio; se la valvola non risponde, Home Assistant riprova finché non risulta chiusa e mostra una notifica
 - Robot aspirapolvere e tagliaerba, stazione meteo, server di Home Assistant e gruppo di continuità (NUT), scelti da «Stanze e dispositivi» nella plancia
 - Vista Energia: potenza in tempo reale, kWh di oggi / ieri / mese / anno (calcolati dallo storico del contatore, senza sensori in più, anche se Home Assistant ha azzerato le statistiche del contatore) e costi = kWh × la tua tariffa; elettrodomestici con i loro sensori di potenza

@@ -93,7 +93,10 @@ class AuroraFlowSteps:
             self._queue = []
             for area_id in areas:
                 if area_id in old:
-                    self._queue.append(dict(old[area_id]))
+                    room = dict(old[area_id])
+                    if "covers" not in room:   # stanze salvate prima della 3.9.0: si propongono le tapparelle dell'area
+                        room["covers"] = detect_room(hass, area_id).get("covers", [])
+                    self._queue.append(room)
                     continue
                 name = area_name(hass, area_id)
                 room = {"area_id": area_id, "name": name, "image": guess_image(name)}
@@ -139,6 +142,7 @@ class AuroraFlowSteps:
                     "motion": user_input.get("motion") or [],
                     "openings": user_input.get("openings") or [],
                     "temperature": user_input.get("temperature") or [],
+                    "covers": user_input.get("covers") or [],
                 }
                 self._rooms_out.append(done)
                 if len(self._rooms_out) < len(self._queue):
@@ -152,6 +156,7 @@ class AuroraFlowSteps:
             vol.Optional("motion", description=_sv(room.get("motion"))): _ent(True, filter=[{"domain": "binary_sensor", "device_class": list(MOTION_CLASSES)}]),
             vol.Optional("openings", description=_sv(room.get("openings"))): _ent(True, filter=[{"domain": "binary_sensor", "device_class": list(OPEN_CLASSES)}, {"domain": "lock"}]),
             vol.Optional("temperature", description=_sv(room.get("temperature"))): _ent(True, filter=[{"domain": "sensor", "device_class": "temperature"}]),
+            vol.Optional("covers", description=_sv(room.get("covers"))): _ent(True, domain="cover"),
             vol.Required("image", default=room.get("image") or guess_image(room.get("name", ""))): selector.SelectSelector(
                 selector.SelectSelectorConfig(options=LIGHT_IMAGES, translation_key="image", mode=selector.SelectSelectorMode.DROPDOWN)
             ),

@@ -216,6 +216,12 @@
     "Faretto, sirena e batteria di ogni telecamera vengono trovati da soli tra le entità dello stesso dispositivo. Il tasto Foto salva l'immagine in Media › aurora_glass.": "Each camera's spotlight, siren and battery are found automatically among the entities of the same device. The Photo button saves the image in Media › aurora_glass.",
     /* 3.8.2 · irrigazione */
     "Zona": "Zone", "Zona Prato": "Lawn zone", "Zona Siepe": "Hedge zone", "Irriga": "Water", "Ferma l'irrigazione": "Stop watering", "In irrigazione": "Watering", "In irrigazione · {t}": "Watering · {t}",
+    /* 3.9.0 · tapparelle e tende */
+    "Tapparella salotto": "Living room shutter", "Tenda camera": "Bedroom curtain", "Si apre…": "Opening…", "Si chiude…": "Closing…",
+    "Aperta · {p}%": "Open · {p}%", "Aperto · {p}%": "Open · {p}%", "Posizione di {n}": "Position of {n}",
+    "Apri {n}": "Open {n}", "Ferma {n}": "Stop {n}", "Chiudi {n}": "Close {n}", "Apri": "Open", "Ferma": "Stop",
+    "Tapparelle e tende": "Covers", "anche persiane, tende da sole e gruppi di tapparelle": "shutters, blinds, curtains, awnings and cover groups",
+    "{n} tapparella": "{n} cover", "{n} tapparelle": "{n} covers",
     "Chiusura in corso: Home Assistant riprova finché la valvola non si chiude": "Closing: Home Assistant keeps retrying until the valve is closed",
     "Non disponibile · da chiudere": "Unavailable · to be closed", "Chiusura in corso…": "Closing…",
     "Irrigazione spenta": "Watering stopped","Durata": "Duration", "{n} min": "{n} min", "Durata dell'irrigazione in minuti": "Watering time in minutes", "Umidità terreno": "Soil moisture",
