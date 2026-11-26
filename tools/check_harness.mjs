@@ -53,7 +53,7 @@ const SCENARIO = `(async () => {
   const row = (id) => [...r.querySelectorAll('.cv-row')].find((x) => x.querySelector('.cv-txt b').textContent.trim() === id);
   const cvSt = (id) => row(id) ? row(id).querySelector('.cv-st').textContent.trim() : null;
   const cvBtns = (id) => row(id) ? [...row(id).querySelectorAll('.cv-b')].filter((b) => !b.hidden).map((b) => b.dataset.a).join(',') : null;
-  const cv = { righe: r.querySelectorAll('.cv-row').length, tapparella: cvSt('Living room shutter'), tenda: cvSt('Bedroom curtain'), garage: cvSt('Garage'),
+  const cv = { righe: r.querySelectorAll('.cv-row').length, tapparella: cvSt('Living room shutter'), tenda: cvSt('Bedroom curtain'), garage: cvSt('Garage'), gruppo: cvSt('All covers'), barraGruppo: row('All covers') ? row('All covers').querySelector('.cv-bar').hidden : null,
     tastiTapparella: cvBtns('Living room shutter'), tastiTenda: cvBtns('Bedroom curtain') };
   if (row('Living room shutter')) { row('Living room shutter').querySelector('[data-a="close"]').click(); await sleep(500); }
   cv.dopoChiudi = cvSt('Living room shutter');
@@ -71,8 +71,8 @@ const ATTESI = {
   en: { avvio: /^Watering · \d/, ferma: /^Closing…$/, avviso: /Closing/, nonDisp: /^Unavailable · to be closed$/ },
 };
 const ATTESI_CV = {
-  it: { righe: 3, tapparella: "Aperta · 60%", tenda: "Chiusa", garage: "Chiuso", tastiTapparella: "open,stop,close", tastiTenda: "open,close", dopoChiudi: "Chiusa", chiamata: true, dopoApri: "Aperta" },
-  en: { righe: 3, tapparella: "Open · 60%", tenda: "Closed", garage: "Closed", tastiTapparella: "open,stop,close", tastiTenda: "open,close", dopoChiudi: "Closed", chiamata: true, dopoApri: "Open" },
+  it: { righe: 4, tapparella: "Aperta · 60%", tenda: "Chiusa", garage: "Chiuso", gruppo: "Aperta", barraGruppo: true, tastiTapparella: "open,stop,close", tastiTenda: "open,close", dopoChiudi: "Chiusa", chiamata: true, dopoApri: "Aperta" },
+  en: { righe: 4, tapparella: "Open · 60%", tenda: "Closed", garage: "Closed", gruppo: "Open", barraGruppo: true, tastiTapparella: "open,stop,close", tastiTenda: "open,close", dopoChiudi: "Closed", chiamata: true, dopoApri: "Open" },
 };
 /* anteprima del sito: le due tapparelle di esempio si muovono davvero */
 const DEMO_CV = `(async () => {

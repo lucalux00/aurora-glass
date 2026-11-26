@@ -409,6 +409,8 @@
       var s = sv(ENT.covers[k]);
       if (isUnavail(s)) return { na: true };
       var a = s.attributes || {}, pos = typeof a.current_position === "number" ? Math.round(a.current_position) : null;
+      /* un gruppo con tende senza posizione è «aperto» con posizione 0: quella posizione non vale, si mostra solo lo stato */
+      if (pos !== null && ((s.state === "open" && pos === 0) || (s.state === "closed" && pos > 0))) pos = null;
       return { na: false, pos: pos, posKnown: pos !== null, open: s.state === "open" || s.state === "opening" || (s.state !== "closed" && pos !== null && pos > 0),
         moving: s.state === "opening" ? "up" : s.state === "closing" ? "down" : null, feat: a.supported_features || 0 };
     }

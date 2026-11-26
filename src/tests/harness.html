@@ -83,6 +83,8 @@
   S["cover.living_shutter"] = st("cover.living_shutter", "open", { friendly_name: "Living room shutter", device_class: "shutter", current_position: 60, supported_features: 15 });
   S["cover.bedroom_curtain"] = st("cover.bedroom_curtain", "closed", { friendly_name: "Bedroom curtain", device_class: "curtain", supported_features: 3 });
   S["cover.garage_door"] = st("cover.garage_door", "closed", { friendly_name: "Garage", device_class: "garage", supported_features: 3 });
+  /* gruppo con una tenda senza posizione: Home Assistant lo dice aperto con posizione 0 */
+  S["cover.all_covers"] = st("cover.all_covers", "open", { friendly_name: "All covers", current_position: 0, supported_features: 15, entity_id: ["cover.living_shutter", "cover.bedroom_curtain"] });
   var calls = [];
   var hass = {
     states: S, user: { name: "Alex Smith", is_admin: true }, language: lang, locale: { language: lang },
@@ -157,7 +159,7 @@
   }
   var stored = q.get("cfg") === "default" ? null : {
     rooms: [
-      { area_id: "living", name: "Living room", image: "salotto", lights: ["light.living_room_lamp", "light.living_room_ceiling", "light.tv_strip"], motion: ["binary_sensor.living_motion"], openings: ["binary_sensor.front_door", "lock.front"], temperature: ["sensor.living_temp"], covers: ["cover.living_shutter", "cover.garage_door"] },
+      { area_id: "living", name: "Living room", image: "salotto", lights: ["light.living_room_lamp", "light.living_room_ceiling", "light.tv_strip"], motion: ["binary_sensor.living_motion"], openings: ["binary_sensor.front_door", "lock.front"], temperature: ["sensor.living_temp"], covers: ["cover.living_shutter", "cover.garage_door", "cover.all_covers"] },
       { area_id: "kitchen", name: "Kitchen", image: "cucina", lights: ["light.kitchen", "light.kitchen_island", "switch.coffee_machine"], motion: ["binary_sensor.kitchen_motion"], openings: ["binary_sensor.kitchen_window"], temperature: [] },
       { area_id: "bedroom", name: "Bedroom", image: "camera", lights: ["light.bedroom"], motion: [], openings: [], temperature: ["sensor.bedroom_temp"], covers: ["cover.bedroom_curtain"] },
       { area_id: null, name: "Office <b>&</b> study", image: "sgabuzzino", lights: ["light.office"], motion: [], openings: [], temperature: [] },
