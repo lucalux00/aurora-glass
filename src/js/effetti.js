@@ -39,10 +39,12 @@
   Fx.prototype.init = function () { var e = E[this.kind]; this.P = []; if (e && e.init) e.init(this); };
   Fx.prototype.loop = function (ts) {
     if (!this.running) return;
+    var e = E[this.kind];
+    if (!e || document.hidden) { this.last = 0; requestAnimationFrame(this._loop); return; }
+    /* 3.9.1 · al massimo ~60 disegni al secondo: sugli schermi a 120 Hz dei telefoni il doppio non si vede e raddoppia il lavoro */
+    if (this.last && ts - this.last < 15) { requestAnimationFrame(this._loop); return; }
     var dt = this.last ? Math.min(.05, (ts - this.last) / 1000) : .016;
     this.last = ts; this.t += dt;
-    var e = E[this.kind];
-    if (!e || document.hidden) { requestAnimationFrame(this._loop); return; }
     var x = this.x;
     x.clearRect(0, 0, this.w, this.h);
     x.globalAlpha = this.alpha;

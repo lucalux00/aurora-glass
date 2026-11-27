@@ -193,8 +193,9 @@ main { display: flex; flex-direction: column; gap: 22px; padding: 18px 0 150px; 
 .eyebrow { margin: 0; font-size: .74rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
 .greet { margin: 2px 0 0; font-family: var(--font-display); font-weight: 600; font-size: clamp(1.1rem, 2.2vw, 1.5rem); letter-spacing: -.02em; }
 .clock { font-family: var(--font-display); font-weight: 800; line-height: 1; letter-spacing: -.05em; font-variant-numeric: tabular-nums; font-size: clamp(3.6rem, 9vw, 6.6rem); margin: 4px 0 8px; background: linear-gradient(110deg, var(--text) 10%, var(--acc-text) 55%, var(--a2) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; filter: drop-shadow(0 6px 24px color-mix(in srgb, var(--a1) 35%, transparent)); }
-.clock .colon { animation: blink 1s steps(1) infinite; }
-@keyframes blink { 50% { opacity: .25; } }
+/* 3.9.1 · i due punti restano fermi: il lampeggio non si vedeva in Chrome (il testo con la sfumatura ignora l'opacità dei figli)
+   e teneva un'animazione sempre accesa dentro l'orologio con l'ombra. Le cifre cambiano una volta al minuto (aurora-app.js) */
+.clock .colon { display: inline; }
 .hero-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
 .chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px 8px 10px; border-radius: 99px; font-size: .82rem; font-weight: 600; color: var(--dim); background: color-mix(in srgb, var(--bg) 45%, transparent); border: 1px solid var(--border); backdrop-filter: blur(8px); }
 .chip i { font-size: 1.1rem; color: var(--acc-text); }
@@ -899,6 +900,21 @@ footer.note { text-align: center; color: var(--faint); font-size: .78rem; paddin
   .slots { grid-template-columns: 1fr 1fr; }
   .shield { width: 104px; height: 104px; }
 }
+/* 3.9.1 · telefoni: meno lavoro per la scheda video. Su schermi densi a 120 Hz le sfocature una dentro l'altra, la grana
+   in sovrimpressione e le macchie di colore sempre in moto obbligavano a rifare tutte le sfocature a ogni fotogramma.
+   Le schede restano di vetro; spariscono solo le sfocature doppie (elementi piccoli dentro una scheda già sfocata, con uno
+   sfondo un po' più pieno al loro posto), la grana e il moto lentissimo delle macchie (i colori seguono sempre l'ora). */
+@media (max-width: 720px) {
+  .orb .sw, .orb .o-col, .chip, .w-fc-chip, .hero-tag, .w-ai-summary { -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .orb .sw, .orb .o-col { background: rgba(8,10,30,.7); }
+  .chip { background: color-mix(in srgb, var(--bg) 62%, transparent); }
+  .w-fc-chip { background: rgba(0,0,0,.45); }
+  .hero-tag { background: rgba(8,10,30,.6); }
+  .w-ai-summary { background: color-mix(in srgb, var(--b1) 18%, rgba(0,0,0,.55)); }
+  .grain { display: none; }
+  .bg .o1, .bg .o2, .bg .o3 { animation: none; }
+  .bg i { will-change: auto; }
+}
 /* ---- Stanze e dispositivi (stanze-dispositivi.js) ---- */
 .btn:disabled { opacity: .45; cursor: default; transform: none; }
 .mcard.hb { position: relative; width: min(940px, 100%); height: min(900px, calc(100vh - 32px)); height: min(900px, calc(100dvh - 32px)); max-height: none; overflow: hidden; gap: 14px; }
@@ -1057,7 +1073,7 @@ footer.note { text-align: center; color: var(--faint); font-size: .78rem; paddin
         <div class="hero-body">
           <p class="eyebrow" id="date-text">Lunedì 12 ottobre</p>
           <h1 class="greet" id="greet">Buonasera, Alex</h1>
-          <div class="clock" id="clock" aria-live="off">21<span class="colon">:</span>00</div>
+          <div class="clock" id="clock" aria-live="off"><span id="clock-h">21</span><span class="colon">:</span><span id="clock-m">00</span></div>
           <div class="hero-chips">
             <span class="chip" id="chip-temp" role="button" tabindex="0" title="Apri dettagli stazione meteo" style="cursor:pointer"><i class="mdi mdi-weather-partly-cloudy" id="temp-ico"></i>Esterno <b id="temp-val">21,4 °C</b></span>
             <span class="chip" id="chip-power" role="button" tabindex="0" title="Apri i consumi" style="cursor:pointer"><i class="mdi mdi-flash bolt"></i>Consumo <b id="power-val">612 W</b><span class="pdelta" id="power-delta"></span><span class="livedot" title="Aggiornamento in tempo reale"></span></span>

@@ -34,11 +34,53 @@
         i.dataset.hy = "1"; i.innerHTML = '<ha-icon icon="mdi:' + n + '"></ha-icon>';
       });
     }
+    /* 3.9.1 · icone e testi si toccano solo se cambiano: un'icona di Home Assistant reimpostata si svuota e si ridisegna
+       (su telefono si vede lampeggiare), un testo riscritto uguale fa ridisegnare la sua zona */
     function setIco(node, name) {
       if (!node) return;
       name = name.replace(/^mdi-/, "");
-      if (HA) { var h = $("ha-icon", node); if (!h) { node.classList.add("mdi"); node.innerHTML = "<ha-icon></ha-icon>"; node.dataset.hy = "1"; h = $("ha-icon", node); } h.setAttribute("icon", "mdi:" + name); }
-      else node.className = "mdi mdi-" + name + (node.classList.contains("bolt") ? " bolt" : "");
+      if (HA) { var h = $("ha-icon", node); if (!h) { node.classList.add("mdi"); node.innerHTML = "<ha-icon></ha-icon>"; node.dataset.hy = "1"; h = $("ha-icon", node); } if (h.getAttribute("icon") !== "mdi:" + name) h.setAttribute("icon", "mdi:" + name); }
+      else { var cn = "mdi mdi-" + name + (node.classList.contains("bolt") ? " bolt" : ""); if (node.className !== cn) node.className = cn; }
+    }
+    function setText(node, s) { if (node && node.textContent !== s) node.textContent = s; }
+    /* 3.9.1 · aggiorna un contenitore con l'HTML nuovo senza ricreare quello che c'è: se la forma è la stessa (stessi elementi
+       nello stesso ordine) cambiano solo attributi e testi e le icone restano al loro posto. Prima innerHTML ricreava tutto a ogni
+       valore nuovo (consumi, costo, KPI, stazione meteo) e su telefono le icone lampeggiavano mentre si ricaricavano.
+       Restituisce "same" (niente da fare), "patched" (aggiornato al suo posto) o "replaced" (ricreato: i gestori vanno ricollegati). */
+    function isIco(n) { return n.nodeType === 1 && n.tagName === "I" && n.classList.contains("mdi"); }
+    function sameShape(a, b) {
+      if (a.nodeType !== b.nodeType) return false;
+      if (a.nodeType !== 1) return true;
+      if (a.tagName !== b.tagName) return false;
+      if (isIco(a)) return isIco(b);
+      if (a.childNodes.length !== b.childNodes.length) return false;
+      for (var i = 0; i < a.childNodes.length; i++) if (!sameShape(a.childNodes[i], b.childNodes[i])) return false;
+      return true;
+    }
+    function patchNode(a, b) {
+      if (a.nodeType !== 1) { if (a.data !== b.data) a.data = b.data; return; }
+      if (isIco(a)) {
+        if (a.className !== b.className) {
+          a.className = b.className;
+          var nm = null; b.classList.forEach(function (c) { if (!nm && /^mdi-/.test(c)) nm = c; });
+          if (HA && nm) setIco(a, nm);
+        }
+        return;
+      }
+      var i, at;
+      for (i = a.attributes.length - 1; i >= 0; i--) { at = a.attributes[i]; if (!b.hasAttribute(at.name)) a.removeAttribute(at.name); }
+      for (i = 0; i < b.attributes.length; i++) { at = b.attributes[i]; if (a.getAttribute(at.name) !== at.value) a.setAttribute(at.name, at.value); }
+      for (i = 0; i < a.childNodes.length; i++) patchNode(a.childNodes[i], b.childNodes[i]);
+    }
+    function patchHTML(box, html) {
+      if (box.dataset.sig === html) return "same";
+      box.dataset.sig = html;
+      var tpl = document.createElement("template"); tpl.innerHTML = html;
+      var nw = tpl.content.childNodes, cur = box.childNodes, ok = cur.length === nw.length && cur.length > 0;
+      for (var i = 0; ok && i < cur.length; i++) ok = sameShape(cur[i], nw[i]);
+      if (ok) { for (i = 0; i < cur.length; i++) patchNode(cur[i], nw[i]); return "patched"; }
+      box.innerHTML = html; hydrate(box);
+      return "replaced";
     }
     function esc(s) { return String(s === undefined || s === null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
     function el(tag, cls, html, attrs) { var e = document.createElement(tag); if (cls) e.className = cls; if (html) { e.innerHTML = html; hydrate(e); } if (attrs) Object.keys(attrs).forEach(function (k) { e.setAttribute(k, attrs[k]); }); return e; }
@@ -1061,7 +1103,14 @@
       if (key === artKey && !force) return;
       artKey = key;
       var tok = ++artTok, back = artBack;
-      back.onload = function () { if (tok !== artTok) return; back.classList.add("show"); artFront.classList.remove("show"); artBack = artFront; artFront = back; };
+      back.onload = function () {
+        if (tok !== artTok) return;
+        back.classList.add("show"); artFront.classList.remove("show");
+        var old = artFront; artBack = artFront; artFront = back;
+        /* 3.9.1 · finita la dissolvenza (1,1 s) l'immagine vecchia si svuota: i mondi sono SVG animati e quella nascosta
+           continuava ad animarsi dietro all'altra (due mondi ridisegnati a ogni fotogramma, pesante sui telefoni) */
+        later(function () { if (tok === artTok && old === artBack && !old.classList.contains("show")) old.removeAttribute("src"); }, 1500);
+      };
       back.src = AMB.dataURL(S.world, h);
       if (drawerOpen) refreshWorldThumbs();
     }
@@ -1087,12 +1136,13 @@
       HOST.style.setProperty("--win", K.win);
       var hh = Math.floor(h) % 24, mm = Math.round((h - Math.floor(h)) * 60);
       if (mm === 60) { mm = 0; hh = (hh + 1) % 24; }
-      $("#clock").innerHTML = pad(hh) + '<span class="colon">:</span>' + pad(mm);
-      $("#phase-out").textContent = pad(hh) + ":" + pad(mm);
-      $("#phase-range").value = h;
+      /* 3.9.1 · prima l'orologio grande (testo con sfumatura e ombra) veniva ricreato ogni secondo; ora cambiano solo le cifre */
+      setText($("#clock-h"), pad(hh)); setText($("#clock-m"), pad(mm));
+      setText($("#phase-out"), pad(hh) + ":" + pad(mm));
+      if (+$("#phase-range").value !== h) $("#phase-range").value = h;
       setIco($("#phase-icon"), K.dy < .12 ? "mdi-weather-night" : K.dy > .8 ? "mdi-weather-sunny" : (h < 12 ? "mdi-weather-sunset-up" : "mdi-weather-sunset-down"));
       var gr = (h >= 22 || h < 5) ? T("Buonanotte") : h < 12 ? T("Buongiorno") : h < 18 ? T("Buon pomeriggio") : T("Buonasera");
-      $("#greet").textContent = gr + ", " + userName;
+      setText($("#greet"), gr + ", " + userName);
       setArt();
     }
     function tickClock() { if (!clockLive) return; var d = new Date(); applyHour(d.getHours() + d.getMinutes() / 60); }
@@ -1462,7 +1512,8 @@
         return (kx - ky) || x.n.localeCompare(y.n);
       });
     }
-    var batSig = "";
+    /* 3.9.1 · i pulsanti delle batterie si aggiornano al loro posto (percentuale, colore, icona) e si spostano senza
+       ricrearli: prima ogni percentuale cambiata rifaceva tutta la griglia, con le icone che lampeggiavano mentre si ricaricavano */
     function syncBatteries() {
       var wrap = $("#bat-wrap"), grid = $("#bat-grid"), more = $("#bat-more");
       if (!wrap || !grid) return;
@@ -1470,21 +1521,33 @@
       wrap.hidden = !items.length;
       if (!items.length) return;
       var shown = BAT.all ? items : items.slice(0, 8), low = items.filter(function (x) { return x.low; }).length;
-      var html = shown.map(function (x) {
+      var old = {};
+      Array.prototype.forEach.call(grid.children, function (b) { if (b.dataset && b.dataset.bat) old[b.dataset.bat] = b; });
+      shown.forEach(function (x, i) {
         var lvl = x.na ? "na" : x.low ? "low" : x.v !== null && x.v <= 40 ? "mid" : "ok";
         var val = x.na ? T("n.d.") : x.bin ? (x.low ? T("Scarica") : T("OK")) : x.v === null ? "—" : Math.round(x.v) + "%";
         var ico = x.bin ? (x.low ? "mdi-battery-alert" : "mdi-battery") : batIcon(x.v, x.charging);
-        return '<button type="button" class="bat" data-lvl="' + lvl + '" data-bat="' + esc(x.id) + '"><i class="mdi ' + ico + '"></i><span class="bat-t"><b>' + esc(x.n) + "</b>" + (x.a ? "<small>" + esc(x.a) + "</small>" : "") + '</span><span class="bat-v">' + esc(val) + "</span></button>";
-      }).join("");
-      if (html !== batSig) { batSig = html; grid.innerHTML = html; hydrate(grid); }
-      $("#bat-sub").textContent = low ? T(low === 1 ? "{n} da cambiare" : "{n} da cambiare o ricaricare", { n: low }) : T("{n} dispositivi, dalla più scarica", { n: items.length });
-      if (more) { more.hidden = items.length <= 8; $("span", more).textContent = BAT.all ? T("Mostra meno") : T("Mostra tutte ({n})", { n: items.length }); setIco($("i", more), BAT.all ? "mdi-chevron-up" : "mdi-chevron-down"); }
+        var b = old[x.id];
+        if (b) delete old[x.id];
+        else b = el("button", "bat", '<i></i><span class="bat-t"><b></b></span><span class="bat-v"></span>', { type: "button", "data-bat": x.id });
+        if (b.dataset.lvl !== lvl) b.dataset.lvl = lvl;
+        setIco($("i", b), ico);
+        setText($(".bat-t b", b), x.n);
+        var sm = $(".bat-t small", b);
+        if (x.a) { if (!sm) { sm = document.createElement("small"); $(".bat-t", b).appendChild(sm); } setText(sm, x.a); }
+        else if (sm) sm.remove();
+        setText($(".bat-v", b), val);
+        if (grid.children[i] !== b) grid.insertBefore(b, grid.children[i] || null);
+      });
+      Object.keys(old).forEach(function (k) { old[k].remove(); });
+      setText($("#bat-sub"), low ? T(low === 1 ? "{n} da cambiare" : "{n} da cambiare o ricaricare", { n: low }) : T("{n} dispositivi, dalla più scarica", { n: items.length }));
+      if (more) { more.hidden = items.length <= 8; setText($("span", more), BAT.all ? T("Mostra meno") : T("Mostra tutte ({n})", { n: items.length })); setIco($("i", more), BAT.all ? "mdi-chevron-up" : "mdi-chevron-down"); }
     }
     function buildBatteries() {
       var grid = $("#bat-grid"), more = $("#bat-more");
       if (!grid) return;
       grid.addEventListener("click", function (e) { var b = e.target.closest("[data-bat]"); if (b && LIVE) moreInfo(b.dataset.bat); });
-      if (more) more.addEventListener("click", function () { BAT.all = !BAT.all; batSig = ""; syncBatteries(); });
+      if (more) more.addEventListener("click", function () { BAT.all = !BAT.all; syncBatteries(); });
       syncBatteries();
     }
 
@@ -1512,7 +1575,8 @@
       t.meta.textContent = parts.join(" · ");
       if (t.off) t.off.hidden = !off;
       var msg = t.na.querySelector("span");
-      if (msg) msg.innerHTML = off ? T("Telecamera offline") + "<br>" + T("HA non la raggiunge in questo momento") : T("Anteprima non disponibile") + "<br>" + T("tocca per aprire la telecamera");
+      var mh = off ? T("Telecamera offline") + "<br>" + T("HA non la raggiunge in questo momento") : T("Anteprima non disponibile") + "<br>" + T("tocca per aprire la telecamera");
+      if (msg && msg.dataset.t !== mh) { msg.dataset.t = mh; msg.innerHTML = mh; }
       var x = t.x || {};
       if (x.light && t.card) {
         var ls = sv(x.light), lb = $('[data-cam-act="light"]', t.card);
@@ -1996,7 +2060,7 @@
         html += '<button type="button" class="' + cls + '"' + (id ? ' data-ws="' + esc(id) + '"' : "") + '><span class="ws-lbl"><i class="mdi ' + f[2] + '"></i>' + esc(f[1]) + "</span>" +
           '<span class="ws-val">' + (val ? val.n + (val.u ? "<small>" + val.u + "</small>" : "") : "—") + extra + "</span></button>";
       });
-      if (grid.dataset.sig !== html) { grid.dataset.sig = html; grid.innerHTML = html; hydrate(grid); }
+      patchHTML(grid, html);
       var sub = $("#ws-sub"); if (sub) sub.textContent = LIVE ? T("tocca un valore per lo storico") : T("dati di esempio");
     }
     function buildWeatherStation() {
@@ -2495,6 +2559,7 @@
       if (pct < .8) return ["high", T("Consumo alto"), pct];
       return ["crit", T("Attenzione: vicino al limite"), pct];
     }
+    var enAppsCur = [];   /* elettrodomestici dell'ultimo disegno: i gestori dei pulsanti aggiornati al loro posto leggono questi */
     function renderEnergy() {
       if (!$("#en-hero")) return;
       var m = enModel(), lv = enLevel(m), f = fmtW(m.power || 0);
@@ -2510,7 +2575,7 @@
       if (m.base !== null) chips += '<span class="echip"><i class="mdi mdi-sleep"></i>' + T("Fondo") + ' <b>' + Math.round(m.base) + " W</b></span>";
       if (m.avg3 !== null) chips += '<span class="echip"><i class="mdi mdi-chart-bell-curve"></i>' + T("Media 3 h") + ' <b>' + Math.round(m.avg3) + " W</b></span>";
       if (m.volt !== null) chips += '<span class="echip"><i class="mdi mdi-sine-wave"></i>' + T("Tensione") + ' <b>' + fmtKwh(m.volt).replace(/[,.]0$/, "") + " V</b></span>";
-      var ch = $("#en-chips"); if (ch.dataset.sig !== chips) { ch.dataset.sig = chips; ch.innerHTML = chips; hydrate(ch); }
+      patchHTML($("#en-chips"), chips);
       // tariffa
       var pb = $("#en-price"), P = m.price;
       if (pb) {
@@ -2528,17 +2593,18 @@
         ["mdi-calendar-month", T("Questo mese"), m.month, m.cMonth, est !== null ? T("Stima fine mese ≈ {n} kWh", { n: Math.round(est) }) + (m.cMonth !== null ? " · " + fmtEur(m.cMonth / dom.getDate() * dim) : "") : ""],
         ["mdi-calendar-month-outline", T("Mese scorso"), m.lmonth, m.cLmonth, ""], ["mdi-calendar-star", T("Quest'anno"), m.year, m.cYear, ""]];
       var kh = kp.map(function (k) { return '<article class="card kpi' + (k[2] === null ? " na" : "") + '"><span class="k-l"><i class="mdi ' + k[0] + '"></i>' + k[1] + '</span><span class="k-v">' + fmtKwh(k[2]) + "<small>kWh</small></span><span class=\"k-c\">" + fmtEur(k[3]) + '</span><span class="k-s">' + (k[4] || "&nbsp;") + "</span></article>"; }).join("");
-      var kb = $("#en-kpis"); if (kb.dataset.sig !== kh) { kb.dataset.sig = kh; kb.innerHTML = kh; hydrate(kb); }
+      patchHTML($("#en-kpis"), kh);
       // elettrodomestici
       var apps = m.apps, sum = 0; apps.forEach(function (x) { if (x.w) sum += x.w; });
+      enAppsCur = apps;
       var other = Math.max(0, (m.power || 0) - sum), tot = Math.max(m.power || 0, sum, 1);
       var segs = apps.filter(function (x) { return x.w > 3; }).map(function (x) { return [x.n, x.c, x.w]; });
       if (other > 3) segs.push([T("Altro (luci, standby…)"), "#64748B", other]);
       var sh = $("#en-share"), shHtml = segs.map(function (g2) { return '<i style="width:' + (g2[2] / tot * 100).toFixed(1) + "%;background:" + g2[1] + '"></i>'; }).join("");
-      if (sh.dataset.sig !== shHtml) { sh.dataset.sig = shHtml; sh.innerHTML = shHtml; }
+      patchHTML(sh, shHtml);
       var lg = $("#en-share-legend");
       if (!lg) { lg = el("div", "share-legend"); lg.id = "en-share-legend"; sh.insertAdjacentElement("afterend", lg); }
-      lg.innerHTML = segs.map(function (g2) { return '<span style="--c:' + g2[1] + '">' + g2[0] + " <b>" + Math.round(g2[2]) + " W</b></span>"; }).join("") || '<span style="--c:#34D399">' + T("Nessun elettrodomestico acceso") + '</span>';
+      patchHTML(lg, segs.map(function (g2) { return '<span style="--c:' + g2[1] + '">' + g2[0] + " <b>" + Math.round(g2[2]) + " W</b></span>"; }).join("") || '<span style="--c:#34D399">' + T("Nessun elettrodomestico acceso") + '</span>');
       var ap = $("#en-apps"), ah = apps.map(function (x, i) {
         var run = x.w !== null && x.w >= 5;
         var monthHtml = x.month !== null && x.month !== undefined ? '<span class="a-m">' + T("{n} kWh questo mese", { n: fmtKwh(x.month) }) + '</span>' : '';
@@ -2555,14 +2621,14 @@
           monthHtml + maintHtml +
         "</button>";
       }).join("");
-      if (ap.dataset.sig !== ah) {
-        ap.dataset.sig = ah; ap.innerHTML = ah; hydrate(ap);
+      /* i gestori si collegano solo quando i pulsanti vengono ricreati; se sono solo aggiornati restano quelli di prima */
+      if (patchHTML(ap, ah) === "replaced") {
         $$(".app", ap).forEach(function (b) {
           b.addEventListener("click", function (e) {
             var badge = e.target.closest(".a-maint-badge");
             if (badge) {
               e.stopPropagation();
-              var idx = +b.dataset.app, appObj = apps[idx];
+              var idx = +b.dataset.app, appObj = enAppsCur[idx];
               if (appObj && appObj.counterEntity && LIVE) {
                 call("counter", "reset", { entity_id: appObj.counterEntity });
                 toast(T("Sanificazione") + ": " + T("ripristinato"), "mdi-check-circle", "var(--ok)");
@@ -2672,7 +2738,7 @@
     function drawChart() {
       var svg = $("#en-svg"), data = EN.series, W = 600, H = 170, base = enNum(ENT.energy.base);
       $("#en-empty").hidden = !!data.length;
-      if (!data.length) { svg.innerHTML = ""; $("#en-axis").innerHTML = ""; $("#en-stats").innerHTML = ""; return; }
+      if (!data.length) { svg.innerHTML = ""; patchHTML($("#en-axis"), ""); patchHTML($("#en-stats"), ""); return; }
       var maxV = 0, peak = data[0], sum = 0; data.forEach(function (d) { var m2 = d.mx || d.v; if (m2 > maxV) maxV = m2; if (d.v > peak.v) peak = d; sum += d.v; });
       var top = Math.max(100, Math.ceil(maxV * 1.12 / 100) * 100), t0 = data[0].t, t1 = data[data.length - 1].t, dt = Math.max(1, t1 - t0);
       var xs = function (t2) { return (t2 - t0) / dt * W; }, ys = function (v) { return H - 6 - (v / top) * (H - 14); };
@@ -2683,10 +2749,9 @@
       var bl = base !== null && base < top ? '<line class="base" x1="0" x2="' + W + '" y1="' + ys(base).toFixed(1) + '" y2="' + ys(base).toFixed(1) + '"/>' : "";
       svg.innerHTML = '<defs><linearGradient id="enarea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--acc-text)" stop-opacity=".45"/><stop offset="1" stop-color="var(--acc-text)" stop-opacity="0"/></linearGradient></defs>' + grid + bl + '<path class="area" d="' + area + '"/><path class="line" d="' + line + '"/><line class="cursor" id="en-cur" x1="0" x2="0" y1="0" y2="' + H + '" style="display:none"/>';
       var ax = $("#en-axis"), lab = []; for (var k = 0; k < 5; k++) { var tt = t0 + dt * k / 4, d2 = new Date(tt); lab.push("<span>" + (EN.range === "7g" ? d2.toLocaleDateString(LOC, { weekday: "short" }).replace(".", "") + " " + pad(d2.getHours()) + "h" : fmtHM(tt)) + "</span>"); }
-      ax.innerHTML = lab.join("");
+      patchHTML(ax, lab.join(""));
       var pk = fmtW(peak.v), av = Math.round(sum / data.length);
-      $("#en-stats").innerHTML = '<span class="echip"><i class="mdi mdi-arrow-up-bold"></i>' + T("Picco") + ' <b>' + pk.n + " " + pk.u + '</b> ' + T("alle") + ' <b>' + fmtHM(peak.t) + '</b></span><span class="echip"><i class="mdi mdi-chart-line"></i>' + T("Media") + ' <b>' + av + ' W</b></span>' + (base !== null ? '<span class="echip"><i class="mdi mdi-minus"></i>' + T("Linea tratteggiata = consumo di fondo") + '</span>' : "");
-      hydrate($("#en-stats"));
+      patchHTML($("#en-stats"), '<span class="echip"><i class="mdi mdi-arrow-up-bold"></i>' + T("Picco") + ' <b>' + pk.n + " " + pk.u + '</b> ' + T("alle") + ' <b>' + fmtHM(peak.t) + '</b></span><span class="echip"><i class="mdi mdi-chart-line"></i>' + T("Media") + ' <b>' + av + ' W</b></span>' + (base !== null ? '<span class="echip"><i class="mdi mdi-minus"></i>' + T("Linea tratteggiata = consumo di fondo") + '</span>' : ""));
       EN.geo = { xs: xs, ys: ys, t0: t0, dt: dt, W: W, data: data };
     }
     function enLoad(force) {
@@ -2710,14 +2775,14 @@
       EN.pDrawn = EN.pEff;
       var eur = EN.dayUnit === "eur";
       $("#en-days-t").textContent = eur ? T("Costo giornaliero") : T("Consumo giornaliero");
-      if (!a.length) { box.innerHTML = '<div class="en-empty" style="position:static;height:120px;display:grid">' + T("Storico non disponibile") + '</div>'; if (sum) sum.innerHTML = ""; return; }
+      if (!a.length) { box.innerHTML = '<div class="en-empty" style="position:static;height:120px;display:grid">' + T("Storico non disponibile") + '</div>'; if (sum) patchHTML(sum, ""); return; }
       var vals = a.map(function (x) { return eur ? x.v * EN.pEff : x.v; });
       var mx = Math.max.apply(null, vals) || 1, today = new Date().toDateString(), wd = T.lang === "en" ? ["S", "M", "T", "W", "T", "F", "S"] : ["D", "L", "M", "M", "G", "V", "S"], tk = 0;
       a.forEach(function (x) { tk += x.v; });
       box.innerHTML = a.map(function (x, i) {
         return '<div class="day' + (x.d.toDateString() === today ? " today" : "") + '" title="' + x.d.toLocaleDateString(LOC, { weekday: "long", day: "numeric", month: "long" }) + " · " + fmtKwh(x.v) + " kWh · " + fmtEur(x.v * EN.pEff) + '"><span class="d-v">' + (eur ? Number(vals[i]).toLocaleString(LOC, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : fmtKwh(vals[i])) + '</span><span class="bar2" style="height:' + Math.max(3, vals[i] / mx * 100) + '%"></span><span class="d-l">' + wd[x.d.getDay()] + x.d.getDate() + "</span></div>";
       }).join("");
-      if (sum) { sum.innerHTML = '<span class="echip"><i class="mdi mdi-sigma"></i>' + T("Totale") + ' <b>' + fmtKwh(tk) + ' kWh</b> · <b>' + fmtEur(tk * EN.pEff) + '</b></span><span class="echip"><i class="mdi mdi-chart-line"></i>' + T("Media al giorno") + ' <b>' + fmtKwh(tk / a.length) + ' kWh</b> · <b>' + fmtEur(tk / a.length * EN.pEff) + '</b></span><span class="echip"><i class="mdi mdi-information-outline"></i>' + T("Calcolato con {p}", { p: fmtP(EN.pEff) + " " + CUR + "/kWh" }) + '</span>'; hydrate(sum); }
+      if (sum) patchHTML(sum, '<span class="echip"><i class="mdi mdi-sigma"></i>' + T("Totale") + ' <b>' + fmtKwh(tk) + ' kWh</b> · <b>' + fmtEur(tk * EN.pEff) + '</b></span><span class="echip"><i class="mdi mdi-chart-line"></i>' + T("Media al giorno") + ' <b>' + fmtKwh(tk / a.length) + ' kWh</b> · <b>' + fmtEur(tk / a.length * EN.pEff) + '</b></span><span class="echip"><i class="mdi mdi-information-outline"></i>' + T("Calcolato con {p}", { p: fmtP(EN.pEff) + " " + CUR + "/kWh" }) + '</span>');
     }
     function enEnter() { renderEnergy(); enLoad(true); daysLoad(); kpiStats(); }
     function buildEnergy() {
