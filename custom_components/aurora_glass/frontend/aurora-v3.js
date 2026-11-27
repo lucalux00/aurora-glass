@@ -1,4 +1,4 @@
-/* Aurora Glass v3.9.1 — scheda per Home Assistant (generata da tools/build.py) */
+/* Aurora Glass v3.9.2 — scheda per Home Assistant (generata da tools/build.py) */
 
 /* ---- disegno.js ---- */
 /* ============================================================================
@@ -1711,7 +1711,7 @@
         if (i.dataset.hy) return;
         var n = null; i.classList.forEach(function (c) { if (!n && /^mdi-/.test(c)) n = c.slice(4); });
         if (!n) return;
-        i.dataset.hy = "1"; i.innerHTML = '<ha-icon icon="mdi:' + n + '"></ha-icon>';
+        i.dataset.hy = "1"; var hi = document.createElement("ha-icon"); hi.setAttribute("icon", "mdi:" + n); i.textContent = ""; i.appendChild(hi);
       });
     }
     /* 3.9.1 · icone e testi si toccano solo se cambiano: un'icona di Home Assistant reimpostata si svuota e si ridisegna
@@ -1762,7 +1762,7 @@
       box.innerHTML = html; hydrate(box);
       return "replaced";
     }
-    function esc(s) { return String(s === undefined || s === null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+    function esc(s) { return String(s === undefined || s === null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
     function el(tag, cls, html, attrs) { var e = document.createElement(tag); if (cls) e.className = cls; if (html) { e.innerHTML = html; hydrate(e); } if (attrs) Object.keys(attrs).forEach(function (k) { e.setAttribute(k, attrs[k]); }); return e; }
     var PEN = '<span class="edit-badge"><i class="mdi mdi-pencil"></i></span>';
 
@@ -2209,8 +2209,8 @@
         r.l.forEach(function (k) {
           var L = LIGHTS[k];
           var isIcon = L[4] || (CFG.button_style === "icon") || (S.btn === "icon");
-          orbs += '<button class="orb' + (isIcon ? " icon-only" : "") + '" type="button" data-light="' + k + '" data-img="' + L[1] + '"' + (L[3] ? ' data-ov="' + L[3] + '"' : "") + ' data-label="' + esc(T("Luce {n}", { n: L[0].toLowerCase() })) + '" data-on="0" aria-pressed="false">' +
-            '<img class="o-img" alt="" draggable="false"><span class="o-shade"></span><span class="o-lvl" aria-hidden="true"></span><span class="sw"></span><span class="o-ico"><i class="mdi ' + L[2] + '"></i></span>' +
+          orbs += '<button class="orb' + (isIcon ? " icon-only" : "") + '" type="button" data-light="' + esc(k) + '" data-img="' + esc(L[1]) + '"' + (L[3] ? ' data-ov="' + esc(L[3]) + '"' : "") + ' data-label="' + esc(T("Luce {n}", { n: L[0].toLowerCase() })) + '" data-on="0" aria-pressed="false">' +
+            '<img class="o-img" alt="" draggable="false"><span class="o-shade"></span><span class="o-lvl" aria-hidden="true"></span><span class="sw"></span><span class="o-ico"><i class="mdi ' + esc(L[2]) + '"></i></span>' +
             '<span class="o-col" role="button" tabindex="0" hidden title="' + esc(T("Colori ed effetti")) + '" aria-label="' + esc(T("Colori ed effetti di {n}", { n: L[0] })) + '"><i class="mdi mdi-palette"></i></span>' +
             '<span class="o-txt"><span class="o-name">' + esc(L[0]) + '</span><span class="o-state">' + T("Spenta") + '</span></span>' + PEN + "</button>";
         });
@@ -2962,7 +2962,7 @@
       LIBGROUPS.forEach(function (g2, i) { var t = el("button", "", g2[0], { type: "button", "aria-pressed": i === edTab ? "true" : "false" }); t.addEventListener("click", function () { edTab = i; renderEditor(); }); tabs.appendChild(t); });
       var lib = $("#lib"); lib.innerHTML = "";
       Object.keys(IMG).filter(function (k) { return k.indexOf(LIBGROUPS[edTab][1]) === 0; }).forEach(function (k) {
-        var it = IMG[k], c = el("button", "", '<img alt="" src="' + (it.kind === "pair" ? it.off : it.src) + '"><span>' + LIBNAMES[k] + "</span>", { type: "button", title: LIBNAMES[k] });
+        var it = IMG[k], c = el("button", "", '<img alt="" src="' + esc(it.kind === "pair" ? it.off : it.src) + '"><span>' + esc(LIBNAMES[k]) + "</span>", { type: "button", title: LIBNAMES[k] });
         if (it.kind === "pair") { c.addEventListener("mouseenter", function () { $("img", c).src = it.on; }); c.addEventListener("mouseleave", function () { $("img", c).src = it.off; }); }
         c.addEventListener("click", function () { applyLib(k); });
         lib.appendChild(c);
@@ -3738,7 +3738,7 @@
         }
         if (f[4] !== sec) { sec = f[4]; html += '<p class="ws-sec">' + esc(sec === "out" ? T("All'esterno") : T("Dentro casa")) + "</p>"; }
         html += '<button type="button" class="' + cls + '"' + (id ? ' data-ws="' + esc(id) + '"' : "") + '><span class="ws-lbl"><i class="mdi ' + f[2] + '"></i>' + esc(f[1]) + "</span>" +
-          '<span class="ws-val">' + (val ? val.n + (val.u ? "<small>" + val.u + "</small>" : "") : "—") + extra + "</span></button>";
+          '<span class="ws-val">' + (val ? esc(val.n) + (val.u ? "<small>" + esc(val.u) + "</small>" : "") : "—") + extra + "</span></button>";
       });
       patchHTML(grid, html);
       var sub = $("#ws-sub"); if (sub) sub.textContent = LIVE ? T("tocca un valore per lo storico") : T("dati di esempio");
@@ -3948,7 +3948,7 @@
       var sel = $(id), w = sel.closest("label");
       if (!list || !list.length) { w.hidden = true; return; }
       w.hidden = false; var sig = list.join("|");
-      if (sel.dataset.sig !== sig) { sel.innerHTML = list.map(function (k) { return '<option value="' + k + '">' + it(k) + "</option>"; }).join(""); sel.dataset.sig = sig; }
+      if (sel.dataset.sig !== sig) { sel.innerHTML = list.map(function (k) { return '<option value="' + esc(k) + '">' + esc(it(k)) + "</option>"; }).join(""); sel.dataset.sig = sig; }
       sel.value = cur;
     }
     /* riga dei climatizzatori (solo se sono più di uno): nome e modalità di ognuno, tocca per comandarlo */
@@ -4023,7 +4023,7 @@
       var fw = $("#cl-fans"), fsig = clima.fans.join("|") + "#" + clima.fan; $("#cl-fan-sec").hidden = !clima.fans.length;
       if (fw.dataset.sig !== fsig) {
         fw.dataset.sig = fsig; fw.innerHTML = "";
-        clima.fans.forEach(function (k) { fw.appendChild(el("button", "cchip sm", it(k), { type: "button", "data-fan": k, "aria-pressed": k === clima.fan ? "true" : "false" })); });
+        clima.fans.forEach(function (k) { fw.appendChild(el("button", "cchip sm", esc(it(k)), { type: "button", "data-fan": k, "aria-pressed": k === clima.fan ? "true" : "false" })); });
       }
       fillSel("#cl-swing", clima.swings, clima.swing); fillSel("#cl-hswing", clima.hswings, clima.hswing); fillSel("#cl-preset", clima.presets, clima.preset);
       $("#cl-minus").disabled = $("#cl-plus").disabled = !clima.avail;
@@ -4280,11 +4280,11 @@
       var other = Math.max(0, (m.power || 0) - sum), tot = Math.max(m.power || 0, sum, 1);
       var segs = apps.filter(function (x) { return x.w > 3; }).map(function (x) { return [x.n, x.c, x.w]; });
       if (other > 3) segs.push([T("Altro (luci, standby…)"), "#64748B", other]);
-      var sh = $("#en-share"), shHtml = segs.map(function (g2) { return '<i style="width:' + (g2[2] / tot * 100).toFixed(1) + "%;background:" + g2[1] + '"></i>'; }).join("");
+      var sh = $("#en-share"), shHtml = segs.map(function (g2) { return '<i style="width:' + (g2[2] / tot * 100).toFixed(1) + "%;background:" + esc(g2[1]) + '"></i>'; }).join("");
       patchHTML(sh, shHtml);
       var lg = $("#en-share-legend");
       if (!lg) { lg = el("div", "share-legend"); lg.id = "en-share-legend"; sh.insertAdjacentElement("afterend", lg); }
-      patchHTML(lg, segs.map(function (g2) { return '<span style="--c:' + g2[1] + '">' + g2[0] + " <b>" + Math.round(g2[2]) + " W</b></span>"; }).join("") || '<span style="--c:#34D399">' + T("Nessun elettrodomestico acceso") + '</span>');
+      patchHTML(lg, segs.map(function (g2) { return '<span style="--c:' + esc(g2[1]) + '">' + esc(g2[0]) + " <b>" + Math.round(g2[2]) + " W</b></span>"; }).join("") || '<span style="--c:#34D399">' + T("Nessun elettrodomestico acceso") + '</span>');
       var ap = $("#en-apps"), ah = apps.map(function (x, i) {
         var run = x.w !== null && x.w >= 5;
         var monthHtml = x.month !== null && x.month !== undefined ? '<span class="a-m">' + T("{n} kWh questo mese", { n: fmtKwh(x.month) }) + '</span>' : '';
@@ -4293,8 +4293,8 @@
           var isWarn = x.counter >= x.counterLimit;
           maintHtml = '<span class="a-maint-badge' + (isWarn ? " warn" : "") + '" data-counter-app="' + i + '" title="' + T("Tocca per azzerare il contatore") + '"><i class="mdi ' + (isWarn ? "mdi-alert" : "mdi-spray-bottle") + '"></i>' + (isWarn ? T("Sanificazione consigliata") : T("Sanificazione: {c}/{l}", { c: x.counter, l: x.counterLimit })) + '</span>';
         }
-        return '<button class="app' + (run ? " run" : "") + (x.na ? " na" : "") + '" type="button" data-app="' + i + '" style="--c:' + x.c + '">' +
-          '<span class="a-ico"><i class="mdi ' + x.ic + '"></i></span>' +
+        return '<button class="app' + (run ? " run" : "") + (x.na ? " na" : "") + '" type="button" data-app="' + i + '" style="--c:' + esc(x.c) + '">' +
+          '<span class="a-ico"><i class="mdi ' + esc(x.ic) + '"></i></span>' +
           '<span class="a-name">' + esc(x.n) + '</span>' +
           '<span class="a-w">' + (x.na || x.w === null ? "—" : (x.w >= 1000 ? fmtW(x.w).n + " kW" : Math.round(x.w) + " W")) + '</span>' +
           '<span class="a-e">' + (x.e !== null ? T("{n} kWh oggi", { n: fmtKwh(x.e) }) : (x.na ? T("Non disponibile") : "&nbsp;")) + '</span>' +
@@ -4668,7 +4668,7 @@
   var App = window.AuroraApp;
   /* nomi con la versione per la pagina della barra laterale: dopo un aggiornamento la versione nuova
      non trova mai i nomi già occupati da quella vecchia rimasta in memoria nel browser */
-  var VER = "3.9.1".replace(/\./g, "-");
+  var VER = "3.9.2".replace(/\./g, "-");
   var CARD_TAG = "aurora-glass-card-" + VER, PANEL_TAG = "aurora-glass-panel-" + VER;
   var OVERRIDES = [
     ":host { display: block; position: relative; --lp: absolute; --sp: absolute; --so: hidden auto; height: var(--aurora-height, calc(100vh - var(--header-height, 56px))); min-height: 520px; overflow: hidden; }",
@@ -4720,7 +4720,7 @@
       var self = this, cfg = JSON.parse(this._sig || "{}");
       this._app = new App({
         root: this._root, host: this, layer: this._root.querySelector("#shell"), scroll: this._root.querySelector("#scroll"),
-        assets: cfg.assets || defaultAssets(), live: true, embedded: true, haIcons: true, config: cfg, hass: this._hass, lang: haLang(this._hass, cfg), version: "3.9.1",
+        assets: cfg.assets || defaultAssets(), live: true, embedded: true, haIcons: true, config: cfg, hass: this._hass, lang: haLang(this._hass, cfg), version: "3.9.2",
         call: function (domain, service, data) { return self._hass.callService(domain, service, data); },
         moreInfo: function (entityId) { self.dispatchEvent(new CustomEvent("hass-more-info", { bubbles: true, composed: true, detail: { entityId: entityId } })); }
       });
